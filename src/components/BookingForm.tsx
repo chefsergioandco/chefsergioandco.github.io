@@ -3,6 +3,7 @@ import * as RadioGroup from '@radix-ui/react-radio-group'
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../booking/api'
+import { navigateAccount } from '../account/navigation'
 import { Calendar } from '../booking/Calendar'
 import { addMonths, clock, longDate, money } from '../booking/format'
 import { budgetLabel, DRAFT_KEY, EMPTY, migrateLegacyDraft, planningRequest, selectedBand, todayET, validDate, validDraft, validatePlanningStep, type PlanningState, type SavedDraft } from '../booking/planning'
@@ -123,7 +124,11 @@ export function BookingForm() {
     try {
       const result = await api.hold(planningRequest(s), honeypot)
       try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
-      window.location.assign(result.url)
+      const destination = new URL(result.url, window.location.href)
+      if (result.next === 'done' && destination.origin === window.location.origin && destination.pathname === href('/book/done/')) {
+        navigateAccount(destination.pathname + destination.search + destination.hash)
+        window.scrollTo(0, 0)
+      } else window.location.assign(result.url)
     } catch (failure) {
       inFlight.current = false; setBusy(false); setSubmissionError(failure instanceof Error ? failure.message : 'Your request could not be confirmed. Your answers are still here.')
       if (failure instanceof BookingError && ['unavailable', 'seats-gone'].includes(failure.code)) { setAvail(null); setAvailabilityRetry(value => value + 1); setNightsRetry(value => value + 1); go(1) }
