@@ -1,0 +1,39 @@
+.seasonal-letter { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: clamp(36px, 7vw, 100px); padding: 46px 0 48px; border-top: 1px solid rgb(var(--footer-paper, 255 254 249) / .2); }
+.seasonal-letter-copy { max-width: 440px; }
+.seasonal-letter-eyebrow { margin: 0 0 15px; font-family: var(--f-ui, inherit); font-size: 12px; line-height: 1.5; color: rgb(var(--footer-paper, 255 254 249) / .7); }
+.seasonal-letter h2 { margin: 0 0 18px; font-family: var(--f-display, inherit); font-size: clamp(30px, 3vw, 43px); font-weight: var(--display-weight, 500); line-height: 1.08; letter-spacing: var(--display-tracking, -.025em); }
+.seasonal-letter-copy > p:not(.seasonal-letter-eyebrow) { max-width: 390px; margin: 0; font-size: 17px; line-height: 1.55; color: rgb(var(--footer-paper, 255 254 249) / .84); }
+.seasonal-letter-copy > p.seasonal-letter-frequency { margin-top: 13px; font-size: 13px; color: rgb(var(--footer-paper, 255 254 249) / .7); }
+.seasonal-letter-signup { min-width: 0; padding-top: 4px; }
+.seasonal-letter-label { display: block; margin-bottom: 10px; font-family: var(--f-ui, inherit); font-size: 13px; line-height: 1.5; }
+.seasonal-letter-fields { display: flex; align-items: stretch; gap: 12px; padding-bottom: 9px; border-bottom: 1px solid rgb(var(--footer-paper, 255 254 249) / .55); }
+.seasonal-letter-fields > input { min-width: 0; width: 100%; min-height: 44px; padding: 7px 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; font-size: 18px; box-shadow: none; }
+.seasonal-letter-fields > input:disabled { opacity: .5; cursor: not-allowed; }
+.seasonal-letter-submit { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 12px; min-height: 44px; padding: 8px 0 8px 10px; border: 0; border-radius: 0; background: transparent; color: inherit; font-family: var(--f-ui, inherit); font-size: 14px; line-height: 1.4; text-align: left; cursor: pointer; }
+.seasonal-letter-submit span { font-size: 22px; line-height: 1; }
+.seasonal-letter-submit:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 5px; }
+.seasonal-letter-submit:disabled { opacity: .5; cursor: not-allowed; }
+.seasonal-letter-consent { display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; font-family: var(--f-ui, inherit); font-size: 12px; line-height: 1.65; color: rgb(var(--footer-paper, 255 254 249) / .86); cursor: pointer; }
+.seasonal-letter-consent input { flex: none; width: 17px; height: 17px; margin: 2px 0 0; accent-color: rgb(var(--footer-paper, 255 254 249)); }
+.seasonal-letter-consent:has(input:disabled) { cursor: default; }
+.seasonal-letter-privacy { margin: 12px 0 0; font-family: var(--f-ui, inherit); font-size: 11px; line-height: 1.65; color: rgb(var(--footer-paper, 255 254 249) / .7); }
+.seasonal-letter-status { min-height: 3.3em; margin: 14px 0 0; font-family: var(--f-ui, inherit); font-size: 13px; line-height: 1.65; color: rgb(var(--footer-paper, 255 254 249) / .9); }
+.seasonal-letter-retry { min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.seasonal-letter-honeypot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.home-arrival[data-arrival-active='true'] .seasonal-letter { display: none; }
+@media (max-width: 800px) {
+  .seasonal-letter { grid-template-columns: 1fr; gap: 27px; padding: 35px 0 36px; }
+  .seasonal-letter-copy { max-width: 480px; }
+  .seasonal-letter-copy > p:not(.seasonal-letter-eyebrow) { max-width: 460px; }
+  .seasonal-letter h2 br { display: none; }
+  .seasonal-letter-signup { max-width: 540px; padding-top: 0; }
+}
+@media (max-width: 420px) {
+  .seasonal-letter { padding: 31px 0; gap: 24px; }
+  .seasonal-letter h2 { font-size: 32px; max-width: 290px; }
+  .seasonal-letter-copy > p:not(.seasonal-letter-eyebrow) { font-size: 16px; }
+  .seasonal-letter-fields { flex-wrap: wrap; gap: 0; }
+  .seasonal-letter-fields > input { flex-basis: 100%; }
+  .seasonal-letter-submit { padding-left: 0; }
+  .seasonal-letter-consent { font-size: 12px; }
+}

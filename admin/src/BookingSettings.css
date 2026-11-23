@@ -1,0 +1,35 @@
+.booking-settings{padding:26px 30px 30px;color:#3f4936}
+.booking-settings-intro{margin-bottom:24px}
+.booking-settings-intro .eyebrow{font-size:11px;letter-spacing:.14em;color:#7c866a;margin:0 0 9px}
+.booking-settings-intro h2{font-family:'EB Garamond',Garamond,Georgia,serif;font-size:34px;font-weight:500;line-height:1.1;margin:0 0 12px}
+.booking-settings-intro>p:last-child{font-size:16px;line-height:1.7;max-width:680px;margin:0;color:#727a65}
+.booking-setup-readiness{display:flex;align-items:flex-start;gap:13px;padding:18px;border:1px solid #dedacb;border-radius:6px;background:#f8f5ed;margin:0 0 25px}
+.booking-setup-readiness>svg{flex-shrink:0;margin-top:2px;color:#8c7951}
+.booking-setup-readiness strong{font-size:15px;font-weight:600}
+.booking-setup-readiness p,.booking-setup-readiness li,.booking-setup-readiness summary{font-size:14px;line-height:1.65;color:#787463}
+.booking-setup-readiness p{margin:6px 0 0}.booking-setup-readiness details{margin-top:9px}.booking-setup-readiness summary{cursor:pointer}.booking-setup-readiness ul{padding-left:19px;margin:8px 0 0}
+.booking-setup-readiness.ready{background:#eff5e8;border-color:#ceddbd}.booking-setup-readiness.ready>svg{color:#617d42}
+.booking-settings-section{padding:24px 0 0;border:0;border-top:1px solid #e3dfd3;margin:0 0 26px;display:grid;gap:18px;min-width:0}
+.booking-settings-section legend{font-family:'EB Garamond',Garamond,Georgia,serif;font-size:25px;font-weight:500;padding:0 12px 0 0;line-height:1.2}
+.booking-settings-section>p{font-size:14px;line-height:1.7;color:#78806c;margin:0}
+.booking-settings .field{display:flex;flex-direction:column;gap:7px;font-size:14px;line-height:1.5;min-width:0}
+.booking-settings .field>span{font-weight:500}.booking-settings small{font-size:13px;line-height:1.65;color:#7b8270}
+.booking-settings input,.booking-settings textarea,.booking-settings select{font:inherit;font-size:16px;line-height:1.5;width:100%;box-sizing:border-box;min-height:45px;border:1px solid #d8d9ce;border-radius:4px;background:#fffefa;color:#35412d;padding:10px 12px}
+.booking-settings textarea{resize:vertical}
+.booking-settings input:focus-visible,.booking-settings textarea:focus-visible,.booking-settings select:focus-visible{outline:2px solid #79865c;outline-offset:3px}
+.booking-settings input:disabled,.booking-settings textarea:disabled,.booking-settings select:disabled{background:#f1efe8;color:#8d9184}
+.booking-settings input::placeholder,.booking-settings textarea::placeholder{color:#949787;font-size:14px}
+.booking-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.booking-settings-grid .full{grid-column:1/-1}
+.booking-band-list{display:grid;gap:12px}
+.booking-band{display:grid;grid-template-columns:minmax(120px,1.5fr) 80px 80px minmax(110px,1fr);gap:12px;padding:16px;background:#f7f6f0;border:1px solid #e6e2d6;border-radius:5px}
+.booking-band .field>span{font-size:13px;font-weight:400}
+.booking-slot-add{display:flex;gap:12px;align-items:flex-end}.booking-slot-add .field{flex:1}.booking-slot-add .button{min-height:45px;font-size:14px;white-space:nowrap}
+.booking-slot-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.booking-slot-list li{border:1px solid #e2dfd3;border-radius:5px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;gap:15px;font-size:14px}
+.booking-settings-note{font-size:13px!important;line-height:1.65!important;color:#7d836f!important;margin:0}
+.booking-settings-error{color:#8d3b31;background:#fbede7;border:1px solid #ebcfc2;border-radius:5px;padding:13px 15px;font-size:14px;line-height:1.6}
+.booking-settings-footer{display:flex;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid #e2ded1;padding-top:24px}
+.booking-settings-footer p{font-size:13px;line-height:1.6;color:#7c8271;margin:0;max-width:310px}
+.booking-settings-footer>div{display:flex;gap:10px;flex-shrink:0}.booking-settings-footer .button{font-size:14px;min-height:44px}
+@media(max-width:640px){.booking-settings{padding:22px 20px}.booking-settings-intro h2{font-size:30px}.booking-settings-grid{grid-template-columns:1fr}.booking-settings-grid .full{grid-column:auto}.booking-band{grid-template-columns:1fr 1fr;gap:12px}.booking-band .field:first-child{grid-column:1/-1}.booking-band .field:last-child{grid-column:1/-1}.booking-slot-add{display:block}.booking-slot-add .button{width:100%;margin-top:10px}.booking-settings-footer{align-items:stretch;flex-direction:column}.booking-settings-footer p{max-width:none}.booking-settings-footer>div{display:grid;grid-template-columns:1fr 1fr}.booking-setup-readiness{padding:15px}}

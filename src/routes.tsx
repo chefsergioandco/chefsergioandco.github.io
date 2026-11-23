@@ -8,7 +8,13 @@ import { About } from './pages/About'
 import { about } from './content/about'
 import { ShotList } from './pages/ShotList'
 import { BookDone, MockCheckout } from './booking/StatusPages'
-import { EventInvitation } from './booking/EventInvitation'
+import { InvitationPage, InvitationPreview } from './invitations/InvitationPage'
+
+import { SignIn, CreateAccount, VerifyEmail, PasswordReset, CheckEmail, SignOut, SignedOut, AuthCallback } from './account/AccountPages'
+import { CustomerDashboard } from './account/CustomerDashboard'
+import { ReceiptPage } from './account/ReceiptPage'
+import { NewsletterConfirm, NewsletterUnsubscribe } from './components/NewsletterTokenPage'
+import { AdminPage } from './account/AdminPage'
 
 export type Route = {
   path: string
@@ -17,6 +23,7 @@ export type Route = {
   h1: string // what the prerender check expects to find
   Page: ComponentType
   noindex?: boolean
+  bookingLinkRequired?: boolean
   jsonld?: object[]
   /**
    * Sharing (og:image). `card`: the words on the share card when the H1 doesn't stand alone out of context.
@@ -94,7 +101,25 @@ const service = (name: string, path: string, description: string, from: number |
 })
 
 const all: Route[] = [
-  { path: '/invitation/', title: 'Your invitation | Chef Sergio & Co.', description: 'Your private invitation to a gathering with Chef Sergio.', h1: 'Your invitation', Page: EventInvitation, noindex: true, og: { card: 'home' } },
+  { path: '/newsletter/confirm/', title: 'Confirm your subscription | Chef Sergio & Co.', description: 'Confirm your choice to receive the seasonal letter from Chef Sergio and Co.', h1: 'Confirm your subscription', Page: NewsletterConfirm, noindex: true, og: {card:'home'} },
+  { path: '/newsletter/unsubscribe/', title: 'Unsubscribe from the letter | Chef Sergio & Co.', description: 'Manage your subscription to the seasonal letter from Chef Sergio and Co.', h1: 'Unsubscribe from the letter', Page: NewsletterUnsubscribe, noindex: true, og: {card:'home'} },
+
+  { path: '/dashboard/', title: 'Your evenings | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'A place to return to.', Page: CustomerDashboard, noindex: true, og: { card: 'home' } },
+  { path: '/receipt/', title: 'Your receipt | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Your receipt.', Page: ReceiptPage, noindex: true, og: { card: 'home' } },
+  { path: '/admin/', title: 'Admin dashboard | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Admin dashboard.', Page: AdminPage, noindex: true, og: { card: 'home' } },
+  { path: '/account/sign-in/', title: 'Sign in | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Good to have you here.', Page: SignIn, noindex: true, og: { card: 'home' } },
+  { path: '/account/create/', title: 'Create an account | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'A place for your plans.', Page: CreateAccount, noindex: true, og: { card: 'home' } },
+  { path: '/account/verify-email/', title: 'Verify your email | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Confirm your email.', Page: VerifyEmail, noindex: true, og: { card: 'home' } },
+  { path: '/account/password-reset/', title: 'Reset your password | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Reset your password.', Page: PasswordReset, noindex: true, og: { card: 'home' } },
+  { path: '/account/check-email/', title: 'Check your email | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Check your email.', Page: CheckEmail, noindex: true, og: { card: 'home' } },
+  { path: '/account/sign-out/', title: 'Sign out | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Ready to sign out?', Page: SignOut, noindex: true, og: { card: 'home' } },
+  { path: '/auth/logout/', title: 'Sign out | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Ready to sign out?', Page: SignOut, noindex: true, og: { card: 'home' } },
+  { path: '/account/signed-out/', title: 'Signed out | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'You’re signed out.', Page: SignedOut, noindex: true, og: { card: 'home' } },
+  { path: '/auth/callback/', title: 'Opening your account | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Opening your account.', Page: AuthCallback, noindex: true, og: { card: 'home' } },
+  { path: '/account/callback/', title: 'Opening your account | Chef Sergio & Co.', description: 'Your private account, bookings, menus and receipts with Chef Sergio and Co. in Orlando.', h1: 'Opening your account.', Page: AuthCallback, noindex: true, og: { card: 'home' } },
+
+  { path: '/invitation/', title: 'Your invitation | Chef Sergio & Co.', description: 'Your private invitation to a gathering with Chef Sergio.', h1: 'Opening your invitation…', Page: InvitationPage, noindex: true, bookingLinkRequired: false, og: { card: 'home' } },
+  ...(IS_PROTOTYPE ? [{ path: '/invitation/preview/', title: 'Invitation design preview | Chef Sergio & Co.', description: 'A fictional invitation and menu for reviewing the printed design with Chef Sergio.', h1: 'An invitation from Sergio.', Page: InvitationPreview, noindex: true, bookingLinkRequired: false, og: { card: 'home' } }] : []),
   {
     path: '/',
     title: 'Private chef in Orlando, FL | Chef Sergio & Co.',

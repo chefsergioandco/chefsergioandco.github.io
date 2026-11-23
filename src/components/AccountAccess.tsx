@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { ACCOUNT_STATUS_ORIGIN, accountHref, accountStatusUrl } from '../content/account'
+import { accountHref } from '../content/account'
+import { useAuth } from '../account/AuthProvider'
 import { Icon } from './Icons'
 import './AccountAccess.css'
 
@@ -17,33 +18,9 @@ export function readAccountSummary(value: unknown): AccountSummary | null {
 
 /** No account status, identity or bearer proof is stored in browser storage. */
 export function AccountProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AccountState>({ kind: 'unknown' })
-  const [revision, setRevision] = useState(0)
-  useEffect(() => {
-    const url = accountStatusUrl(ACCOUNT_STATUS_ORIGIN, location.origin)
-    if (!url) return
-    const controller = new AbortController()
-    let cancelled = false
-    const timeout = setTimeout(() => controller.abort(), 6000)
-    setState({ kind: 'loading' })
-    void fetch(url, { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller.signal })
-      .then(async response => {
-        if (!response.ok) throw new Error('Account status unavailable')
-        const summary = readAccountSummary(await response.json())
-        if (!summary) throw new Error('Account status unavailable')
-        if (!controller.signal.aborted) setState({ kind: 'ready', value: summary })
-      })
-      .catch(() => { if (!cancelled) setState({ kind: 'unavailable' }) })
-      .finally(() => clearTimeout(timeout))
-    return () => { cancelled = true; clearTimeout(timeout); controller.abort() }
-  }, [revision])
-  useEffect(() => {
-    const refresh = () => { if (!document.hidden) setRevision(value => value + 1) }
-    const restored = (event: PageTransitionEvent) => { if (event.persisted) refresh() }
-    window.addEventListener('focus', refresh); window.addEventListener('pageshow', restored)
-    return () => { window.removeEventListener('focus', refresh); window.removeEventListener('pageshow', restored) }
-  }, [])
-  return <AccountContext.Provider value={{ state, refresh: () => setRevision(value => value + 1) }}>{children}</AccountContext.Provider>
+  const { state: auth, refresh } = useAuth()
+  const state: AccountState = auth.kind === 'authenticated' ? { kind: 'ready', value: { authenticated: true, displayName: auth.identity.name || '', emailVerified: auth.identity.email_verified, isAdmin: auth.identity.isAdmin } } : auth.kind === 'signed-out' ? { kind: 'ready', value: { authenticated: false, displayName: '', emailVerified: false, isAdmin: false } } : { kind: auth.kind === 'loading' ? 'loading' : 'unavailable' }
+  return <AccountContext.Provider value={{ state, refresh: () => { void refresh() } }}>{children}</AccountContext.Provider>
 }
 
 function AccountLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -105,5 +82,16 @@ export function FooterAccount() {
 export function BookingAccountAccess() {
   const { state } = useContext(AccountContext)
   const signedIn = state.kind === 'ready' && state.value.authenticated
-  return <aside className="booking-account-access" aria-labelledby="booking-account-title"><Icon name="book-open" size={23}/><div><h2 id="booking-account-title">Your account, when you need it.</h2><p>Open the bookings and receipts linked to your account. Keep this private link for the current status of this request.</p><a href={accountHref('bookings')}>{signedIn ? 'Open your evenings' : 'Open my account'}<Icon name="arrow-up-right" size={16}/></a></div></aside>
+  const [claimHref, setClaimHref] = useState<string | null>(null)
+  useEffect(() => {
+    const current = new URL(location.href), ref = current.searchParams.get('ref')
+    if (current.pathname !== '/book/done/' || !ref || !/^[A-Za-z0-9_-]{3,128}$/.test(ref)) return
+    let proof = new URLSearchParams(current.hash.slice(1)).get('access') || ''
+    if (!proof) { try { proof = sessionStorage.getItem('booking-access:' + ref) || '' } catch { /* The original private link remains usable. */ } }
+    if (!/^[A-Za-z0-9_-]{43}$/.test(proof)) return
+    const target = new URL(accountHref('bookings'), location.origin)
+    target.searchParams.set('ref', ref); target.hash = new URLSearchParams({ access: proof }).toString()
+    setClaimHref(target.pathname + target.search + target.hash)
+  }, [])
+  return <aside className="booking-account-access" aria-labelledby="booking-account-title"><Icon name="book-open" size={23}/><div><h2 id="booking-account-title">Your account, when you need it.</h2><p>{claimHref ? 'Keep this request with your evenings. You’ll review and confirm the link in your account.' : 'Open the bookings and receipts linked to your account. Keep this private link for the current status of this request.'}</p><a href={claimHref || accountHref('bookings')}>{claimHref ? 'Keep this request in your account' : signedIn ? 'Open your evenings' : 'Open my account'}<Icon name="arrow-up-right" size={16}/></a></div></aside>
 }

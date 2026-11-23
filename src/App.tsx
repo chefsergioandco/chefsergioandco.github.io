@@ -1,5 +1,9 @@
-import type { ComponentType } from 'react'
+import { useEffect, useLayoutEffect, type ComponentType } from 'react'
+const useClientLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 import { Layout } from './components/Layout'
+import { AccountProvider } from './components/AccountAccess'
+import { AuthProvider } from './account/AuthProvider'
+import { AccountFrame } from './account/AccountFrame'
 import { MotionRoot } from './components/motion'
 import './styles.css'
 import './components/HomeHero.css'
@@ -15,11 +19,7 @@ import './components/NavigationMotion.css'
 
 /** The page component is passed in: the server renders every route; the browser loads only the current route's code. */
 export function App({ path, Page }: { path: string; Page: ComponentType }) {
-  return (
-    <MotionRoot>
-      <Layout route={path}>
-        <Page />
-      </Layout>
-    </MotionRoot>
-  )
+  useClientLayoutEffect(() => { document.documentElement.toggleAttribute('data-admin-route', path === '/admin/') }, [path])
+  const account = /^\/(account|dashboard|receipt|auth)(\/|$)/.test(path)
+  return <AuthProvider><AccountProvider><MotionRoot>{path.startsWith('/invitation/') ? <Page/> : path.startsWith('/newsletter/') ? <><main id="main"><Page/></main><footer className="newsletter-route-footer"><a href="/book/">Plan an evening with Sergio</a></footer></> : path === '/admin/' ? <Page/> : account ? <AccountFrame><Page/></AccountFrame> : <Layout route={path}><Page/></Layout>}</MotionRoot></AccountProvider></AuthProvider>
 }

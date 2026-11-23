@@ -1,3 +1,5 @@
+import { accountConfig } from '../account/config'
+
 /**
  * Sergio's booking settings (docs/BOOKING.md §7). Every `null` is a decision he hasn't made yet:
  * the prototype's mock API (src/booking/mock.ts) uses clearly-labelled sample rules meanwhile,
@@ -17,7 +19,7 @@ type FormatRules = {
 
 export const booking = {
   /** The Cloudflare Worker's URL once it's deployed (GO-LIVE.md step 6). null = the in-browser mock. */
-  apiBase: 'https://chef-sergio-booking-api.bushy-owlet-3273.chatgpt.site' as string | null,
+  apiBase: accountConfig.apiOrigin as string | null,
 
   formats: {
     dinner: { windows: null, perDay: null, leadDays: null, durationHours: null, bufferHours: null, deposit: null as number | null } satisfies FormatRules & { deposit: number | null },

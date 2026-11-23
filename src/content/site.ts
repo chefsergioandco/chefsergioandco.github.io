@@ -23,7 +23,7 @@ export const site = {
   phoneHref: 'tel:+14077573009',
   email: 'hello@chefsergioandco.com',
   area: 'Orlando and Central Florida',
-  url: 'https://www.chefsergioandco.com',
+  url: 'https://chefsergioandco.github.io',
 
   // From his About page, verbatim facts.
   credentials: [

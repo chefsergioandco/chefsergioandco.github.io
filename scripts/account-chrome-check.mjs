@@ -11,19 +11,21 @@ import { serve } from './serve.mjs'
 const directory = await mkdtemp(join(tmpdir(), 'sergio-account-'))
 const require = createRequire(import.meta.url)
 const port = Number(process.env.ACCOUNT_CHECK_PORT) || 4418
-const origin = `http://localhost:${port}`
+const origin = process.env.CHECK_BASE_URL || `http://localhost:${port}`
 let browser, server, passed = 0
 const check = async (name, run) => { await run(); passed++; console.log(`✓ ${name}`) }
 try {
   const fixture = join(directory, 'account.cjs')
-  await build({ stdin: { contents: `import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';import {AccountContext,AccountMenu,FooterAccount,BookingAccountAccess} from './src/components/AccountAccess';export {readAccountSummary} from './src/components/AccountAccess';export * from './src/content/account';export function render(state){return renderToStaticMarkup(React.createElement(AccountContext.Provider,{value:{state,refresh(){}}},React.createElement(React.Fragment,null,React.createElement(AccountMenu,{navigationOpen:false,onOpen(){}}),React.createElement(FooterAccount),React.createElement(BookingAccountAccess))))}`, resolveDir: process.cwd() }, outfile: fixture, bundle: true, format: 'cjs', platform: 'node', target: 'es2020', loader: { '.css': 'empty' }, logLevel: 'silent' })
-  const { accountStatusUrl, accountHref, readAccountSummary, render } = require(fixture)
-  await check('automatic credentialed status reads require an explicit same-site configuration', async () => {
-    assert.equal(accountStatusUrl(null, 'https://cbassuarez.com'), null)
-    assert.equal(accountStatusUrl('https://chef-sergio-accounts.cbassuarez.workers.dev', 'https://cbassuarez.com'), null)
-    assert.equal(accountStatusUrl('https://accounts.chefsergioandco.com', 'https://chefsergioandco.com', 'https://accounts.chefsergioandco.com'), 'https://accounts.chefsergioandco.com/api/auth/status')
-    for (const current of ['http://chefsergioandco.com', 'https://cbassuarez.com', 'http://localhost:4418', 'https://attacker.example', 'https://chefsergioandco.com.attacker.example']) assert.equal(accountStatusUrl('https://accounts.chefsergioandco.com', current, 'https://accounts.chefsergioandco.com'), null)
-    for (const candidate of ['https://user@accounts.chefsergioandco.com', 'https://accounts.chefsergioandco.com/extra', 'https://accounts.chefsergioandco.com?token=fixture']) assert.equal(accountStatusUrl(candidate, 'https://chefsergioandco.com', 'https://accounts.chefsergioandco.com'), null)
+  await build({ stdin: { contents: `import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';import {AccountContext,AccountMenu,FooterAccount,BookingAccountAccess} from './src/components/AccountAccess';export {readAccountSummary} from './src/components/AccountAccess';export * from './src/content/account';export {safeReturnTo,accountReturnHref} from './src/account/config';export function render(state){return renderToStaticMarkup(React.createElement(AccountContext.Provider,{value:{state,refresh(){}}},React.createElement(React.Fragment,null,React.createElement(AccountMenu,{navigationOpen:false,onOpen(){}}),React.createElement(FooterAccount),React.createElement(BookingAccountAccess))))}`, resolveDir: process.cwd() }, outfile: fixture, bundle: true, format: 'cjs', platform: 'node', target: 'es2022', define: { 'import.meta.env': '{}' }, loader: { '.css': 'empty' }, logLevel: 'silent' })
+  const { accountHref, safeReturnTo, accountReturnHref, readAccountSummary, render } = require(fixture)
+  await check('all account destinations are local static Pages routes', async () => {
+    for (const destination of ['bookings','admin','signIn','signOut','createAccount','verifyEmail']) { const path = accountHref(destination); assert(path.startsWith('/') && !path.startsWith('//')); assert(path.endsWith('/')) }
+  })
+  await check('local return paths retain fragments without moving private proof into query strings', async () => {
+    const proof = 'a'.repeat(43), target = '/dashboard/?ref=CS-check#access=' + proof
+    const link = new URL(accountReturnHref('/account/sign-in/', target), origin)
+    assert.equal(link.searchParams.get('returnTo'), '/dashboard/?ref=CS-check'); assert.equal(link.hash, '#access=' + proof); assert(!link.search.includes(proof)); assert.equal(safeReturnTo(target), target)
+    for (const unsafe of ['https://attacker.test/','//attacker.test/','/%2f/attacker.test/','/\\attacker.test/','/missing/','/auth/callback/?code=x','/auth/logout/']) assert.equal(safeReturnTo(unsafe), '/dashboard/')
   })
   await check('status retains only the four public fields and never grants an anonymous admin display', async () => {
     const summary = readAccountSummary({ authenticated: true, displayName: 'Fixture guest', emailVerified: true, isAdmin: false, email: 'private@example.invalid', csrfToken: 'private-fixture', accessToken: 'private-fixture' })
@@ -43,7 +45,7 @@ try {
     assert(!customer.includes('private-fixture'))
     assert(!accountHref('bookings').includes('#')); assert(!accountHref('bookings').includes('?'))
   })
-  server = await serve(port)
+  if (!process.env.CHECK_BASE_URL) server = await serve(port)
   browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--no-sandbox'] })
   const page = await browser.newPage(), statusRequests = [], errors = []
   page.on('pageerror', error => errors.push(error.message))
@@ -55,7 +57,7 @@ try {
     for (const width of [1440, 1200, 1080, 960, 800, 700, 390, 320]) {
       await page.setViewport({ width, height: 900 }); await settle()
       const layout = await page.$eval('.account-access-trigger', element => { const box = element.getBoundingClientRect(); return { width: box.width, height: box.height, left: box.left, right: box.right, pageWidth: document.documentElement.scrollWidth, viewport: innerWidth } })
-      assert(layout.width >= 44 && layout.height >= 44, `Account target too small at ${width}`)
+      assert(layout.width >= 44 && layout.height >= 44, `Account target too small at ${width}: ${JSON.stringify(layout)}`)
       assert(layout.left >= 0 && layout.right <= width, `Account target overflow at ${width}`)
       assert(layout.pageWidth <= layout.viewport + 1, `Horizontal overflow at ${width}`)
       await page.click('.account-access-trigger'); await settle()
@@ -90,7 +92,7 @@ try {
     await page.setViewport({ width: 390, height: 844 }); await page.click('.account-access-trigger'); await page.screenshot({ path: 'output/account-chrome/mobile-account.png' })
     await page.keyboard.press('Escape'); await page.$eval('.footer-account', element => element.scrollIntoView({ block: 'center' })); await settle(); await page.screenshot({ path: 'output/account-chrome/mobile-footer.png' })
   })
-  await check('booking-status account access does not transfer its private proof or replace its booking service', async () => {
+  await check('request handoff keeps proof in the local fragment and waits for an explicit verified claim', async () => {
     const proof = 'f'.repeat(43), reference = 'WEB-account-fixture'
     await page.setRequestInterception(true)
     page.on('request', request => {
@@ -105,9 +107,18 @@ try {
     await page.goto(`${origin}/book/done/?ref=${reference}#access=${proof}`, { waitUntil: 'networkidle0' })
     await page.waitForSelector('.booking-account-access')
     const destination = await page.$eval('.booking-account-access a', link => link.href)
-    assert.equal(destination, accountHref('bookings')); assert(!destination.includes(proof)); assert(!destination.includes(reference))
+    const target = new URL(destination)
+    assert.equal(target.origin, origin); assert.equal(target.pathname, '/dashboard/'); assert.equal(target.searchParams.get('ref'), reference)
+    assert.equal(target.hash, '#access=' + proof); assert(!target.search.includes(proof))
+    assert.equal(await page.$$eval('.account-access-panel a,.footer-account a', (links, proof) => links.some(link => link.href.includes(proof)), proof), false, 'Generic navigation must not carry private booking proof.')
     assert.equal(await page.evaluate(value => Object.values(localStorage).some(item => item.includes(value)), proof), false)
     await page.$eval('.booking-account-access', element => element.scrollIntoView({ block: 'center' })); await settle(); await page.screenshot({ path: 'output/account-chrome/mobile-booking-status.png' })
+    let claims = 0
+    page.on('request', request => { if (request.url().includes('/customer/claim')) claims++ })
+    await page.click('.booking-account-access a')
+    await page.waitForFunction(() => location.pathname === '/dashboard/' && !!document.querySelector('main a[href^="/account/sign-in/"]'))
+    const signIn = new URL(await page.$eval('main a[href^="/account/sign-in/"]', link => link.href))
+    assert.equal(signIn.searchParams.get('returnTo'), '/dashboard/?ref=' + reference); assert.equal(signIn.hash, '#access=' + proof); assert(!signIn.search.includes(proof)); assert.equal(claims, 0)
   })
   console.log(`${passed} account chrome checks passed. Authenticated states used fictional fixtures; no real sign-in or booking requests were submitted.`)
 } finally {

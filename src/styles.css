@@ -301,3 +301,5 @@
     transform: rotate(-12deg) scale(0.98);
   }
 }
+
+.newsletter-route-footer{max-width:64rem;margin:auto;padding:1.5rem;text-align:center;border-top:1px solid rgb(var(--c-rule));font:400 14px/1.6 var(--f-ui)}.newsletter-route-footer a{display:inline-flex;align-items:center;min-height:44px;color:rgb(var(--c-cta));text-underline-offset:4px}

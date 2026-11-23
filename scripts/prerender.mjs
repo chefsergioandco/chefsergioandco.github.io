@@ -48,6 +48,29 @@ function homeModulePreloads() {
   return [...files].map((file) => `<link rel="modulepreload" crossorigin href="${base}${file}">`).join('\n    ')
 }
 const homePreloads = homeModulePreloads()
+// Account CSS stays outside the anonymous homepage graph but is present before
+// first paint on direct static account/newsletter routes, including without JS.
+function routeStyleLinks(route) {
+  const key = route.startsWith('/invitation/') ? 'src/invitations/InvitationPage.tsx'
+    : route.startsWith('/newsletter/') ? 'src/components/NewsletterTokenPage.tsx'
+    : route === '/dashboard/' ? 'src/account/CustomerDashboard.tsx'
+    : route === '/admin/' ? 'src/account/AdminPage.tsx'
+    : route === '/receipt/' ? 'src/account/ReceiptPage.tsx'
+    : route.startsWith('/account/') || route.startsWith('/auth/') ? 'src/account/AccountPages.tsx' : null
+  if (!key) return ''
+  const seen = new Set(), files = new Set()
+  const visit = name => {
+    if (seen.has(name)) return
+    seen.add(name)
+    const item = manifest[name]
+    if (!item) return
+    for (const file of item.css || []) if (!template.includes(`href="${base}${file}"`)) files.add(file)
+    for (const dependency of item.imports || []) visit(dependency)
+  }
+  visit(key)
+  return [...files].map(file => `<link rel="stylesheet" crossorigin href="${base}${file}">`).join('\n    ')
+}
+
 const preloads = [/^eb-garamond-core-wght-.*\.woff2$/, /^archivo-core-wght-.*\.woff2$/]
   .map((re) => assets.find((a) => re.test(a)))
   .filter(Boolean)
@@ -78,7 +101,7 @@ for (const r of routes) {
     : ''
   const page = template
     .replace('<html lang="en">', `<html lang="en" data-look="${LOOK === 'all' ? 'c' : LOOK}">`)
-    .replace('<!--app-head-->', `${bootScript}\n    ${imagePreload}\n    ${preloads}\n    ${r.path === '/' ? homePreloads : ''}\n    ${head}`)
+    .replace('<!--app-head-->', `${bootScript}\n    ${imagePreload}\n    ${preloads}\n    ${r.path === '/' ? homePreloads : ''}\n    ${routeStyleLinks(r.path)}\n    ${head}`)
     .replace('<div id="root"><!--app-html--></div>', `<div id="root" data-route="${r.path}">${html}</div>`)
   const out = path.join(dist, r.path, 'index.html')
   fs.mkdirSync(path.dirname(out), { recursive: true })
@@ -107,7 +130,7 @@ if (caseSensitive) for (const [from, to] of Object.entries(caseRedirects)) write
 const known = JSON.stringify(routes.map((r) => r.path))
 fs.writeFileSync(
   path.join(dist, '404.html'),
-  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found | ${site.name}</title>${iconHead}<meta name="robots" content="noindex"><script>(function(){var b=${JSON.stringify(base)},k=${known},p=location.pathname.slice(b.length-1).toLowerCase().replace(/\\/?$/,'/');if(k.indexOf(p)>-1&&p!==location.pathname.slice(b.length-1))location.replace(b+p.slice(1)+location.search)})()</script></head><body style="font-family:system-ui;max-width:36rem;margin:4rem auto;padding:0 1rem;background:#FCFAF5;color:#2D2B27"><a href="${base}" aria-label="Chef Sergio and Company, home"><img src="${base}brand/logo-primary-ink.svg?v=salon-1" alt="" width="426" height="65" style="width:280px;max-width:100%;height:auto;margin-bottom:3rem"></a><h1>That page doesn't exist</h1><p>Try the <a href="${base}">home page</a>, or <a href="${base}book/">check your date</a> with Chef Sergio.</p></body></html>`,
+  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found | ${site.name}</title>${iconHead}<meta name="robots" content="noindex"><script>(function(){var b=${JSON.stringify(base)},k=${known},p=location.pathname.slice(b.length-1).toLowerCase().replace(/\\/?$/,'/');if(k.indexOf(p)>-1&&p!==location.pathname.slice(b.length-1))location.replace(b+p.slice(1)+location.search+location.hash)})()</script></head><body style="font-family:system-ui;max-width:36rem;margin:4rem auto;padding:0 1rem;background:#FCFAF5;color:#2D2B27"><a href="${base}" aria-label="Chef Sergio and Company, home"><img src="${base}brand/logo-primary-ink.svg?v=salon-1" alt="" width="426" height="65" style="width:280px;max-width:100%;height:auto;margin-bottom:3rem"></a><h1>That page doesn't exist</h1><p>Try the <a href="${base}">home page</a>, or <a href="${base}book/">check your date</a> with Chef Sergio.</p></body></html>`,
 )
 
 // robots.txt only controls crawling; noindex controls indexing, and a crawler can only see noindex on a page it's

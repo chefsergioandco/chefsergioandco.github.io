@@ -1,3 +1,4 @@
+import { SeasonalLetter } from './SeasonalLetter'
 import { useEffect, useState } from 'react'
 import { IS_PROTOTYPE, site } from '../content/site'
 import { Icon } from './Icons'
@@ -64,6 +65,7 @@ export function SiteFooter() {
           </div>
         </div>
 
+        <SeasonalLetter/>
         <div className="footer-directory">
           <div ref={ruleRef} className="footer-rule" data-rule-entered={(ruleEntered && !ruleMotion.settled) || undefined}
             data-rule-state={ruleMotion.settled ? 'done' : ruleEntered ? 'playing' : 'static'} aria-hidden="true"

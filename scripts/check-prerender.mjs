@@ -21,7 +21,7 @@ for (const r of routes) {
   if (!/<title>[^<]{10,}<\/title>/.test(html)) failures.push(`${r.path}: no <title>`)
   if (!/<meta name="description" content="[^"]{50,}"/.test(html)) failures.push(`${r.path}: description missing or under 50 chars`)
   const bookingHref = `${process.env.BASE_PATH || '/'}book/`
-  if (r.path !== '/book/' && r.path !== '/shot-list/' && !html.includes(`href="${bookingHref}`)) failures.push(`${r.path}: no booking link in static HTML`)
+  if (r.bookingLinkRequired !== false && r.path !== '/book/' && r.path !== '/shot-list/' && !html.includes(`href="${bookingHref}`)) failures.push(`${r.path}: no booking link in static HTML`)
   if (html.includes('data-menu-item')) {
     const missing = menu.filter((m) => !text.includes(m))
     if (missing.length) failures.push(`${r.path}: menu items missing from static HTML: ${missing.join(', ')}`)

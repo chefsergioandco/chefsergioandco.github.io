@@ -25,16 +25,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check:booking
+      - run: npm run check:types
       # Watermarked references are committed (public/reference + src/content/reference-credits.json);
       # check-images.mjs verifies each one's pixel hash, so CI never re-downloads third-party photos.
-      # Prototype until Sergio's decisions and photos are in. Set the repo variable SITE_MODE=production to launch:
-      # that build fails on any open decision, any reference image, or any AI-tagged image.
-      - run: npm run ${{ vars.SITE_MODE == 'production' && 'build:prod' || 'build' }}
+      # This repository is the isolated, noindex GitHub staging site.
+      # Pin the mode and root path so repository variables cannot attach a real-domain CNAME.
+      - run: npm run build
         env:
-          BASE_PATH: ${{ vars.BASE_PATH || '/' }}
-          # Prototype previews only: the preview's own address (e.g. https://name.github.io/repo), so links shared
-          # from it show their share card. Production always uses https://www.chefsergioandco.com.
-          PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+          SITE_MODE: prototype
+          BASE_PATH: /
+          PUBLIC_URL: https://chefsergioandco.github.io
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -1,0 +1,14 @@
+{
+  "source": "EBGaramond-VariableFont_wght.ttf",
+  "source_sha256": "deded453a85fa941f758e54ca893365a426ad30096efe9ab156b3436c9e3cf8e",
+  "source_version": "1.001",
+  "fonttools": "4.60.1",
+  "weight": 500,
+  "characters": "U+0020-U+007E",
+  "glyphs": 115,
+  "bytes": 21428,
+  "sha256": "1b57b79a59a5a72b924e97862202e28a7aa39ff56921c33e2ed4ca393a809e66",
+  "license": "EBGaramond-OFL.txt",
+  "verification": "All retained ASCII outlines and advances identical to the full static weight-500 instance.",
+  "runtime": "Static TrueType embedding and recorded PDF widths; no fontkit, network, font parser or shaping."
+}

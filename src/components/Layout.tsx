@@ -4,7 +4,6 @@ import { track } from './ui'
 import { SiteHeader } from './SiteHeader'
 import { SiteFooter } from './SiteFooter'
 import { HomeDepth } from './HomeDepth'
-import { AccountProvider } from './AccountAccess'
 
 /** Prototype only: switch between the three looks. State lives on <html data-look> so CSS can swap tokens instantly. */
 function LookSwitcher() {
@@ -59,5 +58,5 @@ export function Layout({ route, children }: { route: string; children: ReactNode
       )}
     </>
   )
-  return <AccountProvider>{route === '/about/' ? <div className="about-shell">{content}</div> : content}</AccountProvider>
+  return route === '/about/' ? <div className="about-shell">{content}</div> : content
 }
