@@ -24,6 +24,7 @@ const HEAD: Record<BookingReceipt['status'], { h1: string; stamp: string; icon: 
 function nextSteps(b: BookingReceipt, config: PlanningConfig | null) {
   if (b.status === 'cancelled') return ['Your booking is no longer active. Any refund status is shown separately above.', 'Contact Sergio if you would like to discuss another gathering.']
   const p = b.planning, paid = p?.depositStatus === 'paid'
+  if (p?.depositStatus === 'processing') return [b.kind === 'table' ? 'Your seat payment is processing. Your places stay held until it clears; no further payment is needed.' : 'Your deposit payment is processing. Your hold stays in place until it clears; no further payment is needed.', 'Some payment methods, such as bank payments, take a few business days. This page updates once your payment clears.']
   if (b.kind === 'table') return paid
     ? ['Your seat payment secures your places.', b.nightMinimumState === 'awaiting_minimum' ? `The evening is awaiting its minimum attendance.${b.decisionDate ? ` Sergio’s decision date is ${longDate(b.decisionDate.slice(0, 10))}.` : ''} If Sergio cancels, your seat payment is refunded in full.` : 'Sergio will share the details for your evening.']
     : ['Your seat request is with Sergio. An unpaid request does not hold seats.', config?.paymentReady ? 'Complete payment to secure available seats. Their availability is checked again at checkout.' : 'Online payments are not enabled yet. Sergio will discuss the arrangement with you.']
@@ -42,14 +43,24 @@ function interviewLabel(status?: string) {
 export function BookDone() {
   const [receipt, setReceipt] = useState<BookingReceipt | null | undefined>(), [config, setConfig] = useState<PlanningConfig | null>(null)
   const [error, setError] = useState(''), [loading, setLoading] = useState(false), [busy, setBusy] = useState(false)
-  const [cancelOpen, setCancelOpen] = useState(false), [reason, setReason] = useState(''), [slotId, setSlotId] = useState(''), [notice, setNotice] = useState('')
+  const [cancelOpen, setCancelOpen] = useState(false), [reason, setReason] = useState(''), [slotId, setSlotId] = useState(''), [notice, setNotice] = useState(''), [payError, setPayError] = useState('')
   async function load() {
     setLoading(true); setError('')
-    try { setReceipt(await api.booking(ref())) }
-    catch (failure) { setError(failure instanceof Error ? failure.message : 'Your current booking status could not be loaded.') }
-    finally { setLoading(false) }
+    const [bookingResult, settingsResult] = await Promise.allSettled([api.booking(ref()), api.config()])
+    if (bookingResult.status === 'fulfilled') setReceipt(bookingResult.value)
+    else setError(bookingResult.reason instanceof Error ? bookingResult.reason.message : 'Your current booking status could not be loaded.')
+    if (settingsResult.status === 'fulfilled') setConfig(settingsResult.value)
+    else {
+      setConfig(null)
+      if (bookingResult.status === 'fulfilled') setError('Your booking is saved, but payment availability could not be refreshed. Please try Refresh status again.')
+    }
+    setLoading(false)
   }
-  useEffect(() => { void load(); api.config().then(setConfig).catch(() => { /* Status access does not depend on loading settings. */ }) }, [])
+  useEffect(() => {
+    void load()
+    // A checkout that failed straight after the booking form is explained here.
+    try { const key = 'booking-pay-error:' + ref(), message = sessionStorage.getItem(key); if (message) { setPayError(message); sessionStorage.removeItem(key) } } catch { /* Nothing to show. */ }
+  }, [])
   async function cancel() {
     if (busy) return; setBusy(true); setError(''); setNotice('')
     try { await api.cancel(ref(), reason); setCancelOpen(false); await load(); setNotice('Your cancellation has been recorded. Payment and refund status are shown separately.') }
@@ -63,9 +74,9 @@ export function BookDone() {
     finally { setBusy(false) }
   }
   async function pay() {
-    if (busy) return; setBusy(true); setError('')
+    if (busy) return; setBusy(true); setError(''); setPayError('')
     try { const result = await api.checkout(ref()); location.assign(result.url) }
-    catch (failure) { setError(failure instanceof Error ? failure.message : 'Checkout could not be opened. Your booking is still here.'); setBusy(false) }
+    catch (failure) { setPayError(failure instanceof Error ? failure.message : 'Checkout could not be opened. Your booking is still here.'); setBusy(false); void load() }
   }
   const p = receipt?.planning, paid = p?.depositStatus === 'paid'
   const file = receipt?.status === 'confirmed' ? ics(receipt) : null
@@ -73,7 +84,7 @@ export function BookDone() {
   const interviewAt = p?.scheduledAt || p?.interviewAt
   let meetUrl: string | null = null
   try { const candidate = new URL(p?.meetUrl || ''); if (candidate.protocol === 'https:' && candidate.hostname === 'meet.google.com' && !candidate.username && !candidate.password) meetUrl = candidate.href } catch {}
-  const depositLabel = p?.depositStatus === 'paid' ? `${p.depositAmount != null ? money(p.depositAmount) + ' ' : ''}received` : p?.depositStatus === 'refund_pending' ? 'Refund processing' : p?.depositStatus === 'refunded' ? 'Refunded' : 'Unpaid · no card saved'
+  const depositLabel = p?.depositStatus === 'paid' ? `${p.depositAmount != null ? money(p.depositAmount) + ' ' : ''}received` : p?.depositStatus === 'processing' ? 'Payment processing' : p?.depositStatus === 'refund_pending' ? 'Refund processing' : p?.depositStatus === 'refunded' ? 'Refunded' : 'Unpaid · no card saved'
   return <section className="wrap py-10 md:py-16">
     {!receipt && <><h1 className="text-4xl sm:text-5xl">Your booking</h1>{loading ? <p className="mt-4 text-ink-muted" role="status">Loading your booking…</p> : error ? <div className="mt-4 max-w-prose"><p role="alert">{error}</p><CtaButton type="button" emphasis="secondary" className="mt-4" onClick={() => void load()}>Try again</CtaButton></div> : receipt === null ? <p className="mt-4 max-w-prose">This private booking link could not be opened. Use the complete link you saved after submitting, or <a className="link" href={site.phoneHref}>call Sergio at {site.phone}</a>.</p> : null}</>}
     {receipt && head && <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start"><div className="max-w-prose">
@@ -87,7 +98,8 @@ export function BookDone() {
         {p?.spendingCeiling != null && <div><dt>Agreed ceiling</dt><dd>{money(p.spendingCeiling)}</dd></div>}
       </dl>
       {notice && <p className="booking-notice" role="status">{notice}</p>}
-      {receipt.status !== 'cancelled' && config?.paymentReady && p?.depositStatus === 'unpaid' && <div className="mt-7"><CtaButton type="button" emphasis="primary" disabled={busy} onClick={() => void pay()}>{busy ? 'Opening secure checkout…' : receipt.kind === 'table' ? 'Pay for your seats' : 'Pay your deposit'}</CtaButton><p className="booking-small mt-3">The amount and availability are checked before checkout opens.</p></div>}
+      {receipt.status !== 'cancelled' && config?.paymentReady && p?.depositStatus === 'unpaid' && (receipt.kind === 'table' || p.depositAmount != null && p.depositAmount > 0) && <div className="mt-7"><CtaButton type="button" emphasis="primary" disabled={busy} onClick={() => void pay()}>{busy ? 'Opening secure checkout…' : receipt.kind === 'table' ? 'Pay for your seats' : 'Pay your deposit'}</CtaButton><p className="booking-small mt-3">The amount and availability are checked before checkout opens.</p></div>}
+      {payError && <p role="alert" className="booking-notice booking-notice--error mt-4">{payError}</p>}
       {receipt.status !== 'cancelled' && receipt.kind !== 'table' && config?.interviewScheduling === 'self_schedule' && config.interviewSlots.length > 0 && paid && <section className="booking-receipt-section"><h2 className="text-2xl">Choose your menu interview</h2><p className="booking-small mt-2">Pick a time for your conversation with Sergio. Times below are Eastern time.</p><label className="sr-only" htmlFor="interview-slot">Interview time</label><select id="interview-slot" className="booking-input mt-4" value={slotId} onChange={event => setSlotId(event.target.value)}><option value="">Choose an interview time</option>{config.interviewSlots.map(slot => <option key={slot.id} value={slot.id}>{slot.label || new Date(slot.at).toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' })}</option>)}</select><CtaButton type="button" emphasis="secondary" className="mt-4" disabled={busy || !slotId} onClick={() => void schedule()}>{busy ? 'Saving…' : 'Save interview time'}</CtaButton></section>}
       <h2 className="mt-10 text-2xl">What happens next</h2><ol className="booking-next-steps">{nextSteps(receipt, config).map((step, index) => <li key={step}><span aria-hidden>{index + 1}</span><p>{step}</p></li>)}</ol>
       {p?.menu && <section className="booking-receipt-section"><p className="booking-eyebrow">Your finished menu</p><p className="booking-receipt-menu">{p.menu}</p></section>}

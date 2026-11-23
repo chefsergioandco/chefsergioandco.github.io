@@ -103,7 +103,7 @@ export const api: PublicBookingApi = {
     const payload = { ref, accessToken }, attempt = await requestId('checkout', payload)
     let result: {url: string; expiresAt?: string}
     try { result = await call<{url: string; expiresAt?: string}>('/api/booking/checkout', { ...payload, requestId: attempt.value }) } catch (error) {
-      if (error instanceof BookingError && /previous checkout ended/.test(error.message)) { completeAttempt(attempt); attempts.delete(attempt.key) }
+      if (error instanceof BookingError && /previous checkout ended|could not be opened|is processing/.test(error.message)) { completeAttempt(attempt); attempts.delete(attempt.key) }
       throw error
     }
     let url: URL

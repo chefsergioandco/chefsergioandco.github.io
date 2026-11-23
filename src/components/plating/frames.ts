@@ -27,7 +27,7 @@ type Job = {
   key: string
   index: number
   variant: Variant
-  kind: 'near' | 'warm'
+  kind: 'near' | 'warm' | 'fill'
   priority: number
   order: number
   attempts: number
@@ -35,6 +35,10 @@ type Job = {
 }
 
 const MAX_PARALLEL = 4
+const MAX_DECODING = 3
+// Decode order around the requested frame, scaled by scroll direction: the
+// frames the reader is heading toward first, then one back for a reversal.
+const DECODE_WINDOW = [0, 1, -1, 2, 3, -2, -3]
 const clamp = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 0))
 const abortError = () => new DOMException('The plating frame request was cancelled.', 'AbortError')
 
@@ -93,8 +97,11 @@ async function decodeImage(blob: Blob, signal: AbortSignal): Promise<{
   }
 }
 
-/** Scroll scrubs real, offline-rendered simulation frames. Only a small working
- * set is fetched and decoded; an outstanding request never blanks the canvas.
+/** Scroll scrubs real, offline-rendered simulation frames. Once the timeline
+ * approaches, the compressed sequence is fetched nearest-first and kept as
+ * blobs, so scrubbing never waits on the network. Only a small window around
+ * the current frame is decoded (a desktop bitmap is ~7 MB). With Save-Data,
+ * only the working set is fetched. An outstanding request never blanks the canvas.
  */
 export function createPlatingScene(
   host: HTMLElement,
@@ -111,10 +118,14 @@ export function createPlatingScene(
   const base = `${import.meta.env.BASE_URL}art/plating/`
   const lifetime = new AbortController()
   const cache = new Map<string, DecodedFrame>()
+  const blobs = new Map<string, Blob>()
+  const decoding = new Set<string>()
   const queue = new Map<string, Job>()
   const active = new Map<string, Job>()
   const warmed = new Set<Variant>()
   const failures = new Map<string, number>()
+  const saveData = Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData)
+  let direction = 1
   let manifest: Manifest | undefined
   let disposed = false
   let ready = false
@@ -201,7 +212,7 @@ export function createPlatingScene(
   function enqueue(index: number, priority: number, kind: Job['kind'] = 'near') {
     if (!manifest || disposed || index < 0 || index >= manifest.frames.length) return
     const key = keyAt(variant, index)
-    if (cache.has(key) || active.has(key)) return
+    if (blobs.has(key) || active.has(key)) return
     if (Date.now() - (failures.get(key) ?? 0) < 10_000) return
     const existing = queue.get(key)
     if (existing) {
@@ -215,18 +226,62 @@ export function createPlatingScene(
   function warmStops() {
     if (!manifest || warmed.has(variant)) return
     warmed.add(variant)
-    // At most twelve unique warm frames: four settled poses and immediate
-    // neighbours. This never downloads the full simulation on initial load.
+    // Four settled poses and their neighbours first, then (unless Save-Data)
+    // the rest of the sequence nearest-first. Nothing loads before the
+    // timeline approaches the viewport.
     for (const station of manifest.stations) {
       enqueue(station, 6, 'warm')
       enqueue(station - 1, 7, 'warm')
       enqueue(station + 1, 7, 'warm')
     }
+    if (!saveData) {
+      for (let index = 0; index < manifest.frames.length; index++) enqueue(index, 10 + Math.abs(index - desiredIndex), 'fill')
+    }
+  }
+
+  /** Decode downloaded frames around the requested one, ahead of the scroll. */
+  function decodeNear() {
+    if (!manifest || disposed) return
+    for (const step of DECODE_WINDOW) {
+      if (decoding.size >= MAX_DECODING) return
+      const index = desiredIndex + step * direction
+      if (index < 0 || index >= manifest.frames.length) continue
+      const key = keyAt(variant, index)
+      const blob = blobs.get(key)
+      if (blob && !cache.has(key) && !decoding.has(key)) void decode(key, index, variant, blob)
+    }
+  }
+
+  async function decode(key: string, index: number, type: Variant, blob: Blob) {
+    decoding.add(key)
+    try {
+      const decoded = await decodeImage(blob, lifetime.signal)
+      if (disposed || type !== variant) { decoded.close(); return }
+      if (decoded.width < 1 || decoded.height < 1) { decoded.close(); throw new Error('A plating frame has no dimensions.') }
+      const frame: DecodedFrame = { ...decoded, key, index, variant: type }
+      cache.set(key, frame)
+      if (key === desiredKey && paint(frame, progress) && !disposed) host.dataset.frameLoading = 'false'
+      trimCache()
+    } catch (error) {
+      if (disposed || lifetime.signal.aborted) return
+      // Drop undecodable bytes; a later request may download the frame again.
+      blobs.delete(key)
+      failures.set(key, Date.now())
+      if (key === desiredKey) {
+        host.dataset.frameLoading = 'error'
+        if (!ready) report(error)
+      }
+    } finally {
+      decoding.delete(key)
+      if (!disposed) decodeNear()
+    }
   }
 
   function requestPaint() {
     if (!manifest || disposed || width < 1 || height < 1) return
-    desiredIndex = indexAt(progress)
+    const nextIndex = indexAt(progress)
+    if (nextIndex !== desiredIndex) direction = Math.sign(nextIndex - desiredIndex)
+    desiredIndex = nextIndex
     desiredKey = keyAt(variant, desiredIndex)
     const frame = cache.get(desiredKey)
     if (frame) {
@@ -234,17 +289,25 @@ export function createPlatingScene(
     } else {
       host.dataset.frameLoading = 'true'
     }
-    // Discard stale speculative positions when the user scrubs a long way.
+    // Re-rank pending downloads around the new position. A stale near
+    // request returns to the background fill (or is dropped under Save-Data).
     for (const [key, job] of queue) {
-      if (job.variant !== variant || (job.kind === 'near' && Math.abs(job.index - desiredIndex) > 3)) queue.delete(key)
-      else if (job.kind === 'near') job.priority = Math.abs(job.index - desiredIndex)
+      const distance = Math.abs(job.index - desiredIndex)
+      if (job.variant !== variant) queue.delete(key)
+      else if (job.kind === 'near' && distance > 3) {
+        if (saveData) queue.delete(key)
+        else { job.kind = 'fill'; job.priority = 10 + distance }
+      }
+      else if (job.kind === 'near') job.priority = distance
+      else if (job.kind === 'fill') job.priority = 10 + distance
     }
     enqueue(desiredIndex, 0)
-    enqueue(desiredIndex + 1, 1)
-    enqueue(desiredIndex - 1, 1)
-    enqueue(desiredIndex + 2, 2)
-    enqueue(desiredIndex - 2, 2)
+    enqueue(desiredIndex + direction, 1)
+    enqueue(desiredIndex - direction, 1)
+    enqueue(desiredIndex + 2 * direction, 2)
+    enqueue(desiredIndex - 2 * direction, 2)
     warmStops()
+    decodeNear()
     pump()
   }
 
@@ -259,13 +322,10 @@ export function createPlatingScene(
       const filename = `${String(job.index).padStart(4, '0')}.webp`
       const response = await fetch(`${base}${directory}/${filename}`, { signal: controller.signal })
       if (!response.ok) throw new Error(`Plating frame ${job.index} returned HTTP ${response.status}.`)
-      const decoded = await decodeImage(await response.blob(), controller.signal)
-      if (disposed || controller.signal.aborted || job.variant !== variant) { decoded.close(); return }
-      if (decoded.width < 1 || decoded.height < 1) { decoded.close(); throw new Error('A plating frame has no dimensions.') }
-      const frame: DecodedFrame = { ...decoded, key: job.key, index: job.index, variant: job.variant }
-      cache.set(job.key, frame)
-      if (job.key === desiredKey && paint(frame, progress) && !disposed) host.dataset.frameLoading = 'false'
-      trimCache()
+      const blob = await response.blob()
+      if (disposed || controller.signal.aborted || job.variant !== variant) return
+      blobs.set(job.key, blob)
+      decodeNear()
     } catch (error) {
       if (disposed || controller.signal.aborted || lifetime.signal.aborted) return
       // Retry a currently requested asset once. A later missing frame keeps the
@@ -296,7 +356,7 @@ export function createPlatingScene(
     while (active.size < MAX_PARALLEL && queue.size) {
       const job = [...queue.values()].sort((a, b) => a.priority - b.priority || a.order - b.order)[0]
       queue.delete(job.key)
-      if (job.variant !== variant || cache.has(job.key) || active.has(job.key)) continue
+      if (job.variant !== variant || blobs.has(job.key) || active.has(job.key)) continue
       active.set(job.key, job)
       void load(job)
     }
@@ -319,6 +379,7 @@ export function createPlatingScene(
       for (const [key, frame] of cache) {
         if (frame.variant !== variant && key !== displayed?.key) { cache.delete(key); frame.close() }
       }
+      for (const key of blobs.keys()) if (!key.startsWith(`${variant}:`)) blobs.delete(key)
     }
     const sourceWidth = manifest?.[variant].width ?? (variant === 'mobile' ? 640 : 1280)
     pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5, sourceWidth / width)
@@ -361,6 +422,7 @@ export function createPlatingScene(
       for (const job of active.values()) job.controller?.abort()
       for (const frame of cache.values()) frame.close()
       cache.clear()
+      blobs.clear()
       displayed = undefined
       canvas.width = canvas.height = 1
       canvas.remove()

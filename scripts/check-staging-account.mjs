@@ -233,6 +233,33 @@ try {
  await fixture.waitForFunction(() => document.querySelector('h1')?.textContent === 'Your evenings.' && !document.documentElement.hasAttribute('data-admin-route'))
  assert.equal(await fixture.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ink')), normalColor)
  pass('admin CSS applies only on its route and releases the public/account design after navigation')
+ {
+  // A new tab has no in-memory token. With the non-secret marker from an earlier sign-in,
+  // protected pages ask Auth0 once at top level (prompt=none); public pages never redirect.
+  const resume = await browser.newPage(), silent = []
+  resume.on('pageerror', error => errors.push(error.message))
+  await resume.setRequestInterception(true)
+  resume.on('request', request => { const url = new URL(request.url()); if (url.hostname.endsWith('.auth0.com')) { silent.push(url); return request.abort() }; return request.continue() })
+  await resume.goto(base + '/', { waitUntil: 'networkidle0' })
+  await resume.evaluate(() => localStorage.setItem('account:resume', '1'))
+  await resume.goto(base + '/', { waitUntil: 'networkidle0' })
+  assert.equal(silent.length, 0, 'public pages never redirect to Auth0')
+  await resume.goto(base + '/admin/', { waitUntil: 'networkidle0' }).catch(() => {})
+  for (let index = 0; index < 150 && !silent.length; index++) await new Promise(resolve => setTimeout(resolve, 20))
+  assert.equal(silent.length, 1, 'a protected page makes one silent attempt')
+  assert.equal(silent[0].searchParams.get('prompt'), 'none');assert.equal(silent[0].searchParams.get('response_type'), 'code')
+  assert.equal(silent[0].searchParams.get('redirect_uri'), new URL(base).origin + accountConfig.callbackPath);assert.equal(silent[0].searchParams.get('audience'), accountConfig.audience)
+  await resume.goto(base + '/admin/', { waitUntil: 'networkidle0' }).catch(() => {})
+  await new Promise(resolve => setTimeout(resolve, 400))
+  assert.equal(silent.length, 1, 'the same tab never loops through Auth0')
+  await resume.goto(base + '/auth/callback/?error=login_required&state=fixture', { waitUntil: 'networkidle0' })
+  await resume.waitForFunction(() => location.pathname === '/account/sign-in/')
+  assert.equal(new URL(resume.url()).searchParams.get('returnTo'), '/admin/')
+  assert.equal(await resume.evaluate(() => document.querySelector('[role="alert"]')?.textContent ?? null), null, 'an ended session is not reported as an error')
+  assert.equal(await resume.evaluate(() => localStorage.getItem('account:resume')), null)
+  await resume.close()
+  pass('a returning tab resumes sign-in once at top level; an ended Auth0 session falls back to the ordinary sign-in')
+ }
  assert.equal(errors.length, 0, errors.join('\n'));assert.equal(routeErrors.length,0,routeErrors.join('\n'))
  assert(!blockedExternal.some(item=>item.tokenAttached),'A fictional JWT was attached to an unmocked origin (request blocked, never forwarded)')
  pass('tested account routes have no uncaught browser errors; all unmocked external fixture requests are blocked')

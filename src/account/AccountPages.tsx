@@ -4,7 +4,7 @@ import { Icon } from '../components/Icons'
 import { useAuth } from './AuthProvider'
 import { accountApi } from './api'
 import { accountConfig, accountReturnHref, currentReturnTo, safeReturnTo, signInHref } from './config'
-import { beginSignIn, completeSignIn, endSignIn } from './auth-client'
+import { beginSignIn, completeSignIn, endedResume, endSignIn } from './auth-client'
 import { navigateAccount } from './navigation'
 
 type Kind = 'sign-in' | 'create' | 'check-email' | 'verify-email' | 'password-reset' | 'sign-out' | 'signed-out'
@@ -81,7 +81,12 @@ export const SignedOut = () => <AccountPage kind="signed-out"/>
 export function AuthCallback() {
   const { refresh } = useAuth(), [error, setError] = useState('')
   useEffect(() => { let active = true; const params = new URLSearchParams(location.search)
-    if (params.has('error')) { history.replaceState(null, '', '/auth/callback/'); setError('Sign-in was not completed. You can start again from the sign-in page.'); return }
+    if (params.has('error')) {
+      // A silent resume found no Auth0 session: show the ordinary sign-in, not an error.
+      const resumeTarget = endedResume(params.get('error'))
+      if (resumeTarget) { navigateAccount(signInHref(resumeTarget), true); return }
+      history.replaceState(null, '', '/auth/callback/'); setError('Sign-in was not completed. You can start again from the sign-in page.'); return
+    }
     if (!params.has('code') || !params.has('state')) { navigateAccount('/account/verify-email/', true); return }
     void completeSignIn().then(async target => { history.replaceState(null, '', '/auth/callback/'); await refresh(); if (active) navigateAccount(target, true) }).catch(() => { history.replaceState(null, '', '/auth/callback/'); if (active) setError('Your sign-in could not be completed. Please start again from the sign-in page.') })
     return () => { active = false }

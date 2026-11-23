@@ -143,7 +143,7 @@ export type PlanningReceipt = {
   interviewAt?: string | null
   meetUrl?: string | null
   dateReserved: boolean
-  depositStatus: 'unpaid' | 'paid' | 'refund_pending' | 'refunded'
+  depositStatus: 'unpaid' | 'processing' | 'paid' | 'refund_pending' | 'refunded'
   depositAmount: number | null
   spendingCeiling: number | null
   menu: string

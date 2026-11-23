@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { accountApi } from './api'
 import { accountConfig } from './config'
-import { SignInRequired } from './auth-client'
+import { resumeSignIn, SignInRequired } from './auth-client'
 export type AccountIdentity = { sub: string; email: string; email_verified: boolean; name?: string; isAdmin: boolean; permissions: string[] }
 export type AuthState = { kind: 'loading' | 'signed-out' | 'unavailable'; error?: string } | { kind: 'authenticated'; identity: AccountIdentity }
 const Context = createContext<{ state: AuthState; refresh: () => Promise<void> }>({ state: { kind: 'loading' }, refresh: async () => {} })
@@ -27,6 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('site:navigate', navigate); window.addEventListener('popstate', navigate); window.addEventListener('account:expired', expire); window.addEventListener('focus', focus)
     return () => { window.removeEventListener('site:navigate', navigate); window.removeEventListener('popstate', navigate); window.removeEventListener('account:expired', expire); window.removeEventListener('focus', focus) }
   }, [refresh])
+  useEffect(() => {
+    // Only pages that need an account resume a previous sign-in; public pages never redirect.
+    if (state.kind !== 'signed-out') return
+    const path = location.pathname
+    const target = path === '/account/sign-in/' ? new URLSearchParams(location.search).get('returnTo') || '/dashboard/'
+      : /^\/(dashboard|admin)\//.test(path) ? path + location.search + location.hash : null
+    if (target) void resumeSignIn(target).catch(() => { /* The page's ordinary sign-in remains available. */ })
+  }, [state.kind])
   useEffect(() => {
     if (state.kind !== 'authenticated') return
     const timer = setInterval(() => { if (!document.hidden) void refresh() }, 60000)

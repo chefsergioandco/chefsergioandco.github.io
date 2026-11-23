@@ -125,6 +125,12 @@ export function BookingForm() {
       const result = await api.hold(planningRequest(s), honeypot)
       try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
       const destination = new URL(result.url, window.location.href)
+      // "Continue to deposit" goes straight to Stripe. The saved request stands if
+      // checkout cannot open; the receipt then explains why, beside its Pay button.
+      if (canPay && result.next === 'done') {
+        try { window.location.assign((await api.checkout(result.ref)).url); return }
+        catch (failure) { try { sessionStorage.setItem('booking-pay-error:' + result.ref, failure instanceof Error ? failure.message : 'Checkout could not be opened. Your request is saved.') } catch { /* The receipt still offers payment. */ } }
+      }
       if (result.next === 'done' && destination.origin === window.location.origin && destination.pathname === href('/book/done/')) {
         navigateAccount(destination.pathname + destination.search + destination.hash)
         window.scrollTo(0, 0)
