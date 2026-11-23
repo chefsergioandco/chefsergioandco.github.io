@@ -94,6 +94,7 @@ export function SiteFooter() {
             <ul>
               <li><a className="footer-link" href={href('/about/')}><Icon name="book-open" size={18} /><span>Sergio’s story</span></a></li>
               <li><a className="footer-link" href={href('/gift/')}><Icon name="gift" size={18} /><span>Give an evening</span></a></li>
+              <li><a className="footer-link" href="https://chefsergioandco.betteruptime.com/" target="_blank" rel="noopener noreferrer"><Icon name="arrow-up-right" size={18} /><span>Service status</span><span className="sr-only"> (opens in a new tab)</span></a></li>
               {IS_PROTOTYPE && <li><a className="footer-link footer-prototype-link" href={href('/shot-list/')}><Icon name="arrow-up-right" size={18} /><span>Photo plan <small>Prototype</small></span></a></li>}
             </ul>
           </nav>

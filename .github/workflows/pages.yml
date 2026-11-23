@@ -17,6 +17,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +29,7 @@ jobs:
       - run: npm ci
       - run: npm run check:booking
       - run: npm run check:types
+      - run: python3 scripts/check-retained-assets.py
       # Watermarked references are committed (public/reference + src/content/reference-credits.json);
       # check-images.mjs verifies each one's pixel hash, so CI never re-downloads third-party photos.
       # This repository is the isolated, noindex GitHub staging site.
@@ -35,6 +39,12 @@ jobs:
           SITE_MODE: prototype
           BASE_PATH: /
           PUBLIC_URL: https://chefsergioandco.github.io
+      # Cached HTML and open tabs may still request a previous hashed chunk.
+      # Keep only the original manifest assets of the three last successful builds.
+      - name: Retain previous compiled assets
+        run: node scripts/retain-staging-assets.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

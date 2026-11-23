@@ -4,7 +4,7 @@ import { accountConfig } from '../account/config'
 import './SeasonalLetter.css'
 
 const NEWSLETTER_ORIGIN = accountConfig.apiOrigin
-type PublicStatus = { available: boolean; consentVersion: string; consentText: string; message: string }
+type PublicStatus = { available: boolean; consentVersion: string; consentText: string; message: string; operatorOnly?: boolean }
 type SignupState = 'idle' | 'sending' | 'accepted' | 'error'
 const PAUSED_MESSAGE = 'The letter is taking shape. Signup is paused for now; please check back.'
 const CONFIRMATION_MESSAGE = 'If this address can be subscribed, you’ll receive an email to confirm. You’re only added after you confirm.'
@@ -70,6 +70,7 @@ export function SeasonalLetter() {
         body: JSON.stringify({ email: address, consent: true, consentVersion: status.consentVersion, requestId: request.current.id, honeypot }),
       })
       if (!response.ok) {
+        if (response.status === 403 && status.operatorOnly === true) throw new Error('This staging signup accepts only the configured operator inbox.')
         if (response.status === 429) throw new Error('Please give it a little time before trying again.')
         if (response.status === 503) {
           setStatus({ ...status, available: false, message: PAUSED_MESSAGE })
@@ -102,7 +103,7 @@ export function SeasonalLetter() {
         <p className="seasonal-letter-eyebrow">From my kitchen to yours</p>
         <h2 id={`${id}-title`}>A seasonal letter<br /> from Sergio.</h2>
         <p>What I’m cooking, one useful idea for your own kitchen, and the occasional invitation to gather.</p>
-        <p className="seasonal-letter-frequency">A few times a year. Always personal.</p>
+        <p className="seasonal-letter-frequency">{status?.operatorOnly === true ? 'Staging preview. Operator inbox only.' : 'A few times a year. Always personal.'}</p>
       </div>
       <div className="seasonal-letter-signup">
         <form onSubmit={subscribe} aria-busy={signup === 'sending'} aria-describedby={`${id}-privacy ${id}-status`}>

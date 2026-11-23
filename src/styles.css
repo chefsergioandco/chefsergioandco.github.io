@@ -1,3 +1,5 @@
+@import './components/Subtitle.css';
+
 /* Self-hosted, licensed identity fonts. Font source and subset details: src/fonts/README.txt. */
 @font-face {
   font-family: 'EB Garamond';

@@ -21,5 +21,5 @@ import './components/NavigationMotion.css'
 export function App({ path, Page }: { path: string; Page: ComponentType }) {
   useClientLayoutEffect(() => { document.documentElement.toggleAttribute('data-admin-route', path === '/admin/') }, [path])
   const account = /^\/(account|dashboard|receipt|auth)(\/|$)/.test(path)
-  return <AuthProvider><AccountProvider><MotionRoot>{path.startsWith('/invitation/') ? <Page/> : path.startsWith('/newsletter/') ? <><main id="main"><Page/></main><footer className="newsletter-route-footer"><a href="/book/">Plan an evening with Sergio</a></footer></> : path === '/admin/' ? <Page/> : account ? <AccountFrame><Page/></AccountFrame> : <Layout route={path}><Page/></Layout>}</MotionRoot></AccountProvider></AuthProvider>
+  return <AuthProvider><AccountProvider><MotionRoot>{path.startsWith('/invitation/') ? <Page/> : path.startsWith('/newsletter/') ? <><main id="main"><Page/></main><footer className="newsletter-route-footer"><a href="/book/">Plan an evening with Sergio</a></footer></> : path === '/admin/' ? <Page/> : account ? <AccountFrame route={path}><Page/></AccountFrame> : <Layout route={path}><Page/></Layout>}</MotionRoot></AccountProvider></AuthProvider>
 }

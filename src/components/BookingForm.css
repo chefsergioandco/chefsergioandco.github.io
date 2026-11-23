@@ -1,7 +1,6 @@
 .booking-page-intro {max-width:44rem;font-size:1.15rem;line-height:1.65;}
 .booking-layout {display:grid;grid-template-columns:minmax(0,1fr) 23rem;align-items:start;gap:clamp(2rem,7vw,7rem);margin-top:3rem;}
 .booking-flow {min-width:0;max-width:42rem;}
-.booking-eyebrow {font-family:Archivo,sans-serif;font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;line-height:1.6;}
 .booking-step-heading {display:flex;align-items:center;justify-content:space-between;gap:1rem;}
 .booking-step-heading>span {font-size:.8rem;white-space:nowrap;}
 .booking-step-title {font-size:clamp(1.9rem,3.5vw,2.65rem);line-height:1.15;margin-top:.4rem;outline:none;}
@@ -71,13 +70,13 @@ textarea.booking-input {resize:vertical;}
 .booking-brief-occasion {margin-top:.65rem;font-size:.95rem;}
 .booking-brief-facts {display:grid;gap:1rem;margin-top:1.7rem;text-align:left;}
 .booking-brief-facts>div {display:grid;grid-template-columns:5.4rem 1fr;gap:.5rem;}
-.booking-brief-facts dt {font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;line-height:1.6;opacity:.7;padding-top:.1rem;}
+.booking-brief-facts dt {font-size:.75rem;letter-spacing:normal;text-transform:none;line-height:1.6;opacity:.7;padding-top:.1rem;}
 .booking-brief-facts dd {font-size:.875rem;line-height:1.6;overflow-wrap:anywhere;}
 .booking-brief-food,.booking-brief-clarify {text-align:left;padding-top:1.3rem;margin-top:1.3rem;border-top:1px solid rgb(var(--c-ink)/.2);}
 .booking-brief-food>p+p {font-family:var(--f-body);font-size:1.2rem;line-height:1.45;margin-top:.5rem;white-space:pre-line;}
 .booking-brief-clarify>p+p {font-size:.8rem;line-height:1.7;margin-top:.4rem;}
 .booking-brief-payment {display:grid;gap:.3rem;padding-top:1.3rem;margin-top:1.3rem;border-top:1px solid rgb(var(--c-ink)/.2);}
-.booking-brief-payment>span {font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;}
+.booking-brief-payment>span {font-size:.75rem;text-transform:none;letter-spacing:normal;}
 .booking-brief-payment>strong {font-size:1.5rem;font-weight:500;}
 .booking-brief-payment>p {font-size:.8rem;line-height:1.6;}
 .booking-brief-signoff {margin-top:1.5rem;font-family:var(--f-body);font-size:1rem;font-style:italic;}
@@ -107,7 +106,7 @@ textarea.booking-input {resize:vertical;}
 @media(prefers-reduced-motion:reduce) {.booking-choice,.booking-progress li{transition:none;}}
 .booking-receipt-facts {display:grid;gap:0;margin-top:2rem;border-top:1px solid rgb(var(--c-ink)/.25);}
 .booking-receipt-facts>div {display:grid;grid-template-columns:8rem 1fr;gap:1rem;padding:1rem 0;border-bottom:1px solid rgb(var(--c-ink)/.2);font-size:.95rem;line-height:1.6;}
-.booking-receipt-facts dt {font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7;}
+.booking-receipt-facts dt {font-size:.78rem;text-transform:none;letter-spacing:normal;opacity:.7;}
 .booking-receipt-facts dd>span {display:block;font-size:.8rem;opacity:.7;margin-top:.2rem;}
 .booking-receipt-section {margin-top:2rem;padding:1.4rem 0;border-top:1px solid rgb(var(--c-ink)/.25);}
 .booking-next-steps {display:grid;gap:1.2rem;margin-top:1.5rem;}

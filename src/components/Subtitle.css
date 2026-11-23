@@ -1,0 +1,51 @@
+/* The shared treatment for short headings that introduce a page or section. */
+:root {
+  --f-subtitle: 'EB Garamond', Garamond, Georgia, serif;
+  --subtitle-size: 1.125rem;
+  --subtitle-line-height: 1.4;
+}
+
+:root :is(
+  .eyebrow,
+  .subtitle,
+  .kicker,
+  .overline,
+  .section-kicker,
+  [data-subtitle],
+  .about-eyebrow,
+  .footer-eyebrow,
+  .seasonal-letter-eyebrow,
+  .home-location,
+  .home-card-overline,
+  .invitation-kicker,
+  .booking-eyebrow,
+  .newsletter-token-eyebrow
+),
+:root .home-handoff-heading > p,
+/* Keep the same treatment when admin pages add their local heading styles. */
+html:root[data-admin-route] :is(
+  .eyebrow,
+  .dashboard-shell .kiosk-greeting .eyebrow,
+  .booking-settings-intro .eyebrow,
+  .cal-nights-intro .eyebrow,
+  .cal-day-details .eyebrow,
+  .communications-intro .eyebrow,
+  .communications-template-heading .eyebrow,
+  .newsletter-heading .eyebrow,
+  .newsletter-section-heading .eyebrow,
+  .newsletter-delivery .eyebrow,
+  .newsletter-preview-heading .eyebrow,
+  .interview-brief-header .eyebrow,
+  .website-preview-label .eyebrow,
+  .website-preview-copy > .eyebrow,
+  .website-guest-hero .eyebrow,
+  .website-guest-bottom .eyebrow
+) {
+  font-family: var(--f-subtitle);
+  font-size: var(--subtitle-size);
+  font-style: italic;
+  font-weight: 400;
+  line-height: var(--subtitle-line-height);
+  letter-spacing: normal;
+  text-transform: lowercase;
+}

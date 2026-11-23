@@ -19,7 +19,7 @@ export function Home() {
       <DishCarousel />
 
       <section aria-labelledby="standards" className="bg-canvas">
-        <div className="wrap grid gap-10 py-16 md:grid-cols-2 md:items-center md:py-24">
+        <div className="wrap grid grid-cols-1 gap-10 py-16 md:grid-cols-2 md:items-center md:py-24">
           <div>
             <h2 id="standards" className="text-3xl md:text-4xl">
               Organic ingredients. No seed oils. Nothing frozen.
