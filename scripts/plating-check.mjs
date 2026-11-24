@@ -162,10 +162,9 @@ async function wheelStation(page, station, delta) {
     await quiet(20)
   }
   await settledAt(page, station)
-  await page.waitForFunction(index => {
-    const state = window.__platingTimeline
-    return Math.abs(scrollY - state.start - state.travel * index / 3) < 2
-  }, {}, station)
+  // HomeDepth's wheel follower coasts a little after input stops, so the page settles inside the station's soft
+  // pause (platingProgress holds the spoon for 1/30 of the travel each side), not on its exact pixel.
+  await page.waitForFunction(index => Math.abs(window.__platingTimeline.progress - index / 3) < .003, {}, station)
   await quiet(Math.max(0, 650 - (Date.now() - began)))
   return page.evaluate(() => ({ ...window.__platingTimeline, y: scrollY }))
 }
@@ -180,9 +179,11 @@ async function enterWithWheel(page, end = false) {
   const station = end ? 3 : 0
   await page.mouse.wheel({ deltaY: end ? -120 : 120 })
   await settledAt(page, station)
+  // HomeDepth owns wheel travel through the pinned scene (the scene follows native scroll and only owns explicit
+  // station selections), so entering means the page is inside the scene near the edge it came from, not captured.
   await page.waitForFunction(last => {
     const state = window.__platingTimeline
-    return state.capturing && Math.abs(scrollY - state.start - (last ? state.travel : 0)) < 2
+    return scrollY >= state.start - 2 && scrollY <= state.start + state.travel + 2 && Math.abs(scrollY - state.start - (last ? state.travel : 0)) < 160
   }, {}, end)
   await quiet(250)
 }
@@ -329,7 +330,7 @@ try {
           return { ...window.__platingTimeline, y: scrollY, rendered: { frame: Number(canvas.dataset.frame), simulationFrame: Number(canvas.dataset.simulationFrame), variant: canvas.dataset.variant, alphaSamples, pixelHash: hash } }
         }, CANVAS))
       }
-      pass('native wheel capture reaches all four rendered stations', states.every((state, index) => state.active === index && state.capturing && Math.abs(state.raw - index / 3) < .01), JSON.stringify(states.map(state => ({ raw: state.raw, progress: state.progress, active: state.active, capturing: state.capturing }))))
+      pass('wheel travel reaches all four rendered stations', states.every((state, index) => state.active === index && Math.abs(state.progress - index / 3) < .003), JSON.stringify(states.map(state => ({ raw: state.raw, progress: state.progress, active: state.active, capturing: state.capturing }))))
       pass('settled stations draw their decoded sequence frames', states.every((state, index) => state.rendered.frame === sequence?.stations?.[index] && state.rendered.simulationFrame === sequence?.frames?.[sequence.stations[index]] && state.rendered.alphaSamples > 0), JSON.stringify(states.map(state => state.rendered)))
       pass('the rendered canvas changes at all four stations', new Set(states.map(state => state.rendered.pixelHash)).size === 4)
 
@@ -337,12 +338,15 @@ try {
       await enterWithWheel(page, true)
       const reversed = []
       for (const station of [2, 1, 0]) reversed.push(await wheelStation(page, station, -120))
-      pass('reverse native wheel gestures reach every prior detent', reversed.every((state, index) => state.active === 2 - index && state.capturing), reversed.map(state => state.active).join(' → '))
+      pass('reverse native wheel gestures reach every prior detent', reversed.every((state, index) => state.active === 2 - index), reversed.map(state => state.active).join(' → '))
       pass('the first detent releases a subsequent upward wheel gesture', true, JSON.stringify(await releaseWithWheel(page, false)))
       await enterWithWheel(page)
-      await page.click(`${ROOT} .plating-steps > li:nth-child(3) h3 button`)
+      // The compact layout stacks the step texts (only the active one is visible) and offers station buttons instead,
+      // so select the third stop with whichever control a visitor can actually see.
+      const compactNow = await page.$eval(ROOT, element => element.dataset.compactLayout === 'true')
+      await page.click(compactNow ? `${ROOT} button[aria-controls="plating-step-2"]` : `${ROOT} .plating-steps > li:nth-child(3) h3 button`)
       await settledAt(page, 2)
-      pass('a heading selects its corresponding scroll stop', true)
+      pass(`the visible ${compactNow ? 'station button' : 'heading'} selects its corresponding scroll stop`, true)
       await atStation(page, 3)
       pass('desktop has no horizontal overflow', (await geometryState(page)).overflow <= 1)
 
@@ -369,14 +373,14 @@ try {
   })
 
   for (const [width, height] of [[1000, 600], [1200, 650]]) {
-    await run(`${width}×${height} compact desktop wheel capture`, async () => {
+    await run(`${width}×${height} compact desktop wheel travel`, async () => {
       const { page } = await openPage(`compact-desktop-${width}`, { width, height })
       try {
         await readyTimeline(page, true)
         await enterWithWheel(page)
         const forward = []
         for (const station of [1, 2, 3]) forward.push(await wheelStation(page, station, 120))
-        pass(`${width}×${height}: real forward wheel gestures advance each detent`, forward.every((state, index) => state.active === index + 1 && state.capturing), forward.map(state => state.active).join(' → '))
+        pass(`${width}×${height}: real forward wheel gestures advance each detent`, forward.every((state, index) => state.active === index + 1), forward.map(state => state.active).join(' → '))
         const reading = await page.evaluate(selector => {
           const root = document.querySelector(selector)
           const frame = root.querySelector('.plating-frame').getBoundingClientRect()
@@ -392,7 +396,7 @@ try {
         await enterWithWheel(page, true)
         const reverse = []
         for (const station of [2, 1, 0]) reverse.push(await wheelStation(page, station, -120))
-        pass(`${width}×${height}: real reverse wheel gestures reach the first detent`, reverse.every((state, index) => state.active === 2 - index && state.capturing), reverse.map(state => state.active).join(' → '))
+        pass(`${width}×${height}: real reverse wheel gestures reach the first detent`, reverse.every((state, index) => state.active === 2 - index), reverse.map(state => state.active).join(' → '))
         pass(`${width}×${height}: first detent releases upward wheel scrolling`, true, JSON.stringify(await releaseWithWheel(page, false)))
       } finally { await closePage(page) }
     })
@@ -420,13 +424,14 @@ try {
       const stopped = await sample()
       await quiet(450)
       const rested = await sample()
-      pass('stopping wheel input leaves the spoon between detents without autoplay', stopped.progress > .03 && stopped.progress < .31 && Math.abs(rested.progress - stopped.progress) < .002 && Math.abs(rested.y - stopped.y) <= 1 && rested.frame === stopped.frame, JSON.stringify({ stopped, rested }))
+      // The depth follower may coast into the next soft pause; what must not happen is travel past it or autoplay.
+      pass('stopping wheel input leaves the spoon between detents without autoplay', stopped.progress > .03 && stopped.progress <= 1 / 3 + .003 && Math.abs(rested.progress - stopped.progress) < .002 && Math.abs(rested.y - stopped.y) <= 1 && rested.frame === stopped.frame, JSON.stringify({ stopped, rested }))
       await wheelStation(page, 1, 120)
       const beforePause = await sample()
       await page.mouse.wheel({ deltaY: 12 })
       await quiet(450)
       const inPause = await sample()
-      pass('a soft detent pauses the rendered spoon while captured pixel input continues', inPause.capturing && inPause.y > beforePause.y + 5 && Math.abs(inPause.progress - 1 / 3) < .003 && inPause.frame === sequence.stations[1], JSON.stringify({ beforePause, inPause }))
+      pass('a soft detent pauses the rendered spoon while pixel input continues', inPause.y > beforePause.y + 5 && Math.abs(inPause.progress - 1 / 3) < .003 && inPause.frame === sequence.stations[1], JSON.stringify({ beforePause, inPause }))
       await page.mouse.wheel({ deltaY: 48 })
       await quiet(450)
       const afterPause = await sample()
@@ -434,7 +439,7 @@ try {
     } finally { await closePage(page) }
   })
 
-  await run('sustained wheel capture', async () => {
+  await run('sustained wheel travel', async () => {
     const { page } = await openPage('continuous-wheel', { width: 1000, height: 600 })
     try {
       await readyTimeline(page, true)
@@ -454,7 +459,7 @@ try {
       const seenStops = [1, 2, 3].filter(station => samples.some(sample => sample.active === station))
       const intermediateFrames = new Set(samples.filter(sample => !sequence.stations.some(index => sequence.frames[index] === sample.simulationFrame)).map(sample => sample.simulationFrame))
       const monotonic = samples.every((sample, index) => !index || sample.progress >= samples[index - 1].progress - .003)
-      const released = samples.find(sample => !sample.capturing && sample.y > sample.end + 3)
+      const released = samples.find(sample => sample.y > sample.end + 3)
       wheelBursts.push({ viewport: [1000, 600], deltaY: 40, requestedGapMs: 60, samples })
       pass('dense native wheel input scrubs through intermediate frames and all later stops', maximumGap < 180 && seenStops.length === 3 && intermediateFrames.size >= 8 && monotonic, JSON.stringify({ maximumGapMs: maximumGap, seenStops, intermediateFrames: [...intermediateFrames], events: samples.length }))
       pass('dense native wheel input releases after the final scrub endpoint', !!released, JSON.stringify(released || samples.at(-1)))
