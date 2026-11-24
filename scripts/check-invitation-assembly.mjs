@@ -24,6 +24,8 @@ try {
     loader: { '.css': 'empty' }, define: { 'import.meta.env.BASE_URL': '"/"' },
   })
   const { InvitationAssembly, SAMPLE_INVITATION, SAMPLE_DINNER_MENU } = await import(pathToFileURL(output).href)
+  // The assembly returns the invitation card followed by its print-only menu; property checks read the card.
+  const assembled = props => [].concat(InvitationAssembly(props).props.children)[0]
   const base = { ...SAMPLE_INVITATION, recipientName: '', hostName: 'The Rivera family', title: 'A graduation together', menu: [], menuConfirmed: false }
   const approved = { ...base, menuConfirmed: true, menu: ['Lobster Bisque', 'Cordon Bleu', 'Crème Brûlée'] }
   const render = props => renderToStaticMarkup(React.createElement(InvitationAssembly, props))
@@ -42,7 +44,8 @@ try {
     for (const html of [plain, draft]) {
       assert(html.includes('data-has-enclosure="false"'))
       assert(html.includes('data-menu-new="false"'))
-      assert.equal(InvitationAssembly({document:base,menuProgress:1}).props.enclosureProgress,0)
+      assert.equal(assembled({document:base,menuProgress:1}).props.enclosureProgress,0)
+      assert(!html.includes('invitation-print-menu'))
       assert(!html.includes('data-dinner-menu='))
       assert(!html.includes('UNPUBLISHED MENU'))
       assert(!/menu (?:to follow|unavailable|not ready|coming soon)/i.test(html))
@@ -53,6 +56,7 @@ try {
     assert(html.includes('data-has-enclosure="false"'))
     assert(html.includes('data-menu-new="false"'))
     assert(!html.includes('data-dinner-menu='))
+    assert(!html.includes('invitation-print-menu'))
   })
   check('the current flat 5-by-8 menu is one unbroken horizontal insert inside the invitation leaf', () => {
     assert(/class="invitation-card-stationary"[\s\S]*class="invitation-card-enclosure"[\s\S]*data-dinner-menu=""/.test(live))
@@ -62,10 +66,18 @@ try {
     assert(live.includes('data-menu-reveal-progress="0.000"'))
     assert(live.includes('rotateZ(-90deg)'))
     assert(live.includes('aria-label="Menu. Take out and turn the menu upright."'))
-    assert.equal((live.match(/viewBox="0 0 360 576"/g) || []).length,1)
+    assert.equal((live.split('class="invitation-print-menu"')[0].match(/viewBox="0 0 360 576"/g) || []).length,1)
     assert.equal((live.match(/<canvas[^>]*width="1080"[^>]*height="1728"/g) || []).length,1)
     assert(!/dinner-menu-(?:fold|fragment|crease)|data-menu-fold|CottonReverse/.test(live))
     for(const course of approved.menu) assert(live.includes(course))
+  })
+  check('a ready menu also prints whole after the invitation, once, as flat 5-by-8 artwork hidden from screen readers', () => {
+    const print = live.split('class="invitation-print-menu"')[1]
+    assert(print, 'print-only menu block is present')
+    assert(/^ aria-hidden="true"/.test(print))
+    assert.equal((print.match(/<svg/g) || []).length, 1)
+    assert(print.includes('width="5in" height="8in"'))
+    for (const course of approved.menu.filter(line => !/[&<>"']/.test(line))) assert(print.includes(course))
   })
   check('the physical controls have no legacy toolbar, transcript toggle or menu-added HUD', () => {
     for(const html of [plain,live]) {
@@ -99,18 +111,18 @@ try {
     assert(old.includes('data-menu-reveal-progress="1.000"'))
     assert(old.includes('rotateZ(0deg)'))
     assert(old.includes('aria-expanded="true"'))
-    const hidden=InvitationAssembly({document:base,menuNew:true,menuProgress:1})
+    const hidden=assembled({document:base,menuNew:true,menuProgress:1})
     assert.equal(hidden.props.enclosure,undefined)
     assert.equal(hidden.props.enclosureProgress,0)
     assert.equal(hidden.props.menuNew,false)
   })
   check('only changed menu artwork or its explicit edition replaces the enclosure', () => {
-    const first=InvitationAssembly({document:approved})
-    const revised=InvitationAssembly({document:{...approved,version:approved.version+10,title:'An updated invitation title'}})
-    const changed=InvitationAssembly({document:{...approved,menu:[...approved.menu,'A new course']}})
+    const first=assembled({document:approved})
+    const revised=assembled({document:{...approved,version:approved.version+10,title:'An updated invitation title'}})
+    const changed=assembled({document:{...approved,menu:[...approved.menu,'A new course']}})
     assert.equal(first.props.enclosure.key,revised.props.enclosure.key)
     assert.notEqual(first.props.enclosure.key,changed.props.enclosure.key)
-    assert.notEqual(InvitationAssembly({document:approved,menuVersion:'edition-1'}).props.enclosure.key,InvitationAssembly({document:approved,menuVersion:'edition-2'}).props.enclosure.key)
+    assert.notEqual(assembled({document:approved,menuVersion:'edition-1'}).props.enclosure.key,assembled({document:approved,menuVersion:'edition-2'}).props.enclosure.key)
     assert.equal(first.props.showTranscript,false)
     assert.equal(first.props.enclosure.props.inserted,true)
     assert.equal(first.props.enclosure.props.revealProgress,0)
@@ -118,7 +130,7 @@ try {
   })
   check('physical reveal callbacks and the shared progress pass through without a second interface', () => {
     const open=()=>{},menuOpen=()=>{},reveal=()=>{}
-    const element=InvitationAssembly({document:approved,onOpenRequest:open,onMenuOpen:menuOpen,onMenuRevealRequest:reveal,menuProgress:.4,maxSheetWidth:540,openProgress:.6})
+    const element=assembled({document:approved,onOpenRequest:open,onMenuOpen:menuOpen,onMenuRevealRequest:reveal,menuProgress:.4,maxSheetWidth:540,openProgress:.6})
     assert.equal(element.props.onOpenRequest,open)
     assert.equal(element.props.enclosure.props.onOpen,menuOpen)
     assert.equal(element.props.enclosure.props.onRevealRequest,reveal)

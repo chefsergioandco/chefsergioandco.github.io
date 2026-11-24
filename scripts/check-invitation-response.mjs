@@ -33,7 +33,11 @@ try {
         import {InvitationPage,InvitationPreview} from './invitations/InvitationPage';
         booking.apiBase='https://rsvp.example.test';
         const query=new URLSearchParams(location.search),missing=query.has('missing');
-        createRoot(document.getElementById('root')).render(query.has('page-preview')?<InvitationPreview/>:query.has('page')?<InvitationPage/>:<InvitationResponse invitationId={missing?'':${JSON.stringify(invitationId)}} accessToken={missing?'':${JSON.stringify(accessToken)}} invitationVersion={9}/>);
+        const root=createRoot(document.getElementById('root'));
+        const response=version=><InvitationResponse invitationId={missing?'':${JSON.stringify(invitationId)}} accessToken={missing?'':${JSON.stringify(accessToken)}} invitationVersion={version}/>;
+        // The host changing the event gives the open page a new invitation version.
+        window.fixtureInvitationVersion=version=>root.render(response(version));
+        root.render(query.has('page-preview')?<InvitationPreview/>:query.has('page')?<InvitationPage/>:response(9));
       ` },
       outdir: '/fixture', entryNames: 'entry', bundle: true, format: 'esm', platform: 'browser', target: 'es2022', write: false, external: ['/invitations/*'], define: { 'process.env.NODE_ENV': '"production"', 'import.meta.env': '{}', 'import.meta.env.BASE_URL': '"/"', '__SITE_MODE__': '"prototype"', '__LOOK__': '"c"', '__PLATING_SEQUENCE_AVAILABLE__': 'false' },
     })
@@ -177,6 +181,24 @@ try {
     await pendingReply()
     await page.getByRole('status').filter({ hasText: 'Your response is saved.' }).waitFor()
     pass('an active save disables the form and prevents duplicate submissions')
+    const readsSoFar = () => calls.filter(call => call.path === '/api/invitation').length
+    let reads = readsSoFar()
+    saved = { ...saved, name: 'Saved on another device', revision: saved.revision + 1 }
+    await page.evaluate(() => window.fixtureInvitationVersion(10))
+    await page.waitForFunction(() => document.querySelector('input[autocomplete="name"]')?.value === 'Saved on another device')
+    assert.equal(readsSoFar(), reads + 1)
+    pass('when the host changes the event, an untouched form shows the latest saved answers')
+    await name.fill('Typed but not sent'); reads = readsSoFar()
+    await page.evaluate(() => { window.fixtureFormRemoved = false; new MutationObserver(() => { if (!document.querySelector('form')) window.fixtureFormRemoved = true }).observe(document.body, { childList: true, subtree: true }) })
+    await page.evaluate(() => window.fixtureInvitationVersion(11))
+    for (let wait = 0; readsSoFar() === reads && wait < 100; wait++) await page.waitForTimeout(50)
+    await page.waitForTimeout(300)
+    assert.equal(readsSoFar(), reads + 1)
+    assert.equal(await name.inputValue(), 'Typed but not sent')
+    assert.equal(await name.evaluate(node => document.activeElement === node), true)
+    assert.equal(await page.evaluate(() => window.fixtureFormRemoved), false)
+    assert.equal(await page.getByText('Opening your response…').count(), 0)
+    pass('when the host changes the event mid-answer, the form stays open with the guest’s unsent answers and focus')
     const fetchOptions = await page.evaluate(() => window.fixtureFetchOptions)
     assert(fetchOptions.every(options => options.credentials === 'omit' && options.cache === 'no-store' && options.referrerPolicy === 'no-referrer'))
     const blocked = await context.newPage(); blocked.setDefaultTimeout(10_000)

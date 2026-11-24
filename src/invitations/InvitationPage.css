@@ -52,3 +52,17 @@
 .invitation-unavailable>a{display:inline-flex;min-height:44px;align-items:center;text-decoration:underline;margin-top:1rem}
 @media(max-width:760px){.invitation-site-header{min-height:84px;width:calc(100% - 2.5rem);gap:1rem}.invitation-site-header .brand-logo{width:180px}.invitation-page-layout{width:calc(100% - 2.5rem);padding-top:2.5rem;padding-bottom:4rem;display:flex;flex-direction:column;min-height:0}.invitation-card-rail{position:relative;top:auto;width:100%;margin:0}.invitation-card-position{max-width:580px}.invitation-details{padding-top:5rem;width:100%;max-width:580px;margin:auto}.invitation-details h2{font-size:3.25rem;max-width:12ch}.invitation-welcome{font-size:1.4rem}.invitation-logistics{gap:1.75rem}}
 @media(prefers-reduced-motion:reduce){.invitation-master{will-change:auto}.invitation-ceremony{touch-action:pan-y}}
+
+/* Printing: the tucked-in menu would sit mostly hidden behind the folded card, so it prints whole on a page of its own.
+   On screen the card floats over a scroll track for the opening; on paper the card comes first and everything flows. */
+.invitation-print-menu { display: none; }
+@media print {
+  .invitation-card-enclosure { display: none !important; }
+  .invitation-experience { display: flex; flex-direction: column; }
+  .invitation-ceremony { display: none !important; }
+  .invitation-master { order: -1; position: static !important; inset: auto !important; transform: none !important; margin: 0 auto; }
+  .invitation-body:has(.invitation-details[data-ready="false"]) { display: none; }
+  .invitation-page-footer { position: static !important; transform: none !important; }
+  .invitation-print-menu { display: block; break-before: page; page-break-before: always; width: 5in; margin: 0 auto; }
+  .invitation-print-menu svg { display: block; width: 5in; height: 8in; }
+}

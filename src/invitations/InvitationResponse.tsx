@@ -52,13 +52,23 @@ function PrivateResponse({ invitationId, accessToken, invitationVersion }: Invit
   const [answers, setAnswers] = useState<Answers>(emptyAnswers)
   const [loading, setLoading] = useState(true), [ready, setReady] = useState(false), [retry, setRetry] = useState(0)
   const [sending, setSending] = useState(false), [saved, setSaved] = useState(false), [hasResponse, setHasResponse] = useState(false)
-  const [error, setError] = useState(''), [errorField, setErrorField] = useState<'name' | 'email' | null>(null), [conflict, setConflict] = useState(false)
+  const [error, setError] = useState(''), [errorField, setErrorField] = useState<'name' | 'email' | null>(null), [conflict, setConflict] = useState(false), [failures, setFailures] = useState(0)
   const access = useRef<ResponseAccess | null>(null), attempt = useRef<{ body: string; id: string } | null>(null)
   const active = useRef(false), submission = useRef<AbortController | null>(null), storageKey = 'invitation-response:' + invitationId
+  // `edited`: the guest has changed answers since they were loaded or saved. `shown`: the form has been shown once.
+  const edited = useRef(false), shown = useRef(false), loadedRetry = useRef(-1)
   useEffect(() => { active.current = true; return () => { active.current = false; submission.current?.abort() } }, [])
+  // Move focus once the message exists; a frame scheduled at the state change can run before React draws it.
+  useEffect(() => { if (saved) feedback.current?.focus() }, [saved])
+  useEffect(() => { if (failures) failure.current?.focus() }, [failures])
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true); setReady(false); setSaved(false); setError(''); setErrorField(null); setConflict(false)
+    // When Sergio changes the event, the invitation version changes and this reloads behind the open form: the guest
+    // keeps their place, their focus and, if they have started editing, their unsent answers. A first open or an
+    // explicit "Reload my saved response" shows the loading state and takes the saved answers.
+    const background = shown.current && loadedRetry.current === retry
+    loadedRetry.current = retry
+    if (!background) { setLoading(true); setReady(false); setSaved(false); setError(''); setErrorField(null); setConflict(false) }
     if (!invitationId || !accessToken || !validRevision(invitationVersion)) {
       setError('Open the complete private invitation link shared by your host.'); setLoading(false)
       return () => controller.abort()
@@ -75,20 +85,29 @@ function PrivateResponse({ invitationId, accessToken, invitationVersion }: Invit
       if (controller.signal.aborted) return
       if (value.id !== invitationId || !validRevision(value.version)) throw new Error('The invitation response could not be verified. Please contact your host.')
       if (access.current && !validOwnResponse(value.ownResponse)) throw new Error('Your saved response could not be verified. Please contact your host before sending another response.')
+      // Unsent edits keep the saved revision they started from, so a change saved elsewhere still raises the conflict.
+      const keep = background && edited.current
       if (value.ownResponse) {
         if (!access.current || !validOwnResponse(value.ownResponse)) throw new Error('Your saved response could not be verified. Please contact your host.')
         const own = value.ownResponse
-        setAnswers({ name: own.name, email: own.email, attending: own.attending, dietary: own.dietary, allergies: own.allergies })
-        access.current = { token: access.current.token, version: own.revision }
-        try { sessionStorage.setItem(storageKey, JSON.stringify(access.current)) } catch { /* Keep only the same-page capability in memory. */ }
+        if (!keep) {
+          setAnswers({ name: own.name, email: own.email, attending: own.attending, dietary: own.dietary, allergies: own.allergies })
+          access.current = { token: access.current.token, version: own.revision }
+          try { sessionStorage.setItem(storageKey, JSON.stringify(access.current)) } catch { /* Keep only the same-page capability in memory. */ }
+        }
         setHasResponse(true)
-      } else { setAnswers(emptyAnswers()); setHasResponse(false) }
-      attempt.current = null; setReady(true)
-    }).catch(cause => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Your invitation response could not be opened. Please retry.') })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+      } else if (!keep) { setAnswers(emptyAnswers()); setHasResponse(false) }
+      if (!keep) { edited.current = false; attempt.current = null }
+      shown.current = true; setReady(true)
+    }).catch(cause => {
+      // A failed background refresh leaves the open form alone; sending reports any real problem.
+      if (!controller.signal.aborted && !background) setError(cause instanceof Error ? cause.message : 'Your invitation response could not be opened. Please retry.')
+    })
+      .finally(() => { if (!controller.signal.aborted && !background) setLoading(false) })
     return () => controller.abort()
   }, [invitationId, accessToken, invitationVersion, retry, storageKey])
   function change<K extends keyof Answers>(key: K, value: Answers[K]) {
+    edited.current = true
     setAnswers(current => ({ ...current, [key]: value })); setSaved(false); setError(''); setErrorField(null)
   }
   function validation(message: string, field: 'name' | 'email') {
@@ -110,13 +129,12 @@ function PrivateResponse({ invitationId, accessToken, invitationVersion }: Invit
       if (result.ok !== true || !validToken(result.responseToken) || !validRevision(result.version)) throw new Error('Your response could not be confirmed. Retry to recover the same response.')
       access.current = { token: result.responseToken, version: result.version }
       try { sessionStorage.setItem(storageKey, JSON.stringify(access.current)) } catch { /* Response access remains in memory for this page. */ }
-      attempt.current = null; setHasResponse(true); setSaved(true)
-      requestAnimationFrame(() => feedback.current?.focus())
+      attempt.current = null; edited.current = false; setHasResponse(true); setSaved(true)
     } catch (cause) {
       if (!controller.signal.aborted && active.current) {
         setError(cause instanceof Error ? cause.message : 'Your response could not be confirmed. Please retry.')
         setConflict(cause instanceof InvitationResponseError && cause.status === 409 && !!access.current)
-        requestAnimationFrame(() => failure.current?.focus())
+        setFailures(count => count + 1)
       }
     } finally { if (!controller.signal.aborted && active.current) setSending(false) }
   }
