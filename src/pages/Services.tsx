@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { BookingForm } from '../components/BookingForm'
 import { Faq, FAQ } from '../components/Faq'
-import { MenuCard } from '../components/MenuCard'
+import { DinnerMenuCard } from '../invitations/DinnerMenuCard'
+import { SAMPLE_DINNER_MENU } from '../invitations/menu-sample'
 import { CtaLink } from '../components/CallToAction'
 import { Icon } from '../components/Icons'
 import { FromPrice, href, Photo, Policy, TBD, track } from '../components/ui'
@@ -93,7 +94,10 @@ export function PrivateDining() {
             ))}
           </ul>
         </div>
-        <MenuCard data={{ format: 'dinner', occasion: 'Birthday', guests: 8, place: 'Windermere', dishes: ['Lobster Bisque', 'Seafood Paella'], dietary: ['Without nuts'] }} />
+        <div>
+          <DinnerMenuCard document={SAMPLE_DINNER_MENU} />
+          <p className="mt-5 text-sm leading-relaxed text-ink-muted">A menu designed for the table. This typesetting specimen shows the format; its occasion, course order and descriptions are illustrative. Sergio agrees your actual menu and any dietary accommodations with you.</p>
+        </div>
       </section>
       <Faq items={[FAQ.cost, FAQ.included, FAQ.kitchen, FAQ.rentals, FAQ.dietary, FAQ.deposit, FAQ.tip]} />
     </>
