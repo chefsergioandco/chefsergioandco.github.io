@@ -3,7 +3,7 @@ import type { InvitationDocument } from '../../prototypes/sergio-admin/shared/in
 /** Design review only. Never a booking, delivery record or counted invitation. */
 export const SAMPLE_INVITATION: InvitationDocument = {
   version: 1,
-  calendarUid: 'design-preview-invitation@chefsergioandco.com',
+  calendarUid: 'design-preview-invitation@chefsergioandco.github.io',
   title: 'An evening at Alex’s table',
   hostName: 'Alex',
   recipientName: 'Jordan',

@@ -200,6 +200,6 @@ if (!IS_PROTOTYPE)
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${indexable.map((r) => `  <url><loc>${site.url}${r.path}</loc></url>`).join('\n')}\n</urlset>\n`,
   )
 fs.writeFileSync(path.join(dist, '.nojekyll'), '')
-if (!IS_PROTOTYPE) fs.writeFileSync(path.join(dist, 'CNAME'), 'www.chefsergioandco.com\n')
+// No CNAME: the site's address is always https://chefsergioandco.github.io. A custom domain is a separate, deliberate change.
 if (!IS_PROTOTYPE) fs.rmSync(path.join(dist, 'reference'), { recursive: true, force: true })
 console.log(`mode=${IS_PROTOTYPE ? 'prototype' : 'production'} look=${LOOK} routes=${routes.length} redirects=${Object.keys(redirects).length}${caseSensitive ? ` case-redirects=${Object.keys(caseRedirects).length}` : ' (case redirects skipped: case-insensitive filesystem)'} share-url=${publicUrl}`)

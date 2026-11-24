@@ -73,7 +73,7 @@ function foldLine(line: string) {
 function previewUid(document: InvitationDocument) {
   let hash = 2166136261
   for (const character of `${document.hostName}|${document.experience}|preview`) { hash ^= character.codePointAt(0)!; hash = Math.imul(hash, 16777619) }
-  return `preview-${(hash >>> 0).toString(16)}@chefsergioandco.com`
+  return `preview-${(hash >>> 0).toString(16)}@chefsergioandco.github.io`
 }
 
 export function invitationCalendarFile(document: InvitationDocument, options: { revision?: number; preview?: boolean; now?: Date } = {}) {

@@ -30,7 +30,7 @@ export function eventInvitationDocument(dto: EventInvitationDto): InvitationDocu
   const menu = dto.menuReady === true && typeof dto.menu === 'string' ? nonblankMenuLines(dto.menu) : []
   return {
     version: dto.version,
-    calendarUid: `event-${dto.id}@chefsergioandco.com`,
+    calendarUid: `event-${dto.id}@chefsergioandco.github.io`,
     title: dto.title,
     hostName: dto.hostName,
     recipientName: '',

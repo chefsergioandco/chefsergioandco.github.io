@@ -1,15 +1,19 @@
-// Publication guard for this isolated GitHub Pages repository.
+// Publication guard: the one site lives at https://chefsergioandco.github.io and points nowhere else.
 import fs from 'node:fs'
 import { DIST, report, walk } from './lib.mjs'
 
 const origin = 'https://chefsergioandco.github.io'
 const api = 'https://chef-sergio-staging.chefsergioandco.workers.dev'
 const failures = []
-if (fs.existsSync(`${DIST}/CNAME`)) failures.push('Staging must not publish a custom-domain CNAME')
+if (fs.existsSync(`${DIST}/CNAME`)) failures.push('The site must not publish a custom-domain CNAME: its address is chefsergioandco.github.io')
 let bundledApi = false, bundledAudience = false, pages = 0
-for (const file of walk(DIST).filter(file => /\.(html|js)$/.test(file))) {
+for (const file of walk(DIST).filter(file => /\.(html|js|css|json|xml|txt|webmanifest|svg)$/.test(file))) {
   const content = fs.readFileSync(file, 'utf8')
-  if (content.includes('chef-sergio-accounts.cbassuarez.workers.dev') || content.includes('cbassuarez.com/chef-sergio-and-co')) failures.push(`${file}: stale personal-account target`)
+  // Nothing may point to the old personal domain, ever; chefsergioandco.com is not an address of this site
+  // (Sergio's hello@ mailbox is the one deliberate use of that domain).
+  if (/cbassuarez/i.test(content)) failures.push(`${file}: refers to cbassuarez`)
+  if (/https?:\/\/(?:[a-z0-9-]+\.)*chefsergioandco\.com\b/i.test(content)) failures.push(`${file}: links to chefsergioandco.com instead of chefsergioandco.github.io`)
+  if (!/\.(html|js)$/.test(file)) continue
   if (file.endsWith('.js')) {
     bundledApi ||= content.includes(api)
     bundledAudience ||= content.includes(`${origin}/staging-api`)
@@ -21,4 +25,4 @@ for (const file of walk(DIST).filter(file => /\.(html|js)$/.test(file))) {
   if (canonical && new URL(canonical).origin !== origin) failures.push(`${file}: canonical leaves the staging origin`)
 }
 if (!bundledApi || !bundledAudience) failures.push('Built account configuration must contain the business API and GitHub Auth0 audience')
-report('staging publication target', failures, [`${pages} HTML documents checked; no custom domain or personal backend`])
+report('publication target', failures, [`${pages} HTML documents checked; no custom domain, no cbassuarez, no chefsergioandco.com links`])

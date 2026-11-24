@@ -34,5 +34,5 @@ export function ics(b: BookingReceipt) {
   const stamp = new Date(instant).toISOString().replace(/[-:]/g,'').replace(/\.\d+/, '')
   const what = b.kind === 'table' ? "Sergio's table" : b.kind === 'class' ? 'Cooking class with Chef Sergio' : b.kind === 'event' ? 'Event with Chef Sergio & Co.' : 'Private dinner with Chef Sergio'
   const esc = (value:string) => value.replace(/[\\;,]/g, char => `\\${char}`).replace(/\r?\n/g,'\\n')
-  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Chef Sergio & Co.//Booking//EN','BEGIN:VEVENT',`UID:${esc(b.ref)}@chefsergioandco.com`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/, '')}`,`DTSTART:${stamp}`,`SUMMARY:${esc(what)}`,`DESCRIPTION:${esc('Confirmed appointment. Questions: (407) 757-3009.')}`,'STATUS:CONFIRMED','END:VEVENT','END:VCALENDAR'].join('\r\n')
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Chef Sergio & Co.//Booking//EN','BEGIN:VEVENT',`UID:${esc(b.ref)}@chefsergioandco.github.io`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/, '')}`,`DTSTART:${stamp}`,`SUMMARY:${esc(what)}`,`DESCRIPTION:${esc('Confirmed appointment. Questions: (407) 757-3009.')}`,'STATUS:CONFIRMED','END:VEVENT','END:VCALENDAR'].join('\r\n')
 }
