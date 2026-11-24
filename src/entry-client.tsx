@@ -2,8 +2,11 @@ import { StrictMode, useEffect, useState, type ComponentType } from 'react'
 import { hydrateRoot } from 'react-dom/client'
 import { App } from './App'
 import { installScrollNavigation } from './scroll-navigation'
+import { installNextPage } from './next-page'
 
 installScrollNavigation()
+// Internal links are followed in the page (RoutedApp below), so only code, styles and photos are loaded ahead.
+installNextPage({ documents: false })
 
 // Route-level code splitting: each page hydrates with only its own code (the home page never downloads the booking form).
 const pages: Record<string, () => Promise<ComponentType>> = {

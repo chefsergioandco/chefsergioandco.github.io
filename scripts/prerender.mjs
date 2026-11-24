@@ -71,6 +71,32 @@ function routeStyleLinks(route) {
   return [...files].map(file => `<link rel="stylesheet" crossorigin href="${base}${file}">`).join('\n    ')
 }
 
+
+// Next page (src/next-page/): what each page needs to open instantly, so it can be loaded before the visitor asks
+// for it. Only these public pages are ever loaded ahead: account, sign-in/out, receipt, invitation and checkout pages
+// must run only when a person opens them.
+const AHEAD = new Set(['/', '/privatedining/', '/cookingclasses/', '/catering/', '/about/', '/book/', '/gift/', '/sergios-table/', '/shot-list/'])
+const entrySource = fs.readFileSync(path.resolve('src/entry-client.tsx'), 'utf8')
+const pageModules = Object.fromEntries([...entrySource.matchAll(/'(\/[^']*)':\s*\(\)\s*=>\s*import\('\.\/([^']+)'\)/g)].map(([, route, file]) => [route, file]))
+function pageChunks(route) {
+  const file = pageModules[route]
+  if (!file) throw new Error(`next-page: no page module for ${route} in src/entry-client.tsx`)
+  // A page module also imported statically elsewhere becomes a shared chunk, listed under its chunk name.
+  const key = [`src/${file}.tsx`, `src/${file}.ts`].find((k) => manifest[k]) ?? Object.keys(manifest).find((k) => manifest[k].isDynamicEntry && manifest[k].name === path.basename(file))
+  if (!key) throw new Error(`next-page: ${file} is missing from the Vite manifest`)
+  const files = [], styles = new Set()
+  const seen = new Set(['index.html']) // the entry is already running on every page
+  const visit = (k) => {
+    if (seen.has(k)) return
+    seen.add(k)
+    for (const dependency of manifest[k].imports ?? []) visit(dependency)
+    if (manifest[k].file.endsWith('.js')) files.push(manifest[k].file)
+    for (const css of manifest[k].css ?? []) styles.add(css)
+  }
+  visit(key)
+  return { m: files, ...(styles.size ? { c: [...styles] } : {}) }
+}
+const unescapeAttribute = (s) => s?.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
 const preloads = [/^eb-garamond-core-wght-.*\.woff2$/, /^archivo-core-wght-.*\.woff2$/]
   .map((re) => assets.find((a) => re.test(a)))
   .filter(Boolean)
@@ -90,18 +116,36 @@ const shareImages = await ensureCards(routes, { distDir: dist })
 // shared links show cards; production always uses the real domain.
 const publicUrl = (IS_PROTOTYPE && process.env.PUBLIC_URL?.replace(/\/$/, '')) || site.url
 
-for (const r of routes) {
+const rendered = routes.map((r) => {
   const { html, head } = render(r.path, { image: shareImages[r.path], publicUrl })
   // Discover service-page priority images before font downloads as well.
   const heroPhoto = html.match(/<img\b(?=[^>]*fetchpriority="high")(?=[^>]*data-reference=)[^>]*>/)?.[0]
   const imageAttribute = (name) => heroPhoto?.match(new RegExp(`\\b${name}="([^"]*)"`, 'i'))?.[1]
+  // The photograph the page opens with (usually its largest paint): the priority hero, else the first eager image.
+  const lead = heroPhoto ?? html.slice(html.indexOf('id="main"')).match(/<img\b(?=[^>]*(?:fetchpriority="high"|loading="eager"))[^>]*>/)?.[0]
+  const leadImage = lead && ['src', 'srcset', 'sizes'].map((name) => unescapeAttribute(lead.match(new RegExp(`\\b${name}="([^"]*)"`, 'i'))?.[1]) ?? '')
+  return { r, html, head, heroPhoto, imageAttribute, leadImage }
+})
+
+const nextPageHints = Object.fromEntries(
+  rendered
+    .filter(({ r }) => AHEAD.has(r.path))
+    .map(({ r, leadImage }) => [r.path, { ...pageChunks(r.path), ...(leadImage ? { i: leadImage } : {}) }]),
+)
+// Internal links are followed in the page (src/entry-client.tsx keeps the account session in memory), so there are
+// no document Speculation Rules: a prefetched or prerendered document would never be used. next-page/ loads the
+// next page's code, styles and lead photo instead. Automated browsers (navigator.webdriver) are left alone.
+const json = (value) => JSON.stringify(value).replace(/</g, '\\u003c')
+const nextPageHead = `<script type="application/json" id="next-page-hints">${json(nextPageHints)}</script>`
+
+for (const { r, html, head, heroPhoto, imageAttribute } of rendered) {
   // Discover the responsive hero image ahead of module preloads so hydration never queues it behind scripts.
   const imagePreload = heroPhoto
     ? `<link rel="preload" as="image" href="${imageAttribute('src')}" imagesrcset="${imageAttribute('srcset')}" imagesizes="${imageAttribute('sizes')}" fetchpriority="high">`
     : ''
   const page = template
     .replace('<html lang="en">', `<html lang="en" data-look="${LOOK === 'all' ? 'c' : LOOK}">`)
-    .replace('<!--app-head-->', `${bootScript}\n    ${imagePreload}\n    ${preloads}\n    ${r.path === '/' ? homePreloads : ''}\n    ${routeStyleLinks(r.path)}\n    ${head}`)
+    .replace('<!--app-head-->', `${bootScript}\n    ${imagePreload}\n    ${preloads}\n    ${r.path === '/' ? homePreloads : ''}\n    ${routeStyleLinks(r.path)}\n    ${head}\n    ${r.path.startsWith('/invitation/') ? '' : nextPageHead}`)
     .replace('<div id="root"><!--app-html--></div>', `<div id="root" data-route="${r.path}">${html}</div>`)
   const out = path.join(dist, r.path, 'index.html')
   fs.mkdirSync(path.dirname(out), { recursive: true })

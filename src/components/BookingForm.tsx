@@ -2,6 +2,7 @@ import * as Checkbox from '@radix-ui/react-checkbox'
 import * as RadioGroup from '@radix-ui/react-radio-group'
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useActivated } from '../activation'
 import { api } from '../booking/api'
 import { navigateAccount } from '../account/navigation'
 import { Calendar } from '../booking/Calendar'
@@ -49,6 +50,8 @@ export function BookingForm() {
   const [errors, setErrors] = useState<Record<string, string>>({}), [submissionError, setSubmissionError] = useState(''), [busy, setBusy] = useState(false)
   const [draft, setDraft] = useState<SavedDraft | null>(null), [hydrated, setHydrated] = useState(false), [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null), inFlight = useRef(false), reduced = useReducedMotion()
+  // A prerendered form (next-page/) may never be opened: it must not leave a draft to resume.
+  const activated = useActivated()
   const set = (patch: Partial<PlanningState>) => { setState(previous => ({ ...previous, ...patch })); setErrors({}) }
   const table = s.kind === 'table', format = s.kind && s.kind !== 'table' ? s.kind : undefined
   const night = nights?.find(item => item.id === s.nightId), band = selectedBand(s, config)
@@ -81,9 +84,9 @@ export function BookingForm() {
     setHydrated(true)
   }, [])
   useEffect(() => {
-    if (!hydrated || !s.kind || draft) return
+    if (!activated || !hydrated || !s.kind || draft) return
     try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ version: 2, savedAt: new Date().toISOString(), step, s })) } catch { /* A server receipt never depends on local storage. */ }
-  }, [s, step, hydrated, draft])
+  }, [s, step, hydrated, draft, activated])
   useEffect(() => {
     let current = true; setConfigError('')
     api.config().then(value => { if (current) setConfig(value) }, failure => { if (current) setConfigError(failure instanceof Error ? failure.message : 'Booking settings could not be loaded.') })

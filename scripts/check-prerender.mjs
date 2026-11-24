@@ -8,7 +8,10 @@ const { routes } = await loadRoutes()
 const menu = JSON.parse(fs.readFileSync('content/menu.source.json', 'utf8')).named.map((d) => d.name)
 const failures = []
 const notes = []
+const clientEntry = fs.readFileSync('src/entry-client.tsx', 'utf8')
+const hydratedPaths = new Set(Array.from(clientEntry.matchAll(/['"](\/[^'"]*)['"]\s*:\s*\(\)\s*=>/g), match => match[1]))
 for (const r of routes) {
+  if (!hydratedPaths.has(r.path)) failures.push(`${r.path}: missing browser route registration; the page cannot load live content or handle input`)
   const file = path.join(DIST, r.path, 'index.html')
   if (!fs.existsSync(file)) {
     failures.push(`${r.path}: missing ${file}`)
