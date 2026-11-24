@@ -20,8 +20,21 @@
 .sergio-header-action-hint[hidden]{display:none}
 .sergio-header-action-hint>span{display:block;padding:8px 12px;background:rgb(var(--c-ink));color:rgb(var(--c-canvas));border:1px solid rgb(var(--c-canvas));box-shadow:0 3px 12px rgb(var(--c-ink)/.12)}
 .sergio-header-overview-bottom .sergio-header-action-hint{inset-block-start:auto;inset-block-end:100%;padding-block-start:0;padding-block-end:8px}
-.sergio-header-overview{background:rgb(var(--c-paper));border-top:1px solid rgb(var(--c-rule));max-height:var(--sergio-panel-space,calc(100dvh - var(--sergio-header-row)));overflow-y:auto;overscroll-behavior:contain;animation:sergio-overview-in .18s var(--ease)}
+/* The overview is a tray beneath the page (see drawer-motion.ts): a woven linen
+   surface, the header's overhang shading its top edge and the page's edge shading
+   its bottom. Inset shadows stay at the edges while the tray scrolls or opens. */
+.sergio-header-overview{
+ --sergio-linen:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='a' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.008 .7' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .33 0 0 0 0 .27 0 0 0 0 .2 0 0 0 1.2 -.45'/%3E%3C/filter%3E%3Cfilter id='b' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7 .008' numOctaves='2' seed='8' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .33 0 0 0 0 .27 0 0 0 0 .2 0 0 0 1.2 -.45'/%3E%3C/filter%3E%3Cg opacity='.16'%3E%3Crect width='220' height='220' filter='url(%23a)'/%3E%3Crect width='220' height='220' filter='url(%23b)'/%3E%3C/g%3E%3C/svg%3E");
+ background:var(--sergio-linen) 0 0/220px 220px,rgb(var(--c-paper));
+ box-shadow:inset 0 13px 14px -13px rgb(var(--c-ink)/.3),inset 0 -15px 16px -15px rgb(var(--c-ink)/.36);
+ max-height:var(--sergio-panel-space,calc(100dvh - var(--sergio-header-row)));overflow-y:auto;overscroll-behavior:contain}
 .sergio-header-overview[hidden]{display:none}
+.sergio-header-overview[hidden][data-closing]{display:block}
+/* Stays a scroll container while moving, so an early flick never scrolls the page. */
+.sergio-header-overview[data-animating]{scrollbar-width:none}
+.sergio-header-overview[data-animating]::-webkit-scrollbar{display:none}
+.sergio-header-overview-heading>p,.sergio-header-service-title,.sergio-header-service-description{text-shadow:0 1px 0 rgb(255 255 255/.55)}
+@media(forced-colors:active){.sergio-header-overview{background:Canvas;box-shadow:none;border-top:1px solid CanvasText}}
 .sergio-header-overview-inner{max-width:1328px;margin:auto;padding:24px 24px 20px}
 .sergio-header-overview-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:20px}
 .sergio-header-overview-heading>p{font:400 28px/1.2 var(--f-display);margin:0}
@@ -38,7 +51,6 @@
 .sergio-header-fallback{max-width:1328px;margin:auto;padding:12px 24px;display:flex;flex-wrap:wrap;gap:8px 24px;border-top:1px solid rgb(var(--c-rule))}
 .sergio-header-fallback a{display:flex;align-items:center;min-height:44px}
 html:not(.js) .sergio-header-toggle{display:none}
-@keyframes sergio-overview-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
 @media(min-width:1700px){.sergio-header-main,.sergio-header-overview-inner{max-width:1488px}}
 @media(max-width:1199px){.sergio-header{--sergio-header-row:94px}.sergio-header-main{min-height:94px;padding-left:32px;padding-right:32px;gap:20px}.sergio-header-desktop{gap:18px}.sergio-header-brand{font-size:27px}}
 /* Keep every heading visible as the row fills, with the same observed main

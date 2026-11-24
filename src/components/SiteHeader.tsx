@@ -7,6 +7,7 @@ import { HeaderIconAction } from './HeaderIconAction'
 import { ExperienceNavIcon } from './ExperienceNavIcon'
 import { AccountMenu } from './AccountAccess'
 import { useReducedMotion } from 'framer-motion'
+import { useDrawer } from './drawer-motion'
 
 const services = [
   { path: '/privatedining/', label: 'Private dinners', description: 'A menu for your table.', format: 'dinner', icon: 'utensils-crossed' },
@@ -28,6 +29,7 @@ export function SiteHeader({ route }: { route: string }) {
   const desktopTrigger = useRef<HTMLButtonElement>(null)
   const openMode = useRef<'hover' | 'manual' | null>(null)
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useDrawer(panel, open, !!reduce)
   const secondary: { path: string; label: string; icon: IconName }[] = [
     ...(site.features.sergiosTable ? [{ path: '/sergios-table/', label: 'Sergio’s table', icon: 'armchair' as const }] : []),
     { path: '/about/', label: 'About Sergio', icon: 'book-open' },
