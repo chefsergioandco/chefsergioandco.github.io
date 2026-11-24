@@ -3,6 +3,7 @@ import { BookingForm } from '../components/BookingForm'
 import { Faq, FAQ } from '../components/Faq'
 import { MenuCard } from '../components/MenuCard'
 import { CtaLink } from '../components/CallToAction'
+import { Icon } from '../components/Icons'
 import { FromPrice, href, Photo, Policy, TBD, track } from '../components/ui'
 import { dishes } from '../content/menu'
 import { booking } from '../content/booking'
@@ -273,19 +274,26 @@ export function Gift() {
     <section className="wrap grid grid-cols-1 gap-10 py-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:items-center md:py-20">
       <div className="max-w-prose">
         <h1 className="text-4xl sm:text-5xl">Give a dinner, not a thing.</h1>
-        <p className="mt-5 text-lg text-ink-muted">A gift card for a private dinner or a cooking class with Sergio, in any amount. It arrives by email, ready to print or forward.</p>
+        <p className="mt-5 text-lg text-ink-muted">{url ? 'A gift card for a private dinner or a cooking class with Sergio, in any amount. It arrives by email, ready to print or forward.' : 'A private dinner or a cooking class makes a personal gift. Talk with Sergio about the amount, delivery and how the recipient can use it.'}</p>
         {url ? (
           <CtaLink emphasis="primary" data-hero-cta href={url} className="mt-8" onClick={() => track('gift_checkout')}>
             Buy a gift card
           </CtaLink>
         ) : (
-          <p className="mt-8">
-            <TBD k="hooks.giftCardUrl">Connect gift card checkout (Gift Up!, 3.49% per card sold, no monthly fee) and paste its link in site.ts.</TBD>
-          </p>
+          <div className="mt-8"><CtaLink emphasis="primary" data-hero-cta href={`mailto:${site.email}`}>Discuss a gift with Sergio</CtaLink><p className="mt-3 text-sm text-ink-muted">Online gift-card checkout is not available here yet.</p></div>
         )}
         <p className="mt-6 text-sm text-ink-muted">The recipient books like anyone else and mentions the gift card in their request.</p>
       </div>
-      <MenuCard data={{ format: 'class', occasion: 'Birthday', guests: 2, dishes: ['Seafood Paella'] }} className="md:rotate-1" />
+      <aside className="border-t-2 border-cta bg-paper/60 p-8 sm:p-10" aria-label="How the gift works">
+        <Icon name="gift" size={30} aria-hidden />
+        <h2 className="mt-6 text-3xl">An evening to look forward to.</h2>
+        <ol className="mt-7 space-y-5">
+          <li><h3 className="font-medium">Choose the gift</h3><p className="mt-1 text-ink-muted">A contribution toward a private dinner or a cooking class.</p></li>
+          <li><h3 className="font-medium">Let them make it theirs</h3><p className="mt-1 text-ink-muted">The recipient contacts Sergio to discuss the occasion and request an available date.</p></li>
+          <li><h3 className="font-medium">Plan the evening together</h3><p className="mt-1 text-ink-muted">Sergio confirms availability, the menu and how the gift applies before the evening.</p></li>
+        </ol>
+        <p className="mt-7 border-t border-rule pt-5 text-sm text-ink-muted">This explains the gift experience. It is not a gift certificate, issued invitation or confirmed booking.</p>
+      </aside>
     </section>
   )
 }

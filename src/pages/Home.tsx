@@ -7,6 +7,7 @@ import { DishCarousel } from '../components/DishCarousel'
 import { DeferredImage } from '../components/DeferredImage'
 import { sergioPortrait } from '../content/portrait'
 import { reviews, site } from '../content/site'
+import { HomeGift } from '../components/HomeGift'
 
 export function Home() {
   return (
@@ -80,17 +81,7 @@ export function Home() {
         </div>
       </section>
 
-      <section className="wrap py-16 md:py-24">
-        <div className="home-gift flex flex-col gap-6 rounded-card border border-rule p-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-3xl">Give a dinner</h2>
-            <p className="mt-3 max-w-prose text-ink-muted">A gift card for a private dinner or a cooking class, in any amount. Delivered by email.</p>
-          </div>
-          <CtaLink emphasis="primary" href={href('/gift/')} className="shrink-0">
-            Buy a gift card
-          </CtaLink>
-        </div>
-      </section>
+      <HomeGift />
 
       <Faq items={[FAQ.cost, FAQ.included, FAQ.rentals, FAQ.dietary, FAQ.area, FAQ.ahead, FAQ.deposit].filter(Boolean)} />
     </>
