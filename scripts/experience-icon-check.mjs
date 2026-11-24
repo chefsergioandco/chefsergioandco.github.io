@@ -34,6 +34,8 @@ async function open({ width = 1440, reduced = false, js = true } = {}) {
   await p.setViewport({ width, height: width === 390 ? 844 : 900, isMobile: width === 390, hasTouch: width === 390, deviceScaleFactor: 1 })
   if (!js) await p.setJavaScriptEnabled(false)
   if (reduced) await p.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
+  // The folded-invitation arrival has its own checks; these test the settled homepage a returning visitor sees.
+  await p.evaluateOnNewDocument(() => { try { sessionStorage.setItem('sergio.home-arrival.v1', 'settled') } catch {} })
   await p.goto(`${ORIGIN}/`, { waitUntil: 'networkidle0' }); await p.evaluate(() => document.fonts.ready)
   await p.mouse.move(20, 700); await pause(220); return p
 }

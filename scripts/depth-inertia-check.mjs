@@ -54,6 +54,8 @@ async function open({ width = 1440, height = 1000, reduced = false, disabled = f
   if (reduced) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
   if (!js) await page.setJavaScriptEnabled(false)
   await page.evaluateOnNewDocument(installInputRecorder)
+  // The folded-invitation arrival has its own checks; these test the settled homepage a returning visitor sees.
+  await page.evaluateOnNewDocument(() => { try { sessionStorage.setItem('sergio.home-arrival.v1', 'settled') } catch {} })
   await page.goto(`${ORIGIN}/?depth=${disabled ? 'off' : 'on'}`, { waitUntil: 'networkidle0' })
   await page.evaluate(() => document.fonts.ready)
   if (js) await page.waitForFunction(() => !!window.__depthStudy, { timeout: 5000 })
