@@ -21,11 +21,12 @@ const base = process.env.BASE_PATH || '/'
 
 const LOOK = process.env.LOOK || 'c'
 const iconHead = [
-  `<link rel="icon" href="${base}favicon.ico?v=salon-1" sizes="16x16 32x32 48x48">`,
-  `<link rel="icon" type="image/png" href="${base}favicon-32x32.png?v=salon-1" sizes="32x32">`,
-  `<link rel="icon" type="image/png" href="${base}favicon-16x16.png?v=salon-1" sizes="16x16">`,
-  `<link rel="icon" type="image/svg+xml" href="${base}favicon.svg?v=salon-1" sizes="any">`,
-  `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png?v=salon-1" sizes="180x180">`,
+  `<link rel="icon" data-favicon="ico" href="${base}favicon.ico?v=faces-3" sizes="16x16 32x32 48x48">`,
+  `<link rel="icon" data-favicon="32" type="image/png" href="${base}favicon-32x32.png?v=faces-3" sizes="32x32">`,
+  `<link rel="icon" data-favicon="16" type="image/png" href="${base}favicon-16x16.png?v=faces-3" sizes="16x16">`,
+  `<link rel="icon" data-favicon="svg" type="image/svg+xml" href="${base}favicon.svg?v=faces-3" sizes="any">`,
+  `<link rel="apple-touch-icon" href="${base}apple-touch-icon.png?v=faces-3" sizes="180x180">`,
+  `<script src="${base}favicon-theme.js?v=faces-3"></script>`,
 ].join('\n')
 
 // Preload the fonts the shipped look renders above the fold, so text doesn't reflow when they arrive (layout shift).

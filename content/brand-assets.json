@@ -1,6 +1,6 @@
 {
   "version": "salon-1",
-  "description": "Original project vector logo selected by the user for site implementation; icons derived from the approved micro symbol.",
+  "description": "Original project vector logo selected for the site; favicon uses the approved micro faces/glass symbol with transparent black/light and white/dark treatments.",
   "source": "output/chef-sergio-final-pass",
   "assets": [
     {
@@ -45,28 +45,59 @@
     },
     {
       "file": "favicon.svg",
-      "sha256": "b49b831c6d357c4c1c67ba4beca751c222058e0967afc62c4f15be32be25071e",
+      "sha256": "b301586f6f412e223d914ce1dce821de9619caea0c3fd3404ffa45917dd25811",
       "kind": "derived-brand-icon"
     },
     {
       "file": "favicon.ico",
-      "sha256": "7520c0708996162cd8d35b8d7bae54d699cfc3b7c53ca394a4d37671ddd15624",
+      "sha256": "9c71a80f9336d56270c4d266c248b4a90a2272b6cf2b58de08bf15a5a7477f96",
       "kind": "derived-brand-icon"
     },
     {
       "file": "favicon-16x16.png",
-      "sha256": "fe10a6071edcf2bcf40bb0da4a436ce3f93ed5f05ed2b92e7d396c3febafc2ca",
+      "sha256": "547681f36795a64ae4e701b6bff5094670aefc8f4cf3bb5bf911a8d2265fed20",
       "kind": "derived-brand-icon"
     },
     {
       "file": "favicon-32x32.png",
-      "sha256": "4233608eb6277dada33a13bb219ff072c27d6f7468b9cc7127004b0e65c8b88b",
+      "sha256": "787c613c70f60cd846d4a4d1a3dad2245d5863372544d7eede32ecd23bb57639",
       "kind": "derived-brand-icon"
     },
     {
       "file": "apple-touch-icon.png",
-      "sha256": "826964245ba39024b93df04aa222021717443a103e856d0fcc2f403216d882e7",
+      "sha256": "8b1f3f69bd3e8d994a1f7e810095f27872ff218aa94d479e9add4700e0318394",
+      "kind": "derived-brand-icon"
+    },
+    {
+      "file": "favicon-light.svg",
+      "sha256": "9597c1463774e50852cfb9bce4cf117d7e3b69dda2df2ff0fbefee188c3f9178",
+      "kind": "derived-brand-icon"
+    },
+    {
+      "file": "favicon-dark.svg",
+      "sha256": "ffc820272531fecc97ce3efaa2483ca7ba7a3eb4f3b97fa2fa295408123b6bbd",
+      "kind": "derived-brand-icon"
+    },
+    {
+      "file": "favicon-16x16-dark.png",
+      "sha256": "4cad4f615b163b1e67b769b016ece192441dcfdccf459763ea83d08683519921",
+      "kind": "derived-brand-icon"
+    },
+    {
+      "file": "favicon-32x32-dark.png",
+      "sha256": "86cec02b1922800c6807c7955fe4e4100633fbf10a27ceb9c44c67fc8bdecb99",
+      "kind": "derived-brand-icon"
+    },
+    {
+      "file": "favicon-dark.ico",
+      "sha256": "8e663b3eeded941cbeb910b0c99c69aca8910f0a02621a7b623fc5aa1a91f621",
       "kind": "derived-brand-icon"
     }
-  ]
+  ],
+  "icon_version": "faces-3",
+  "icon_source": {
+    "file": "public/brand/logo-micro-ink.svg",
+    "sha256": "52fbbead0a270e90b561a00b0f4cce664a2800fbc8e7514045a43dfe25aaf5fd",
+    "treatment": "Unchanged outlines; tightly centered; transparent black on light and white on dark."
+  }
 }

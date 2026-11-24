@@ -113,7 +113,7 @@ if (art) {
 }
 for (const asset of brand) {
   // Keep this exception restricted to the actual brand family, never arbitrary photographs.
-  if (!/^(?:brand\/logo-(?:primary|compact|symbol|micro)-(?:ink|reverse)\.svg|favicon\.(?:svg|ico)|favicon-(?:16x16|32x32)\.png|apple-touch-icon\.png)$/.test(asset.file)) {
+  if (!/^(?:brand\/logo-(?:primary|compact|symbol|micro)-(?:ink|reverse)\.svg|favicon(?:-(?:light|dark))?\.svg|favicon(?:-dark)?\.ico|favicon-(?:16x16|32x32)(?:-dark)?\.png|apple-touch-icon\.png)$/.test(asset.file)) {
     failures.push(`${asset.file}: unsupported first-party brand asset path`)
     continue
   }
