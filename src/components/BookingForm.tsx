@@ -13,6 +13,7 @@ import { BookingError, type Availability, type Kind, type Night, type PlanningCo
 import { booking } from '../content/booking'
 import { site } from '../content/site'
 import { BookingBrief } from './BookingBrief'
+import { MenuCard, type CardData } from './MenuCard'
 import { CtaButton } from './CallToAction'
 import { Icon } from './Icons'
 import { href, track } from './ui'
@@ -40,6 +41,21 @@ function Choices<T extends string>({ id, label, value, onChange, options, error 
 }
 function NumberStepper({ id, value, min, max, onChange, label, error }: { id: string; value?: number; min: number; max: number; onChange: (value?: number) => void; label: string; error?: string }) {
   return <div className="booking-stepper"><button type="button" aria-label={`One fewer ${label}`} disabled={(value ?? min) <= min} onClick={() => onChange(Math.max(min, (value ?? min + 1) - 1))}>−</button><input className={inputClass} id={id} type="number" inputMode="numeric" min={min} max={max} aria-label={label} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} value={value ?? ''} onChange={event => onChange(event.target.value ? Number(event.target.value) : undefined)}/><button type="button" aria-label={`One more ${label}`} disabled={(value ?? 0) >= max} onClick={() => onChange(Math.min(max, (value ?? min - 1) + 1))}>+</button></div>
+}
+
+/** The last step sets the evening like the printed menu, as the confirmation page does; the courses come later. */
+function printedCard(s: PlanningState, night?: Night): CardData {
+  const table = s.kind === 'table'
+  return {
+    format: s.kind === 'table' ? undefined : s.kind,
+    table,
+    guests: table ? s.seats : s.headcountMode === 'exact' ? s.guests : undefined,
+    date: table ? night?.date : s.dateMode === 'exact' ? s.date : undefined,
+    time: table ? night?.start : s.dateMode === 'exact' ? s.time : undefined,
+    where: s.where,
+    place: s.place || undefined,
+    nightTitle: table ? night?.title : undefined,
+  }
 }
 
 export function BookingForm() {
@@ -145,6 +161,7 @@ export function BookingForm() {
   }
   const seatTotal = night?.pricePerSeat != null ? night.pricePerSeat * s.seats : null
   const canPay = !!config?.paymentReady && (table ? seatTotal != null : band?.deposit != null && config.planningFee != null)
+  const stamp = canPay ? 'Ready for your deposit' : 'Ready to send'
   const action = table ? canPay ? 'Continue to seat payment' : `Request ${s.seats} ${s.seats === 1 ? 'seat' : 'seats'}` : canPay ? `Continue to ${money(band!.deposit!)} deposit` : 'Send your planning request'
   const described = (id: string, hint = false) => [hint && `${id}-hint`, errors[id.replace('f-', '')] && `${id}-err`].filter(Boolean).join(' ') || undefined
 
@@ -201,7 +218,7 @@ export function BookingForm() {
         </>}
         {step === 3 && <>
           <p className="booking-intro">{canPay ? 'Review your gathering and what today’s payment secures.' : 'Your ideas will go straight to Sergio’s dashboard. Online payments are not enabled yet, so this step sends an unpaid request.'}</p>
-          <div className="booking-review-mobile"><BookingBrief state={s} config={config} night={night} compact/></div>
+          <div className="booking-review-mobile"><MenuCard data={printedCard(s, night)} stamp={stamp}/></div>
           <Field id="f-name" label="Your name" error={errors.name}><input id="f-name" className={inputClass} autoComplete="name" maxLength={150} value={s.name} onChange={event => set({ name: event.target.value })} aria-invalid={!!errors.name} aria-describedby={described('f-name')}/></Field>
           <Field id="f-email" label="Email" error={errors.email}><input id="f-email" className={inputClass} type="email" autoComplete="email" maxLength={254} value={s.email} onChange={event => set({ email: event.target.value })} aria-invalid={!!errors.email} aria-describedby={described('f-email')}/></Field>
           <Choices id="f-contactBy" label="How would you like Sergio to reach you?" value={s.contactBy} onChange={contactBy => set({ contactBy })} options={[{ value: 'email', label: 'Email' }, { value: 'call', label: 'Phone call' }, { value: 'text', label: 'Text message' }]}/>
@@ -220,6 +237,6 @@ export function BookingForm() {
       <div className="booking-actions">{step > 0 && <CtaButton type="button" emphasis="secondary" disabled={busy} onClick={() => go(step - 1)}>Back</CtaButton>}<CtaButton type="submit" emphasis="primary" disabled={busy || step === 3 && !config} aria-busy={busy || undefined}>{busy ? 'Sending your request…' : step === 3 ? action : 'Continue'}</CtaButton></div>
       <p className="booking-help">Prefer to talk it through? <a className="link" href={site.phoneHref}>Call {site.phone}</a>.</p>
     </form>
-    <div className="booking-summary-column"><BookingBrief state={s} config={config} night={night}/><p className="booking-summary-caption">Your starting brief, carried into your conversation with Sergio.</p></div>
+    <div className="booking-summary-column">{step === 3 ? <><MenuCard data={printedCard(s, night)} stamp={stamp}/><p className="booking-summary-caption">Your evening, set like the printed menu. The courses come from your conversation with Sergio.</p></> : <><BookingBrief state={s} config={config} night={night}/><p className="booking-summary-caption">Your starting brief, carried into your conversation with Sergio.</p></>}</div>
   </div>
 }
