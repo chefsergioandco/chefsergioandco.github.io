@@ -20,12 +20,15 @@ export function HomeDepth({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const element = root.current!, header = document.querySelector('header')!
+    const element = root.current!, header = document.querySelector<HTMLElement>('[data-site-header]')
+    const arrival = document.querySelector<HTMLElement>('[data-home-arrival]')
     const planes = Array.from(element.querySelectorAll<HTMLElement>(':scope > main > section, :scope > footer'))
     const reduced = matchMedia('(prefers-reduced-motion: reduce)')
     let enabled = false, measureFrame = 0, headerHeight = 0, disposed = false
-    let touchY: number | null = null, touchX = 0, touchTime = 0, touchVelocity = 0, touchCaptured = false, coastFrame = 0
+    let touchY: number | null = null, touchX = 0, touchOriginY = 0, touchVertical = false, touchTime = 0, touchVelocity = 0, touchCaptured = false, coastFrame = 0
     let painted: HTMLElement[] = [], heights: number[] = []
+    let arrivalConfigured = false, lastArrivalProgress = -1, lastArrivalSettled = false
+    let pointerFocus = false, pointerReset = 0
     const study: Record<string, unknown> = { enabled: false, reason: 'initializing', planes: [] }
     window.__depthStudy = study
     const ids = planes.map((plane, index) => plane.id || plane.getAttribute('aria-labelledby') || `section-${index + 1}`)
@@ -46,8 +49,17 @@ export function HomeDepth({ children }: { children: ReactNode }) {
     const paint = (state: DepthSequenceSnapshot) => {
       Object.assign(study, state, { enabled, header: headerHeight })
       element.dataset.depthPhase = state.phase
+      if (arrival && arrivalConfigured) {
+        const progress = state.arrivalProgress, settled = !state.arrivalActive && progress >= 1
+        arrival.style.setProperty('--home-arrival-progress', String(progress))
+        arrival.dataset.arrivalProgress = progress.toFixed(5)
+        if (Math.abs(lastArrivalProgress - progress) > .00001 || lastArrivalSettled !== settled) {
+          lastArrivalProgress = progress; lastArrivalSettled = settled
+          window.dispatchEvent(new CustomEvent('home:arrival-progress', { detail: { progress, settled } }))
+        }
+      }
       resetPaint()
-      if (!enabled || state.activeIndex < 0) return
+      if (!enabled || state.arrivalActive || state.activeIndex < 0) return
       const back = planes[state.activeIndex], front = planes[state.activeIndex + 1]
       if (!back || !front) return
       // Pose follows position even at rest: letting go halfway through a
@@ -77,7 +89,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
     const stopCoast = () => { cancelAnimationFrame(coastFrame); coastFrame = 0 }
     const measure = () => {
       if (disposed) return
-      headerHeight = header.getBoundingClientRect().height
+      headerHeight = header?.offsetHeight ?? 0
       heights = planes.map((plane) => plane.offsetHeight)
       const tops = planes.map(layoutTop)
       const maxScroll = Math.max(0, document.documentElement.scrollHeight - innerHeight)
@@ -102,7 +114,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
       element.dataset.depthEnabled = String(enabled)
       element.style.setProperty('--depth-header', `${headerHeight}px`)
       element.style.setProperty('--depth-page-width', `${element.clientWidth}px`)
-      if (!enabled) { stopCoast(); controller.cancel() }
+      if (!enabled) { stopCoast(); controller.finishArrival(); controller.cancel() }
       controller.configure(boundaries, maxScroll)
       paint(controller.snapshot())
     }
@@ -112,7 +124,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
     }
     const bypass = (target: EventTarget | null) => {
       if (!(target instanceof Element)) return true
-      if (target.closest('input,textarea,select,[contenteditable=true],[role=dialog],[data-radix-popper-content-wrapper]')) return true
+      if (target.closest('input,textarea,select,[contenteditable=true],[role=dialog],iframe,[data-radix-popper-content-wrapper]')) return true
       for (let node: Element | null = target; node && node !== document.body; node = node.parentElement) {
         const css = getComputedStyle(node)
         if (/(auto|scroll)/.test(css.overflowY) && node.scrollHeight > node.clientHeight + 1) return true
@@ -122,6 +134,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
     const wheel = (event: WheelEvent) => {
       if (!enabled || event.defaultPrevented || !event.cancelable || event.ctrlKey || event.metaKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || bypass(event.target)) return
       stopCoast()
+      window.dispatchEvent(new Event('home:continuous-input'))
       const unit = event.deltaMode === 1 ? 20 : event.deltaMode === 2 ? innerHeight : 1
       // Own the vertical sequence from its first event. Some browsers make
       // later wheel events noncancelable once native scrolling has latched.
@@ -130,7 +143,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
       controller.handle(delta, 'wheel')
     }
     const cancel = () => { stopCoast(); controller.cancel() }
-    const timelineCapture = () => { touchCaptured = false; touchY = null; touchVelocity = 0; cancel() }
+    const timelineCapture = () => { touchCaptured = false; touchY = null; touchVelocity = 0; controller.finishArrival(); cancel() }
     const touchCancel = () => { touchY = null; touchCaptured = false; cancel() }
     const touchStart = (event: TouchEvent) => {
       stopCoast()
@@ -138,19 +151,29 @@ export function HomeDepth({ children }: { children: ReactNode }) {
       touchCaptured = enabled && event.touches.length === 1 && !bypass(event.target)
       touchVelocity = 0
       if (!touchCaptured) { touchY = null; return }
+      window.dispatchEvent(new Event('home:continuous-input'))
       controller.beginGesture()
       touchY = event.touches[0].clientY
+      touchOriginY = touchY
       touchX = event.touches[0].clientX
+      touchVertical = false
       touchTime = event.timeStamp
     }
     const touchMove = (event: TouchEvent) => {
       if (!enabled || !touchCaptured || touchY === null) return
       if (event.touches.length !== 1 || !event.cancelable) { touchCancel(); return }
       const next = event.touches[0], delta = touchY - next.clientY
-      if (Math.abs(next.clientX - touchX) > Math.abs(delta) * 2 + 12) { touchY = null; touchCaptured = false; cancel(); return }
+      if (!touchVertical) {
+        const travelX = Math.abs(next.clientX - touchX), travelY = Math.abs(next.clientY - touchOriginY)
+        // Wait for intent before cancelling native input, so small horizontal
+        // moves can start the gallery's own swipe instead of being swallowed.
+        if (Math.max(travelX, travelY) < 6) return
+        if (travelX > travelY) { touchY = null; touchCaptured = false; cancel(); return }
+        touchVertical = true
+      }
       event.preventDefault()
       const dt = Math.max(8, event.timeStamp - touchTime)
-      touchY = next.clientY; touchX = next.clientX; touchTime = event.timeStamp
+      touchY = next.clientY; touchTime = event.timeStamp
       if (delta * touchVelocity < 0) touchVelocity = 0
       touchVelocity = .65 * touchVelocity + .35 * Math.max(-2.5, Math.min(2.5, delta / dt))
       controller.handle(delta, 'touch')
@@ -172,25 +195,53 @@ export function HomeDepth({ children }: { children: ReactNode }) {
       coastFrame = requestAnimationFrame(coast)
     }
     const key = (event: KeyboardEvent) => {
+      pointerFocus = false
+      if (controller.snapshot().arrivalActive && !event.defaultPrevented && !event.ctrlKey && !event.metaKey && !event.altKey && !bypass(event.target)) {
+        if (event.key === 'Escape') { event.preventDefault(); controller.finishArrival(); return }
+        if (!(event.target instanceof Element && event.target.closest('button,a'))) {
+          const amount = event.key === 'PageDown' || event.key === ' ' && !event.shiftKey ? innerHeight * .8 : event.key === 'PageUp' || event.key === ' ' && event.shiftKey ? -innerHeight * .8 : event.key === 'ArrowDown' ? 64 : event.key === 'ArrowUp' ? -64 : event.key === 'End' ? 440 + innerHeight : event.key === 'Home' ? -440 : null
+          if (amount !== null) { event.preventDefault(); stopCoast(); controller.handle(amount, 'keyboard'); return }
+        }
+      }
       if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' ', 'Tab', 'Escape'].includes(event.key)) cancel()
+    }
+    const skipArrival = () => { stopCoast(); controller.finishArrival() }
+    const readyArrival = () => {
+      if (!arrival) return
+      arrivalConfigured = true
+      controller.configureArrival(arrival.dataset.arrivalActive === 'true' && enabled && !reduced.matches)
+      paint(controller.snapshot())
+      scheduleMeasure()
+    }
+    const focus = (event: FocusEvent) => {
+      // Pointer focus arrives between down and up. Preserve the visible hit
+      // target until its click completes; keyboard/programmatic focus can
+      // reveal the reading surface immediately.
+      if (event.target instanceof Element && (event.target.matches(':focus-visible') || !pointerFocus) && event.target.closest('[data-site-header],.home-depth')) controller.finishArrival()
+      cancel()
     }
     const onScroll = () => {
       const current = controller.snapshot()
       if (Math.abs(scrollY - current.nativeY) > .5) controller.reconcile(scrollY)
     }
     const pointer = (event: PointerEvent) => {
+      clearTimeout(pointerReset); pointerFocus = true
       if (event.pointerType !== 'touch') { stopCoast(); if (controller.snapshot().phase === 'transitioning') cancel() }
     }
+    const pointerEnd = () => { clearTimeout(pointerReset); pointerReset = window.setTimeout(() => { pointerFocus = false }, 0) }
     const observer = new ResizeObserver(scheduleMeasure)
-    observer.observe(header)
+    if (header) observer.observe(header)
     planes.forEach((plane) => observer.observe(plane))
     measure()
+    if (arrival?.dataset.arrivalReady === 'true') readyArrival()
     document.fonts.ready.then(() => { if (!disposed) scheduleMeasure() })
     window.addEventListener('wheel', wheel, { passive: false })
     window.addEventListener('plating:scroll-capture', timelineCapture)
     window.addEventListener('site:scroll-start', timelineCapture)
     window.addEventListener('site:scroll-cancel', timelineCapture)
     window.addEventListener('site:scroll-end', cancel)
+    window.addEventListener('home:arrival-ready', readyArrival)
+    window.addEventListener('home:arrival-skip', skipArrival)
     window.addEventListener('touchstart', touchStart, { passive: true })
     window.addEventListener('touchmove', touchMove, { passive: false })
     window.addEventListener('touchend', touchEnd, { passive: true })
@@ -200,21 +251,27 @@ export function HomeDepth({ children }: { children: ReactNode }) {
     window.addEventListener('pageshow', scheduleMeasure)
     window.addEventListener('keydown', key)
     window.addEventListener('pointerdown', pointer)
-    element.addEventListener('focusin', cancel)
+    window.addEventListener('pointerup', pointerEnd)
+    window.addEventListener('pointercancel', pointerEnd)
+    document.addEventListener('focusin', focus)
     reduced.addEventListener('change', scheduleMeasure)
     return () => {
       disposed = true
+      clearTimeout(pointerReset)
       observer.disconnect(); cancelAnimationFrame(measureFrame); stopCoast()
       window.removeEventListener('wheel', wheel); window.removeEventListener('touchstart', touchStart)
       window.removeEventListener('plating:scroll-capture', timelineCapture)
       window.removeEventListener('site:scroll-start', timelineCapture)
       window.removeEventListener('site:scroll-cancel', timelineCapture)
       window.removeEventListener('site:scroll-end', cancel)
+      window.removeEventListener('home:arrival-ready', readyArrival)
+      window.removeEventListener('home:arrival-skip', skipArrival)
       window.removeEventListener('touchmove', touchMove); window.removeEventListener('touchend', touchEnd)
       window.removeEventListener('touchcancel', touchCancel); window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', scheduleMeasure); window.removeEventListener('pageshow', scheduleMeasure)
       window.removeEventListener('keydown', key)
-      window.removeEventListener('pointerdown', pointer); element.removeEventListener('focusin', cancel)
+      window.removeEventListener('pointerdown', pointer); document.removeEventListener('focusin', focus)
+      window.removeEventListener('pointerup', pointerEnd); window.removeEventListener('pointercancel', pointerEnd)
       reduced.removeEventListener('change', scheduleMeasure)
       controller.destroy(); resetPaint()
       planes.forEach((plane) => { delete plane.dataset.depthPlane; delete plane.dataset.depthPosition; delete plane.dataset.depthSurface })

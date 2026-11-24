@@ -127,8 +127,15 @@ export function SiteHeader({ route }: { route: string }) {
       const main = row.current?.getBoundingClientRect()
       if (!main || !header.current) return
       const height = window.visualViewport?.height ?? window.innerHeight
-      document.documentElement.style.setProperty('--site-header-height', `${main.height}px`)
-      header.current.style.setProperty('--sergio-panel-space', `${Math.max(0, height - Math.max(0, main.bottom))}px`)
+      const layoutHeight = row.current?.offsetHeight ?? main.height
+      let bottom = main.bottom
+      if (header.current.closest('[data-arrival-active=true]')) {
+        let layoutTop = 0
+        for (let node: HTMLElement | null = row.current; node; node = node.offsetParent as HTMLElement | null) layoutTop += node.offsetTop
+        bottom = layoutTop + layoutHeight - scrollY
+      }
+      document.documentElement.style.setProperty('--site-header-height', `${layoutHeight}px`)
+      header.current.style.setProperty('--sergio-panel-space', `${Math.max(0, height - Math.max(0, bottom))}px`)
     }
     const resize = new ResizeObserver(measure)
     if (row.current) resize.observe(row.current)

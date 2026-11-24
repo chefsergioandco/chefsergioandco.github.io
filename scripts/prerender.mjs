@@ -111,6 +111,8 @@ const bootScript = `<script>document.documentElement.classList.add('js');${
 }</script>`
 
 // Share cards: re-rendered only when their words, the logo or the fonts change (see og-cards.mjs).
+const arrivalBootScript = `<script>(function(){try{var n=performance.getEntriesByType('navigation')[0],s=sessionStorage.getItem('sergio.home-arrival.v1'),i=document.referrer&&new URL(document.referrer).origin===location.origin;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&s!=='settled'&&!location.hash&&!i&&(!n||n.type!=='reload'&&n.type!=='back_forward')&&innerHeight>=440){document.documentElement.dataset.homeArrivalBoot='pending';setTimeout(function(){if(document.documentElement.dataset.homeArrivalBoot==='pending')document.documentElement.dataset.homeArrivalBoot='expired'},1800)}}catch(e){}})()</script>`
+
 const shareImages = await ensureCards(routes, { distDir: dist })
 // Absolute URL for og:url/og:image. A prototype preview can set PUBLIC_URL (e.g. https://name.github.io/repo) so its
 // shared links show cards; production always uses the real domain.
@@ -145,7 +147,7 @@ for (const { r, html, head, heroPhoto, imageAttribute } of rendered) {
     : ''
   const page = template
     .replace('<html lang="en">', `<html lang="en" data-look="${LOOK === 'all' ? 'c' : LOOK}">`)
-    .replace('<!--app-head-->', `${bootScript}\n    ${imagePreload}\n    ${preloads}\n    ${r.path === '/' ? homePreloads : ''}\n    ${routeStyleLinks(r.path)}\n    ${head}\n    ${r.path.startsWith('/invitation/') ? '' : nextPageHead}`)
+    .replace('<!--app-head-->', `${bootScript}\n    ${r.path === '/' ? arrivalBootScript : ''}\n    ${imagePreload}\n    ${preloads}\n    ${r.path === '/' ? homePreloads : ''}\n    ${routeStyleLinks(r.path)}\n    ${head}\n    ${r.path.startsWith('/invitation/') ? '' : nextPageHead}`)
     .replace('<div id="root"><!--app-html--></div>', `<div id="root" data-route="${r.path}">${html}</div>`)
   const out = path.join(dist, r.path, 'index.html')
   fs.mkdirSync(path.dirname(out), { recursive: true })
