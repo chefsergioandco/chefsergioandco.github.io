@@ -10,11 +10,12 @@
 //    aimless ones are replayed through three predictors: Chromium's own hover trigger, straight-line extrapolation
 //    ("inertia"), and model.ts. Synthetic movement is a model of people, not people: it ranks methods and catches
 //    regressions; it does not prove field accuracy.
-// 2. Browser. Chrome against a local GitHub-Pages-like server (max-age=600, ETag, gzip) with a simulated 4G link,
-//    each journey moved and clicked like a person would, in four conditions: no speculation, Chromium's built-in
-//    hover/press rules only, the full predictor, and the predictor without Speculation Rules or link prefetch (the
-//    path Safari takes, but run in Chromium's cache: whether WebKit reuses a fetched document for the navigation is
-//    not shown here). The booking API host is mapped to localhost, so prerendered booking pages never reach it.
+// 2. Browser. Chrome against a local GitHub-Pages-like server (max-age=600, ETag, gzip) with a simulated 4G link.
+//    Internal links are followed in the page (src/entry-client.tsx), so each journey is moved and clicked like a person
+//    would, and timed inside the page from the click until the next page's heading, then its photographs in view, are
+//    on screen: with the predictor, and with its hints removed. The booking API and Auth0 hosts are mapped to
+//    localhost, so nothing reaches them.
+// 3. Safety. Only public pages are ever loaded ahead, and a warmed booking form saves no draft until it is opened.
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
@@ -37,9 +38,8 @@ const model = await import('data:text/javascript;base64,' + Buffer.from(bundled.
 
 // ---- A GitHub-Pages-like server on a simulated link ----
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' }
-const RULES = /<script id="next-page-rules">[\s\S]*?<\/script>/g
 const HINTS = /<script type="application\/json" id="next-page-hints">[\s\S]*?<\/script>/g
-const variants = { none: (h) => h.replace(RULES, '').replace(HINTS, ''), rules: (h) => h.replace(HINTS, ''), full: (h) => h, 'fetch-only': (h) => h.replace(RULES, '') }
+const variants = { none: (h) => h.replace(HINTS, ''), full: (h) => h }
 function serve(variant, { rtt = 0, bytesPerSecond = Infinity } = {}) {
   let downlinkFree = 0
   const server = http.createServer(async (req, res) => {
@@ -73,7 +73,7 @@ function serve(variant, { rtt = 0, bytesPerSecond = Infinity } = {}) {
 const browser = await puppeteer.launch({
   executablePath: CHROME,
   headless: true,
-  args: [`--host-resolver-rules=MAP ${API_HOST} 127.0.0.1:9`, '--window-size=1440,900'],
+  args: [`--host-resolver-rules=MAP ${API_HOST} 127.0.0.1:9, MAP *.auth0.com 127.0.0.1:9`, '--window-size=1440,900'],
 })
 const settledHome = () => { try { sessionStorage.setItem('sergio.home-arrival.v1', 'settled') } catch {} }
 // The site leaves automated browsers alone (navigator.webdriver); this check stands in for a person.
@@ -257,18 +257,31 @@ const PHONE_JOURNEYS = [
   ['/cookingclasses/', '/gift/'],
   ['/book/', '/'],
 ]
+/** Times, inside the page, from the click to the next page's heading and then its photographs in view. */
+function watchNavigation(href) {
+  const heading = () => document.querySelector('main h1')?.textContent?.trim() ?? ''
+  const before = heading()
+  const nav = (window.__nav = { clickAt: 0, contentAt: 0, shownAt: 0 })
+  addEventListener('click', () => { if (!nav.clickAt) nav.clickAt = performance.now() }, true)
+  const tick = () => {
+    if (nav.clickAt && location.pathname + location.search === href) {
+      const now = heading()
+      if (!nav.contentAt && now && now !== before) nav.contentAt = performance.now()
+      if (nav.contentAt) {
+        const inView = [...document.querySelectorAll('main img')].filter((img) => { const r = img.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth })
+        if (inView.every((img) => img.complete && img.naturalWidth)) nav.shownAt = performance.now()
+      }
+    }
+    if (!nav.shownAt) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
 async function journey(origin, variant, from, href, rand, phone = false) {
   const context = await browser.createBrowserContext()
   const page = await context.newPage()
   await page.setViewport(phone ? { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true, hasTouch: true } : { width: 1440, height: 900 })
   await page.evaluateOnNewDocument(settledHome)
   await page.evaluateOnNewDocument(person)
-  if (variant === 'fetch-only')
-    await page.evaluateOnNewDocument(() => {
-      HTMLScriptElement.supports = () => false
-      const supports = DOMTokenList.prototype.supports
-      DOMTokenList.prototype.supports = function (token) { return token === 'prefetch' ? false : supports.call(this, token) }
-    })
   await page.goto(origin + from, { waitUntil: 'load' })
   await sleep(2500) // reading: the idle step runs, and the first page's own late requests finish
   if (phone) {
@@ -282,19 +295,18 @@ async function journey(origin, variant, from, href, rand, phone = false) {
     }, href)
     if (!found) { await context.close(); return { missing: true } }
     await sleep(500 + 600 * rand())
-    const box = await page.evaluate((href) => {
-      const r = [...document.querySelectorAll(`a[href="${href}"]`)].map((a) => a.getBoundingClientRect()).find((r) => r.width && r.top >= 0 && r.bottom <= innerHeight)
-      return r && { x: r.left + r.width / 2, y: r.top + r.height / 2 }
-    }, href)
-    if (!box) { await context.close(); return { missing: true } }
+  }
+  const box = await page.evaluate((href) => {
+    const r = [...document.querySelectorAll(`a[href="${href}"]`)].map((a) => a.getBoundingClientRect()).find((r) => r.width && r.top >= 0 && r.bottom <= innerHeight)
+    return r && { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }
+  }, href)
+  if (!box) { await context.close(); return { missing: true } }
+  await page.evaluate(watchNavigation, href)
+  if (phone) {
     await page.touchscreen.touchStart(box.x, box.y)
     await sleep(90) // a tap: finger down to finger up
+    await page.touchscreen.touchEnd()
   } else {
-    const box = await page.evaluate((href) => {
-      const a = [...document.querySelectorAll(`a[href="${href}"]`)].map((a) => a.getBoundingClientRect()).find((r) => r.width && r.top >= 0 && r.bottom <= innerHeight)
-      return a && { x: a.left + a.width / 2, y: a.top + a.height / 2, w: a.width, h: a.height }
-    }, href)
-    if (!box) { await context.close(); return { missing: true } }
     let start
     do start = { x: 200 + rand() * 1040, y: 250 + rand() * 600 }
     while (Math.hypot(start.x - box.x, start.y - box.y) < 250)
@@ -309,28 +321,32 @@ async function journey(origin, variant, from, href, rand, phone = false) {
     await sleep(100 + 200 * rand()) // settling on the link before pressing
     await page.mouse.down()
     await sleep(90)
+    await page.mouse.up()
   }
-  const before = await page.evaluate(() => ({ clock: performance.timeOrigin + performance.now(), marks: performance.getEntriesByType('mark').filter((m) => m.name.startsWith('next-page:')).map((m) => `${m.name.slice(10)} ${Math.round(performance.now() - m.startTime)}ms`) }))
-  await Promise.all([page.waitForNavigation({ waitUntil: 'load' }), phone ? page.touchscreen.touchEnd() : page.mouse.up()])
-  await sleep(1200)
-  const after = await page.evaluate(() => new Promise((resolve) => {
-    let lcp = 0
-    new PerformanceObserver((list) => { for (const e of list.getEntries()) lcp = e.startTime }).observe({ type: 'largest-contentful-paint', buffered: true })
-    setTimeout(() => {
-      const nav = performance.getEntriesByType('navigation')[0]
-      const fcp = performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? 0
-      resolve({ origin: performance.timeOrigin, url: location.pathname + location.search, activationStart: nav.activationStart, transferSize: nav.transferSize, deliveryType: nav.deliveryType, fcp, lcp })
-    }, 50)
-  }))
+  const arrived = await page.waitForFunction(() => window.__nav?.shownAt, { timeout: 15000 }).then(() => true, () => false)
+  const result = await page.evaluate((href) => {
+    const nav = window.__nav ?? {}
+    const marks = performance.getEntriesByType('mark').filter((m) => m.name.startsWith('next-page:'))
+    const lead = (level) => { const m = marks.find((m) => m.name === `next-page:${level}:${href}`); return m && nav.clickAt ? Math.round(nav.clickAt - m.startTime) : null }
+    return { inPage: !!window.__nav, url: location.pathname + location.search, content: nav.contentAt - nav.clickAt, shown: nav.shownAt - nav.clickAt, warmLead: lead(2) ?? lead(3), marks: marks.map((m) => m.name.slice(10)) }
+  }, href)
   await context.close()
-  const visible = (t) => after.origin + Math.max(t || 0, after.activationStart) - before.clock
-  return { ...after, activationFromClick: after.activationStart ? after.origin + after.activationStart - before.clock : 0, fcpFromClick: visible(after.fcp), lcpFromClick: visible(after.lcp || after.fcp), marks: before.marks }
+  return { ...result, arrived }
 }
 
 if (!ONLY_MODEL) {
+  // Only public pages may ever be loaded ahead: never account, sign-in/out, receipt, invitation or checkout pages.
+  const hints = JSON.parse(fs.readFileSync(path.join(DIST, 'index.html'), 'utf8').match(/id="next-page-hints">([^<]*)</)?.[1] ?? '{}')
+  const PRIVATE = /^\/(account|auth|dashboard|admin|receipt|invitation|newsletter)\/|^\/book\/(done|pay)\//
+  const ahead = Object.keys(hints)
+  if (!ahead.length) failures.push('safety: the built homepage carries no next-page hints')
+  for (const key of ahead) if (PRIVATE.test(key)) failures.push(`safety: ${key} is listed for loading ahead`)
+  notes.push(`pages that may be loaded ahead: ${ahead.join(' ')}`)
+  const isAhead = (mark) => { const url = mark.slice(mark.indexOf(':') + 1).split('?')[0].split('#')[0]; return ahead.includes(url) }
+
   const results = {}
   const rand = rng(11)
-  for (const variant of ['none', 'rules', 'full', 'fetch-only']) {
+  for (const variant of ['none', 'full']) {
     const { server, origin } = await serve(variant, NETWORK)
     for (const [device, journeys] of [['desktop', JOURNEYS], ['phone', PHONE_JOURNEYS]])
       for (const [from, href] of journeys)
@@ -338,29 +354,29 @@ if (!ONLY_MODEL) {
           const result = await journey(origin, variant, from, href, rand, device === 'phone')
           const name = `${device} ${from} → ${href}`
           if (result.missing) { failures.push(`browser: no visible link to ${href} on ${from} (${device})`); continue }
-          if (result.url !== href) failures.push(`browser ${variant}: ${name} arrived at ${result.url}`)
+          if (!result.inPage) failures.push(`browser ${variant}: ${name} loaded a new document instead of following the link in the page`)
+          else if (!result.arrived || result.url !== href) failures.push(`browser ${variant}: ${name} did not show ${href} (at ${result.url})`)
+          for (const mark of result.marks) if (!isAhead(mark)) failures.push(`safety: ${name} loaded ${mark} ahead`)
           ;(results[name] ??= {})[variant] ??= []
           results[name][variant].push(result)
-          if (process.env.VERBOSE) console.log(`  ${variant.padEnd(10)} ${name}: largest paint ${result.lcpFromClick | 0} ms after click${result.activationStart ? `, prerender shown ${result.activationFromClick | 0} ms after click` : ''}${result.transferSize === 0 ? ', document from cache' : ''}; before click: ${result.marks.join(', ') || 'nothing'}`)
+          if (process.env.VERBOSE) console.log(`  ${variant.padEnd(5)} ${name}: heading ${result.content | 0} ms, photos ${result.shown | 0} ms after click; warmed ${result.warmLead ?? '-'} ms before; marks: ${result.marks.join(', ') || 'none'}`)
         }
     server.close()
   }
   const median = (rs, k) => pct(rs.map((r) => r[k]), 0.5)
-  console.log(`\nBrowser: click to largest paint (ms), median of ${REPS}; simulated link ${NETWORK.rtt} ms RTT, ${(NETWORK.bytesPerSecond * 8e-6).toFixed(0)} Mbps`)
-  console.log('journey                                         | none | rules | full (prerendered) | fetch-only (doc from cache)')
+  console.log(`\nBrowser: click to next page on screen (ms), median of ${REPS}; simulated link ${NETWORK.rtt} ms RTT, ${(NETWORK.bytesPerSecond * 8e-6).toFixed(0)} Mbps`)
+  console.log('journey                                         | heading: none / predicted | photos: none / predicted | warmed before click')
   for (const [name, by] of Object.entries(results)) {
-    const full = by.full ?? [], fetchOnly = by['fetch-only'] ?? []
-    const prerendered = full.filter((r) => r.activationStart > 0).length
-    const cached = fetchOnly.filter((r) => r.transferSize === 0).length
-    console.log(`${name.padEnd(47)} | ${median(by.none ?? [], 'lcpFromClick') | 0} | ${median(by.rules ?? [], 'lcpFromClick') | 0} | ${median(full, 'lcpFromClick') | 0} (${prerendered}/${full.length}) | ${median(fetchOnly, 'lcpFromClick') | 0} (${cached}/${fetchOnly.length})`)
-    if (prerendered < full.length) failures.push(`browser full: ${name} was prerendered in ${prerendered}/${full.length} runs (marks before click: ${full.map((r) => r.marks.join(' ') || 'none').join(' | ')})`)
+    const none = by.none ?? [], full = by.full ?? []
+    console.log(`${name.padEnd(47)} | ${median(none, 'content') | 0} / ${median(full, 'content') | 0} | ${median(none, 'shown') | 0} / ${median(full, 'shown') | 0} | ${full.map((r) => r.warmLead ?? '-').join(', ')} ms`)
     // On a phone, a link nothing pointed to before the tap gets only the tap's head start: reported, not required.
     if (name.startsWith('phone')) continue
-    if (cached < fetchOnly.length) failures.push(`browser fetch-only: ${name} document came from the network in ${fetchOnly.length - cached}/${fetchOnly.length} runs`)
-    if (median(full, 'lcpFromClick') >= median(by.none ?? [], 'lcpFromClick')) failures.push(`browser: ${name} was not faster with the predictor`)
+    if (full.some((r) => r.warmLead == null)) failures.push(`browser: ${name} was not warmed before the click`)
+    // Some pages share code with the page before them and have no lead photograph: nothing to warm, so equal within a frame.
+    if (median(full, 'shown') > median(none, 'shown') + 20) failures.push(`browser: ${name} was slower with the predictor (${median(full, 'shown') | 0} vs ${median(none, 'shown') | 0} ms)`)
   }
 
-  // ---- 4. A prerender nobody opens leaves nothing behind (any version of the booking draft key) ----
+  // ---- 4. A warmed booking form saves nothing until it is opened ----
   {
     const { server, origin } = await serve('full', NETWORK)
     const context = await browser.createBrowserContext()
@@ -373,18 +389,21 @@ if (!ONLY_MODEL) {
       const r = [...document.querySelectorAll('a[href="/book/?type=dinner"]')].map((a) => a.getBoundingClientRect()).find((r) => r.width && r.top >= 0 && r.bottom <= innerHeight)
       return r && { x: r.left + r.width / 2, y: r.top + r.height / 2 }
     })
+    const drafts = () => page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('booking-draft')).map((k) => localStorage.getItem(k)).join('') || null)
     await page.mouse.move(box.x - 200, box.y + 120)
     await page.mouse.move(box.x, box.y, { steps: 12 })
-    await sleep(2500) // long enough for the booking form to load and hydrate in the background
-    const unopened = await page.evaluate(() => ({ draft: (Object.keys(localStorage).filter((k) => k.startsWith('booking-draft')).map((k) => localStorage.getItem(k)).join('') || null), rendered: performance.getEntriesByName('next-page:3:/book/?type=dinner').length }))
-    if (!unopened.rendered) failures.push('draft: resting on the booking link did not start a prerender')
-    if (unopened.draft) failures.push('draft: a prerendered booking form nobody opened saved a draft')
-    await Promise.all([page.waitForNavigation(), page.mouse.click(box.x, box.y)])
+    await sleep(2500)
+    const warmed = await page.evaluate(() => performance.getEntriesByName('next-page:3:/book/?type=dinner').length)
+    const unopened = await drafts()
+    if (!warmed) failures.push('draft: resting on the booking link did not warm the booking page')
+    if (unopened) failures.push('draft: warming the booking page saved a draft before it was opened')
+    await page.evaluate(watchNavigation, '/book/?type=dinner')
+    await page.mouse.click(box.x, box.y)
+    await page.waitForFunction(() => window.__nav?.contentAt, { timeout: 15000 }).catch(() => {})
     await sleep(800)
-    const opened = await page.evaluate(() => ({ draft: (Object.keys(localStorage).filter((k) => k.startsWith('booking-draft')).map((k) => localStorage.getItem(k)).join('') || null), activationStart: performance.getEntriesByType('navigation')[0].activationStart }))
-    if (!opened.activationStart) failures.push('draft: the booking page was not served from the prerender')
-    if (!opened.draft) failures.push('draft: the opened booking form did not save its draft after activation')
-    notes.push(`draft: unopened prerender saved ${unopened.draft ? 'a draft' : 'nothing'}; after opening, draft ${opened.draft ? 'saved' : 'missing'}`)
+    const opened = await drafts()
+    if (!opened) failures.push('draft: the opened booking form did not save its draft')
+    notes.push(`draft: warmed booking page saved ${unopened ? 'a draft' : 'nothing'}; after opening, draft ${opened ? 'saved' : 'missing'}`)
     await context.close()
     server.close()
   }

@@ -32,7 +32,7 @@ jobs:
       - run: python3 scripts/check-retained-assets.py
       # Watermarked references are committed (public/reference + src/content/reference-credits.json);
       # check-images.mjs verifies each one's pixel hash, so CI never re-downloads third-party photos.
-      # This repository is the isolated, noindex GitHub staging site.
+      # This repository is the one Chef Sergio site (chefsergioandco.github.io), still noindex while in prototype mode.
       # Pin the mode and root path so repository variables cannot attach a real-domain CNAME.
       - run: npm run build
         env:
