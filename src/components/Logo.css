@@ -10,7 +10,6 @@
 .sergio-header-brand .brand-logo { width: 17.5rem; }
 .footer-brand .brand-logo { width: 15.75rem; }
 .menu-card .brand-logo { width: 14rem; margin-inline: auto; }
-.menu-card.menu-card--stamped { padding-top: 4.5rem; }
 
 @media (max-width: 700px) {
   .brand-logo--responsive { aspect-ratio: 273.0477 / 42.62134; }

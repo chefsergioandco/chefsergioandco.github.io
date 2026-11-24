@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { site, type FormatKey } from '../content/site'
 import { inWords } from './ui'
 import { Logo } from './Logo'
+import './MenuCard.css'
 
 export type Where = 'home' | 'rental' | 'his'
 
@@ -83,21 +84,70 @@ function Line({ live, id, className, children }: { live: boolean; id: string; cl
 }
 
 /**
- * The printed menu card. On the booking page it fills in as the visitor answers; on the status page it carries a
- * stamp (Held, Reserved, Requested); elsewhere it shows a finished example.
- * Centered like a real menu; everything else on the site is left-aligned.
+ * The status page's card, composed like the printed dinner menu (menu-artwork.ts): rouge dedication, tracked capital
+ * label and italic date at the head; the menu in the middle with rouge hairlines; logo and a rouge status line at the
+ * foot, where the printed menu states whether it is a draft.
  */
-export function MenuCard({ data, live = false, stamp, className = '' }: { data: CardData; live?: boolean; stamp?: string; className?: string }) {
+function PrintedMenuCard({ data, stamp, className }: { data: CardData; stamp: string; className: string }) {
   const date = formatDate(data.date)
   const g = data.guests
   const where = placeLine(data)
   return (
-    <div className={`menu-card ${stamp ? 'menu-card--stamped' : ''} relative px-8 py-10 sm:px-10 ${className}`} aria-live={live ? 'polite' : undefined} aria-label={live ? 'Your request so far' : undefined}>
-      {stamp && (
-        <p data-stamp className="absolute right-4 top-4 -rotate-6 rounded-btn border-2 border-current px-2 py-0.5 text-sm font-medium text-ink">
-          {stamp}
-        </p>
-      )}
+    <div className={`menu-card menu-card--printed ${className}`}>
+      <div className="menu-sheet">
+        <header>
+          {g ? <p className="menu-sheet-dedication">For {inWords(g)} {g === 1 ? 'guest' : 'guests'}</p> : null}
+          <p className="menu-sheet-label">{title(data)}</p>
+          {date && (
+            <p className="menu-sheet-date">
+              {date}
+              {data.time ? `, ${clock(data.time)}` : ''}
+              {data.flexible ? ', or nearby' : ''}
+            </p>
+          )}
+          {where && <p className="menu-sheet-date">{where}</p>}
+        </header>
+        <div className="menu-sheet-body">
+          {data.nightTitle ? (
+            <p className="menu-sheet-course">{data.nightTitle}</p>
+          ) : data.dishes && data.dishes.length > 0 ? (
+            <ul className="menu-sheet-courses">
+              {data.dishes.map((d, i) => (
+                <li key={d}>
+                  {i > 0 && <div className="menu-sheet-rule" aria-hidden />}
+                  <p className="menu-sheet-course">{d}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="menu-sheet-course menu-sheet-course--pending">Menu written around your guests</p>
+          )}
+          {data.dietary && data.dietary.length > 0 && (
+            <p className="menu-sheet-note">Prepared {data.dietary.map((x) => x.toLowerCase()).join(', ')}</p>
+          )}
+        </div>
+        <footer>
+          <p className="menu-sheet-signoff">{signoff(data)}</p>
+          <Logo />
+          <p data-stamp className="menu-sheet-status">{stamp}</p>
+        </footer>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The printed menu card. On the booking page it fills in as the visitor answers; on the status page it carries a
+ * status (Held, Reserved, Requested) and is set like the printed dinner menu; elsewhere it shows a finished example.
+ * Centered like a real menu; everything else on the site is left-aligned.
+ */
+export function MenuCard({ data, live = false, stamp, className = '' }: { data: CardData; live?: boolean; stamp?: string; className?: string }) {
+  if (stamp) return <PrintedMenuCard data={data} stamp={stamp} className={className} />
+  const date = formatDate(data.date)
+  const g = data.guests
+  const where = placeLine(data)
+  return (
+    <div className={`menu-card relative px-8 py-10 sm:px-10 ${className}`} aria-live={live ? 'polite' : undefined} aria-label={live ? 'Your request so far' : undefined}>
       <Logo />
       <div className="mx-auto my-4 h-px w-10 bg-ink/30" aria-hidden />
       <Line live={live} id={title(data)} className="font-display text-2xl leading-tight sm:text-3xl">
