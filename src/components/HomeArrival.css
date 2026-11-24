@@ -1,0 +1,44 @@
+/* Reuse the byte-identical, already-preloaded homepage fonts for the physical ink. */
+@font-face{font-family:'Invitation Garamond';src:url('../fonts/eb-garamond-core-wght.woff2') format('woff2');font-style:normal;font-weight:400 500;font-display:swap}
+@font-face{font-family:'Invitation Garamond Italic';src:url('../fonts/eb-garamond-core-italic-wght.woff2') format('woff2');font-style:italic;font-weight:400 500;font-display:swap}
+@font-face{font-family:'Invitation Archivo';src:url('../fonts/archivo-core-wght.woff2') format('woff2');font-style:normal;font-weight:400 500;font-display:swap}
+.home-arrival{--home-arrival-progress:1;--home-arrival-reveal:1;background:#fcfaf5;min-width:0;overflow-wrap:anywhere}
+.home-arrival-opening{display:none;position:fixed;inset:0;z-index:45;pointer-events:none;overflow:hidden}
+.home-arrival-card{position:absolute;opacity:var(--home-arrival-card-opacity);pointer-events:none;will-change:top,width,left}
+.home-arrival-card .invitation-card-stage{background:transparent}
+.home-arrival-cue{position:absolute;left:1rem;right:1rem;display:flex;justify-content:center;align-items:center;gap:1.2rem;font:400 .875rem/1.5 var(--f-ui,Archivo,sans-serif);color:#655f55;opacity:calc(1 - min(1,var(--home-arrival-progress) * 5))}
+.home-arrival-cue button{min-height:44px;padding:.5rem .15rem;color:#2d2b27;background:none;border:0;text-decoration:underline;text-underline-offset:.3em;pointer-events:auto;touch-action:manipulation}
+.home-arrival-skip{position:fixed;left:1rem;top:1rem;max-width:calc(100% - 2rem);min-height:44px;padding:.75rem 1rem;background:#fcfaf5;color:#2d2b27;border:1px solid #8e352f;font:400 1rem/1.5 var(--f-ui,Archivo,sans-serif);transform:translateY(-200%);pointer-events:auto;z-index:70}
+.home-arrival-skip:focus{transform:none;outline:2px solid #8e352f;outline-offset:3px}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [aria-label='Prototype notice']{visibility:hidden}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-depth,:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-depth>main{transform-style:flat}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [aria-label='Prototype notice']{visibility:hidden}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [data-home-hero]{background:transparent;overflow:visible;clip-path:none;opacity:1;box-shadow:none;isolation:auto}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) #main>section:not([data-home-hero]):not(#ways){visibility:hidden}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) :where(.home-hero-copy,.home-photograph,[data-site-header],#ways){visibility:hidden;transform:var(--emergence-transform);transform-origin:0 0;will-change:transform;z-index:60}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [data-emergence-visible=true]{visibility:visible}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [data-site-header]{position:relative;z-index:64;box-shadow:var(--emergence-shadow);backface-visibility:hidden}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-hero-copy{z-index:63;filter:drop-shadow(0 2px 2px #2d2b2710)}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-photograph{z-index:62;filter:drop-shadow(var(--emergence-shadow))}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) #ways{position:relative;z-index:61;box-shadow:var(--emergence-shadow)}
+/* The existing footer is the initial chrome; its full content returns to normal flow. */
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fcfaf5;color:#2d2b27;border-top:1px solid #e6e1d8;transform:translateY(calc(var(--home-arrival-footer-exit) * 100%));opacity:calc(1 - var(--home-arrival-footer-exit))}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer-inner{padding:1rem 1.5rem}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer :is(.seasonal-letter,.footer-account,.footer-invitation,.footer-column,.footer-rule,.footer-about>p:not(.footer-area),.footer-colophon a){display:none}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-directory{display:block;border:0;padding:0}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-about{display:flex;align-items:center;flex-direction:column}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-brand .brand-logo{width:144px;filter:brightness(0);opacity:.82}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-area{font:400 .875rem/1.5 var(--f-ui,Archivo,sans-serif);max-width:100%;color:#655f55;margin:.25rem 0 0}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-colophon{border:0;padding:.5rem 0 0;justify-content:center;color:#655f55;font:400 .75rem/1.5 var(--f-ui,Archivo,sans-serif)}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer :focus-visible{outline-color:#8e352f}
+/* Keep fixed-size text treatments readable when the browser enlarges text. */
+.home-arrival :is(.home-description,.home-card-overline,.home-card-close,.home-guest-range,.home-location){line-height:1.48}
+.home-arrival .home-hero h1>span,.home-arrival .home-card-title{white-space:normal}
+@media(max-width:620px){:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-area{max-width:28ch;text-align:center}:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-area svg{display:none}}
+@media(prefers-reduced-motion:reduce){.home-arrival-opening{display:none}:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) :is([data-site-header],[data-home-hero],.home-hero-copy,.home-photograph,.site-footer){transform:none;clip-path:none;opacity:1}.home-arrival-card{will-change:auto}}
+
+/* The server-rendered cover paints before hydration; a failed bundle reveals the full site. */
+.home-arrival-opening[data-opening-active=true],html[data-home-arrival-boot=pending] .home-arrival-opening{display:block}
+html[data-home-arrival-boot=pending]{--home-boot-sheet:min(560px,calc(100vw - 64px),max(220px,calc((100dvh - 268px) * 1.4)))}
+html[data-home-arrival-boot=pending] .home-arrival-card{width:calc(var(--home-boot-sheet) + 40px)!important;left:calc((100vw - var(--home-boot-sheet) - 40px) / 2)!important;top:max(24px,calc((100dvh - 140px - var(--home-boot-sheet) * .7142857 - 80px) / 2))!important;opacity:1}
+html[data-home-arrival-boot=pending] .home-arrival-card .invitation-card{--invitation-sheet-w:var(--home-boot-sheet)!important;--invitation-sheet-h:calc(var(--home-boot-sheet) * .7142857)!important;--invitation-stage-h:calc(var(--home-boot-sheet) * .7142857 + 80px)!important}

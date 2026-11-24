@@ -4,6 +4,7 @@ import { track } from './ui'
 import { SiteHeader } from './SiteHeader'
 import { SiteFooter } from './SiteFooter'
 import { HomeDepth } from './HomeDepth'
+import { HomeArrival } from './HomeArrival'
 
 /** Prototype only: switch between the three looks. State lives on <html data-look> so CSS can swap tokens instantly. */
 function LookSwitcher() {
@@ -58,5 +59,5 @@ export function Layout({ route, children }: { route: string; children: ReactNode
       )}
     </>
   )
-  return route === '/about/' ? <div className="about-shell">{content}</div> : content
+  return route === '/' ? <HomeArrival>{content}</HomeArrival> : route === '/about/' ? <div className="about-shell">{content}</div> : content
 }

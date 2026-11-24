@@ -61,9 +61,8 @@ export function PlatingTimeline() {
     let disposed = false, requested = false, graphicsReady = false, isPinned = false, near = false
     let start = 0, travel = 1, raw = 0, progress = 0, target = 0, currentStep = 0
     let animation = 0, layoutFrame = 0, previous = 0
-    let scrollFrame = 0, requestedStop = 0, wheelDirection = 0, scrubTarget = 0, lastWrittenY = scrollY
-    let scrollMode: 'scrub' | 'stop' | null = null
-    let touchY: number | null = null, touchX = 0, touchOriginY = 0
+    let scrollFrame = 0, requestedStop = 0
+    let scrollMode: 'stop' | null = null
     const snapshot = { raw, progress, active: 0, start, travel, pinned: false, ready: false, capturing: false }
     window.__platingTimeline = snapshot
 
@@ -93,7 +92,7 @@ export function PlatingTimeline() {
     }
     const measure = () => {
       if (disposed) return
-      const top = (header?.getBoundingClientRect().height || 0) + 12
+      const top = (header?.offsetHeight || 0) + 12
       const bottom = compact.matches ? 92 : innerHeight < 800 ? 16 : 28
       const available = innerHeight - top - bottom
       const condensed = graphicsReady && !reduce.matches && innerHeight < 800
@@ -176,7 +175,7 @@ export function PlatingTimeline() {
           window.scrollTo({ top: from + (destination - from) * (1 - (1 - p) ** 3), behavior: 'instant' })
           update()
           scrollFrame = p < 1 ? requestAnimationFrame(tick) : 0
-          if (!scrollFrame) scrollMode = null
+          if (!scrollFrame) { scrollMode = null; snapshot.capturing = false }
         }
         scrollFrame = requestAnimationFrame(tick)
       } else {
@@ -202,57 +201,9 @@ export function PlatingTimeline() {
       snapshot.capturing = true
       window.dispatchEvent(new Event('plating:scroll-capture'))
     }
-    const scrubBy = (delta: number) => {
-      const direction = Math.sign(delta)
-      if (scrollMode !== 'scrub' || !scrollFrame || direction !== wheelDirection) {
-        cancelAnimationFrame(scrollFrame)
-        scrollFrame = 0
-        scrubTarget = scrollY
-        lastWrittenY = scrollY
-      }
-      wheelDirection = direction
-      scrollMode = 'scrub'
-      scrubTarget = Math.max(start, Math.min(start + travel, scrubTarget + delta))
-      if (scrollFrame) return
-      let previousTick = performance.now()
-      const tick = (now: number) => {
-        if (disposed || !isPinned || reduce.matches) { scrollFrame = 0; scrollMode = null; snapshot.capturing = false; return }
-        const dt = Math.min(40, Math.max(1, now - previousTick))
-        previousTick = now
-        const destination = Math.max(start, Math.min(start + travel, scrubTarget))
-        const next = scrollY + (destination - scrollY) * (1 - Math.exp(-dt / 55))
-        // Native scroll positions can round to whole CSS pixels (DPR 1).
-        const settled = Math.abs(destination - next) < 1.5
-        window.scrollTo({ top: settled ? destination : next, behavior: 'instant' })
-        lastWrittenY = scrollY
-        update()
-        scrollFrame = settled ? 0 : requestAnimationFrame(tick)
-        if (settled) scrollMode = null
-      }
-      scrollFrame = requestAnimationFrame(tick)
-    }
-    const onWheel = (event: WheelEvent) => {
-      if (!graphicsReady || !isPinned || reduce.matches || !event.cancelable || event.ctrlKey || event.metaKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || bypass(event.target)) return
-      const delta = event.deltaY * (event.deltaMode === 1 ? 20 : event.deltaMode === 2 ? innerHeight : 1)
-      if (!delta) return
-      if (!inRange()) {
-        snapshot.capturing = false
-        if (delta > 0 && scrollY < start && scrollY + delta >= start || delta < 0 && scrollY > start + travel && scrollY + delta <= start + travel) {
-          claim(event)
-          cancelAnimationFrame(scrollFrame); scrollFrame = 0; scrollMode = null
-          window.scrollTo({ top: delta > 0 ? start : start + travel, behavior: 'instant' })
-          update()
-        }
-        return
-      }
-      const atExit = delta < 0 && raw <= .001 && progress <= .002 || delta > 0 && raw >= .999 && progress >= .998
-      if (atExit && !scrollFrame) {
-        snapshot.capturing = false
-        return
-      }
-      claim(event)
-      scrubBy(delta)
-    }
+    // HomeDepth owns continuous wheel/touch travel through the pinned scene.
+    // This component follows native scroll and only owns explicit station
+    // selections, which cancel the shared follower via the existing event.
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Tab' || event.key === 'Escape') {
         cancelAnimationFrame(scrollFrame); scrollFrame = 0; scrollMode = null; snapshot.capturing = false
@@ -270,28 +221,9 @@ export function PlatingTimeline() {
       claim(event)
       if (!event.repeat) goToStop(Math.max(0, Math.min(3, stop + direction)))
     }
-    const onTouchStart = (event: TouchEvent) => {
-      touchY = event.touches.length === 1 && inRange() && !bypass(event.target) ? event.touches[0].clientY : null
-      touchX = event.touches[0]?.clientX ?? 0
-      touchOriginY = touchY ?? 0
-    }
-    const onTouchMove = (event: TouchEvent) => {
-      if (touchY === null || event.touches.length !== 1 || !event.cancelable) return
-      const delta = touchY - event.touches[0].clientY
-      const totalY = touchOriginY - event.touches[0].clientY
-      if (Math.abs(event.touches[0].clientX - touchX) > Math.abs(totalY) + 12) { touchY = null; return }
-      if (Math.abs(totalY) < 3) return
-      claim(event)
-      cancelAnimationFrame(scrollFrame); scrollFrame = 0; scrollMode = null
-      touchY = event.touches[0].clientY
-      window.scrollTo({ top: Math.max(0, scrollY + delta), behavior: 'instant' })
-      snapshot.capturing = inRange()
-      update()
-    }
-    const onTouchEnd = () => { touchY = null }
     const cancelScrollMotion = () => {
       cancelAnimationFrame(scrollFrame); scrollFrame = 0; scrollMode = null
-      snapshot.capturing = false; touchY = null
+      snapshot.capturing = false
     }
     const visibility = 'IntersectionObserver' in window ? new IntersectionObserver(([entry]) => {
       near = entry.isIntersecting
@@ -304,9 +236,6 @@ export function PlatingTimeline() {
     size.observe(content)
     if (header) size.observe(header)
     const onScroll = () => {
-      if (scrollMode === 'scrub' && Math.abs(scrollY - lastWrittenY) > 1) {
-        cancelAnimationFrame(scrollFrame); scrollFrame = 0; scrollMode = null
-      }
       if (!inRange()) snapshot.capturing = false
       update()
     }
@@ -325,12 +254,8 @@ export function PlatingTimeline() {
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('site:scroll-start', cancelScrollMotion)
     window.addEventListener('site:scroll-cancel', cancelScrollMotion)
-    window.addEventListener('wheel', onWheel, { passive: false, capture: true })
+    window.addEventListener('home:continuous-input', cancelScrollMotion)
     window.addEventListener('keydown', onKey, true)
-    window.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
-    window.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
-    window.addEventListener('touchend', onTouchEnd, true)
-    window.addEventListener('touchcancel', onTouchEnd, true)
     window.addEventListener('resize', scheduleMeasure)
     window.addEventListener('pageshow', scheduleMeasure)
     reduce.addEventListener('change', onReduce)
@@ -343,12 +268,8 @@ export function PlatingTimeline() {
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('site:scroll-start', cancelScrollMotion)
       window.removeEventListener('site:scroll-cancel', cancelScrollMotion)
-      window.removeEventListener('wheel', onWheel, true)
+      window.removeEventListener('home:continuous-input', cancelScrollMotion)
       window.removeEventListener('keydown', onKey, true)
-      window.removeEventListener('touchstart', onTouchStart, true)
-      window.removeEventListener('touchmove', onTouchMove, true)
-      window.removeEventListener('touchend', onTouchEnd, true)
-      window.removeEventListener('touchcancel', onTouchEnd, true)
       window.removeEventListener('resize', scheduleMeasure)
       window.removeEventListener('pageshow', scheduleMeasure)
       reduce.removeEventListener('change', onReduce)
