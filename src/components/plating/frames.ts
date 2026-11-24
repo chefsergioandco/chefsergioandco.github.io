@@ -175,11 +175,15 @@ export function createPlatingScene(
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
       ctx.clearRect(0, 0, width, height)
-      // The full physical scene keeps its original aspect ratio. Desktop crops
-      // only the empty lower region; phones bottom-align the shorter full image.
-      const naturalHeight = frame.height * width / frame.width
-      const top = Math.max(0, height - naturalHeight)
-      ctx.drawImage(frame.image, 0, top, width, naturalHeight)
+      // Keep every source pixel inside the canvas, including the low sauce
+      // trail and soft shadow. The artwork must also fit short desktop panels.
+      const inset = 8
+      const scale = Math.min(width / frame.width,
+        Math.max(1, height - inset * 2) / frame.height)
+      const drawnWidth = frame.width * scale, drawnHeight = frame.height * scale
+      const left = (width - drawnWidth) / 2
+      const top = height - drawnHeight - inset
+      ctx.drawImage(frame.image, left, top, drawnWidth, drawnHeight)
       displayed = frame
       displayedProgress = paintedProgress
       touch(frame)

@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 from collections import deque
 import csv
-from fractions import Fraction
 import hashlib
 import json
 import math
@@ -25,7 +24,7 @@ import time
 import numpy as np
 
 
-DOMAIN = (-0.32, 0.18, -0.10, 0.12)
+DOMAIN = (-0.24, 0.16, -0.06, 0.06)
 
 
 def _components(mask):
@@ -67,12 +66,11 @@ def solve(plan_path, output_dir, *, grid_m=0.00075, viscosity_multiplier=1.0):
         raise ValueError('Need positive viscosity and a 0.4-1mm grid')
     fps = float(provenance['fps'])
     xmin, xmax, ymin, ymax = DOMAIN
-    # A small exact rational aspect (currently 25:11) lands square cells on
-    # every physical boundary without adding an artificial edge strip.
-    aspect = Fraction((xmax - xmin) / (ymax - ymin)).limit_denominator(1000)
-    nx = math.ceil(math.ceil((xmax - xmin) / grid_m) / aspect.numerator) * aspect.numerator
+    # Domain aspect 10:3: use a multiple of ten so square cells land exactly
+    # on all four requested physical boundaries, without an extra Y strip.
+    nx = math.ceil(math.ceil((xmax - xmin) / grid_m) / 10) * 10
     dx = (xmax - xmin) / nx
-    ny = nx * aspect.denominator // aspect.numerator
+    ny = nx * 3 // 10
     source = output / 'source-plan.tsv'
     rows = [f'{len(states)} {nx} {ny} {dx:.17g} {xmin} {ymin} {nu:.17g} 9.81 .0015 .00075']
     for i, state in enumerate(states):

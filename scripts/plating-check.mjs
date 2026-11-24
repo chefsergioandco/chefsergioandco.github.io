@@ -3,6 +3,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
+import { createHash } from 'node:crypto'
 import puppeteer from 'puppeteer-core'
 import { serve } from './serve.mjs'
 
@@ -48,6 +49,9 @@ const manifest = JSON.parse(fs.readFileSync(path.join(DIST, '.vite/manifest.json
 const sceneKey = Object.keys(manifest).find(key => key.endsWith('/plating/frames.ts'))
 const hydration = graphFiles(manifest, 'src/pages/Home.tsx')
 const graphicsFiles = [...graphFiles(manifest, sceneKey)].filter(file => !hydration.has(file))
+const compiledApp = [...new Set([...hydration, ...graphicsFiles])].map(file => ({
+  file, sha256: createHash('sha256').update(fs.readFileSync(path.join(DIST, file))).digest('hex'),
+}))
 const isGraphicsRequest = url => graphicsFiles.some(file => new URL(url).pathname.endsWith(`/${file}`))
 const isSequenceRequest = url => new URL(url).pathname.endsWith('/art/plating/sequence.json')
 const isFrameRequest = url => /\/art\/plating\/[^/]+\/\d+\.webp$/.test(new URL(url).pathname)
@@ -225,18 +229,36 @@ async function posterState(page) {
     const image = still.tagName === 'IMG' ? still : still.querySelector('img')
     const art = still.closest('.plating-art').getBoundingClientRect()
     const rect = image?.getBoundingClientRect()
+    const css = image && getComputedStyle(image)
+    const number = value => parseFloat(value) || 0
+    const padding = css ? [number(css.paddingLeft), number(css.paddingTop), number(css.paddingRight), number(css.paddingBottom)] : [0, 0, 0, 0]
+    const boxWidth = image?.offsetWidth || 0, boxHeight = image?.offsetHeight || 0
+    const contentWidth = Math.max(0, (image?.clientWidth || 0) - padding[0] - padding[2])
+    const contentHeight = Math.max(0, (image?.clientHeight || 0) - padding[1] - padding[3])
+    const scale = image?.naturalWidth && image?.naturalHeight ? Math.min(contentWidth / image.naturalWidth, contentHeight / image.naturalHeight) : 0
+    const drawnWidth = (image?.naturalWidth || 0) * scale, drawnHeight = (image?.naturalHeight || 0) * scale
+    const positions = css?.objectPosition.split(' ') || ['50%', '50%']
+    const offset = (position, free) => position.endsWith('%') ? number(position) / 100 * free : position === 'center' ? free / 2 : position === 'right' || position === 'bottom' ? free : number(position)
+    const left = padding[0] + offset(positions[0], contentWidth - drawnWidth)
+    const top = padding[1] + offset(positions[1] || '50%', contentHeight - drawnHeight)
+    const factorX = rect && boxWidth ? rect.width / boxWidth : 1, factorY = rect && boxHeight ? rect.height / boxHeight : 1
+    const fitted = rect ? { left: rect.left + left * factorX, top: rect.top + top * factorY, right: rect.left + (left + drawnWidth) * factorX, bottom: rect.top + (top + drawnHeight) * factorY } : null
     return {
       present: true, loaded: !!image && image.complete && image.naturalWidth > 0,
       width: still.getBoundingClientRect().width, opacity: Number(getComputedStyle(still).opacity),
       imageWidth: rect?.width || 0, imageHeight: rect?.height || 0, artWidth: art.width,
-      fitsHorizontally: !!rect && Math.abs(rect.width - art.width) < 1.5 && rect.left >= art.left - 1 && rect.right <= art.right + 1,
-      preservesAspect: !!rect && rect.height > 0 && Math.abs(rect.width / rect.height - image.naturalWidth / image.naturalHeight) < .01,
+      fitMode: css?.objectFit, padding, fittedContent: fitted,
+      fitsHorizontally: !!fitted && fitted.left >= art.left - 1 && fitted.right <= art.right + 1,
+      fitsVertically: !!fitted && fitted.top >= art.top - 1 && fitted.bottom <= art.bottom + 1,
+      preservesAspect: css?.objectFit === 'contain' && drawnHeight > 0 && Math.abs(drawnWidth / drawnHeight - image.naturalWidth / image.naturalHeight) < .01,
+      hasGutter: Math.min(top, boxHeight - top - drawnHeight) >= 7.5,
+      fullWidth: padding[0] < .01 && padding[2] < .01 && Math.abs(left) <= 1 && Math.abs(boxWidth - left - drawnWidth) <= 1,
     }
   }, ROOT)
 }
 
 function checkPoster(label, poster) {
-  pass(`${label}: rendered still loads and fits the full composition width`, poster.present && poster.loaded && poster.width > 0 && poster.opacity > .99 && poster.fitsHorizontally && poster.preservesAspect, JSON.stringify(poster))
+  pass(`${label}: rendered still preserves full source width and vertical gutters`, poster.present && poster.loaded && poster.width > 0 && poster.opacity > .99 && poster.fitsHorizontally && poster.fitsVertically && poster.preservesAspect && poster.hasGutter && poster.fullWidth, JSON.stringify(poster))
 }
 
 async function checkStaticTreatment(page, label, requests) {
@@ -453,6 +475,7 @@ try {
         await page.tap(`${ROOT} .plating-mobile-stops button:first-child`)
         await settledAt(page, 0)
         if (width === 390 || width === 320) await screenshot(page, width === 390 ? 'mobile-first.png' : 'mobile-320-first.png')
+        const nextLabel = await page.$eval(`${ROOT} .plating-mobile-stops button:nth-child(2)`, button => button.textContent.trim())
         await page.focus(`${ROOT} .plating-mobile-stops button:first-child`)
         await page.keyboard.press('ArrowRight')
         await settledAt(page, 1)
@@ -487,7 +510,7 @@ try {
             nav,
           }
         }, ROOT)
-        pass(`${width}px: native right-arrow selects and focuses the next step`, state.current === 'Deposit' && state.focused === 'Deposit', JSON.stringify(state))
+        pass(`${width}px: native right-arrow selects and focuses the next step`, !!nextLabel && state.current === nextLabel && state.focused === nextLabel, JSON.stringify({ expected: nextLabel, ...state }))
         pass(`${width}px: selected detail is readable with no horizontal overflow`, state.selectedVisible && state.overflow <= 1 && (!state.pinned || state.insideReadingArea), JSON.stringify(state))
         pass(`${width}px: all four navigation icons stack above centered, fitting labels`, state.nav.length === 4 && state.nav.every(item => item.height >= 58 && item.iconAboveLabel && item.centered && item.labelFits), JSON.stringify(state.nav))
         const variant = await page.$eval(CANVAS, canvas => canvas.dataset.variant)
@@ -596,7 +619,7 @@ try {
 
 pass('pages complete without uncaught browser errors', errors.length === 0, JSON.stringify(errors))
 const failures = rows.filter(row => !row.ok)
-const report = { generatedAt: new Date().toISOString(), origin: ORIGIN, dist: DIST, sequence: sequence && { frames: sequence.frames, stations: sequence.stations, desktop: sequence.desktop, mobile: sequence.mobile }, checks: rows, unavailable, errors, screenshots, wheelBursts, failures: failures.length }
+const report = { generatedAt: new Date().toISOString(), origin: ORIGIN, dist: DIST, compiledApp, sequence: sequence && { frames: sequence.frames, stations: sequence.stations, desktop: sequence.desktop, mobile: sequence.mobile }, checks: rows, unavailable, errors, screenshots, wheelBursts, failures: failures.length }
 fs.writeFileSync(path.join(OUT, 'integration-report.json'), JSON.stringify(report, null, 2) + '\n')
 for (const row of rows) console.log(`${row.ok ? '✓' : '✗'} ${row.name}${row.detail ? `  (${row.detail})` : ''}`)
 for (const row of unavailable) console.log(`↷ NOT RUN: ${row.name}  (${row.detail})`)

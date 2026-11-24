@@ -17,13 +17,13 @@ export function platingProgress(raw: number) {
 }
 
 const steps = [
-  { short: 'Date', title: 'Choose your date.', body: <>Pick an open date and time, your guest count, and where you’ll gather. It takes about two minutes.</> },
-  { short: 'Request', title: 'Plan your evening.', body: <>Send your request. Sergio reviews your date and menu, then confirms the arrangements with you. No card is charged here.</> },
-  { short: 'Menu', title: 'Shape the menu.', body: <>Sergio plans the food around your guests, then sends the balance invoice.</> },
-  { short: 'Dinner', title: 'Stay at the table.', body: <>Sergio cooks, serves every course and clears up. Enjoy the evening with your guests.</> },
+  { short: 'Date', title: 'Pick a date.', body: <>Choose an open date and plan your evening: the occasion, your guests and where you’ll gather. The deposit secures your evening, and all of it counts toward your bill.</> },
+  { short: 'Menu', title: 'Shape the menu.', body: <>In a short interview, Sergio learns about your guests, their tastes and the occasion. He writes the menu around them, within the budget you agree.</> },
+  { short: 'Invites', title: 'Invitations arrive.', body: <>Each guest gets a private invitation. They reply, note any dietary needs, and find the menu inside once it’s set.</> },
+  { short: 'Dinner', title: 'Dinner is served.', body: <>Sergio sets your table and cooks in your kitchen, bringing each course out in turn. At a class, you cook beside him. Then he clears up.</> },
 ]
 
-const stepIcons: IconName[] = ['calendar-days', 'heart-handshake', 'utensils-crossed', 'armchair']
+const stepIcons: IconName[] = ['calendar-days', 'utensils-crossed', 'mail', 'chef-hat']
 
 /** The completed, physically simulated still remains readable without motion. */
 function PlatingStill() {
@@ -31,7 +31,7 @@ function PlatingStill() {
   return (
     <picture className="plating-still" aria-hidden="true">
       <source media="(max-width: 680px)" srcSet={`${href('art/plating/poster-640.webp')} 640w, ${href('art/plating/poster-1280.webp')} 1280w`} sizes="calc(100vw - 40px)" />
-      <img src={href('art/plating/poster-1280.webp')} srcSet={`${href('art/plating/poster-1280.webp')} 1280w, ${href('art/plating/poster-1920.webp')} 1920w`} sizes="(min-width: 1200px) 1136px, calc(100vw - 64px)" width="1280" height="600" loading="lazy" decoding="async" alt="" />
+      <img src={href('art/plating/poster-1280.webp')} srcSet={`${href('art/plating/poster-1280.webp')} 1280w, ${href('art/plating/poster-1920.webp')} 1920w`} sizes="(min-width: 1200px) 1136px, calc(100vw - 64px)" width="1280" height="400" loading="lazy" decoding="async" alt="" />
     </picture>
   )
 }
@@ -95,7 +95,9 @@ export function PlatingTimeline() {
       const top = (header?.offsetHeight || 0) + 12
       const bottom = compact.matches ? 92 : innerHeight < 800 ? 16 : 28
       const available = innerHeight - top - bottom
-      const condensed = graphicsReady && !reduce.matches && innerHeight < 800
+      // Measure the uncondensed layout first: the wider render can make it taller than the space even above 800px.
+      element.dataset.compactLayout = 'false'
+      const condensed = graphicsReady && !reduce.matches && (innerHeight < 800 || content.offsetHeight > available)
       element.dataset.compactLayout = String(condensed)
       if (condensed) {
         const inner = content.querySelector<HTMLElement>('.plating-inner')!
@@ -103,11 +105,11 @@ export function PlatingTimeline() {
         const css = getComputedStyle(inner)
         const width = inner.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight)
         element.style.setProperty('--plating-art-width', `${width}px`)
-        element.style.setProperty('--plating-art-height', `${width * .32 + 8}px`)
+        element.style.setProperty('--plating-art-height', `${width * .3125 + 16}px`)
         const otherHeight = content.offsetHeight - art.offsetHeight
-        const fittedWidth = Math.max(160, Math.min(width, (available - otherHeight - 10) / .32))
+        const fittedWidth = Math.max(160, Math.min(width, (available - otherHeight - 26) / .3125))
         element.style.setProperty('--plating-art-width', `${fittedWidth}px`)
-        element.style.setProperty('--plating-art-height', `${fittedWidth * .32 + 8}px`)
+        element.style.setProperty('--plating-art-height', `${fittedWidth * .3125 + 16}px`)
       }
       isPinned = graphicsReady && !reduce.matches && content.offsetHeight <= available
       travel = Math.round(Math.max(640, Math.min(1100, innerHeight * .95)))

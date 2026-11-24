@@ -32,7 +32,7 @@
     },
     {
       "path": "scripts/blender/plating_thinfilm.py",
-      "sha256": "b14de05e57488a0a15d3764133f858f5287d58e1c8790f8b63274d7138a24023"
+      "sha256": "1a268c94227e3b56a3a668aa3169736325783f89c61d83ebcc08c9098e6c6b45"
     },
     {
       "path": "scripts/blender/plating_thinfilm_solver.cpp",
@@ -44,609 +44,609 @@
     },
     {
       "path": "scripts/blender/plating_surface.py",
-      "sha256": "bd9c4a8d1a194e1037d9100809c5d8ba2f1d35d265fc4113ebfc935c07c40393"
+      "sha256": "d9b330d8849f037d9bb08ca1e3723493a2465c4f5ca1c31f11fd480eaaf79a7b"
     },
     {
       "path": "scripts/blender/render_thinfilm_sequence.py",
-      "sha256": "2fb7a3dd484fd382cefb12504919358d6dfd1c61307d813834a91539eb4bcc72"
+      "sha256": "48b4edd746a4bdffefb880655ea260923cae1da5627d917f9b8097e7851f17b0"
     }
   ],
   "assets": [
     {
       "file": "art/plating/desktop/0000.webp",
-      "sha256": "1f47cd6b6503bc07b874298b65426187e6d6a37aacd58570263f175ddfb1cad8"
+      "sha256": "9ac8d792f9c82e661485b6fce42ea1ba427ba7fc2fc2e34d1e64d1cd4c91a43d"
     },
     {
       "file": "art/plating/desktop/0001.webp",
-      "sha256": "1d2a976d98461537ec00e2c4f96f3a8ca10a807644d0e72f7964038a9f49fef4"
+      "sha256": "40c42a687c0ae73c20eca964922cf15914a8e1306261f62e8179de0c8202b294"
     },
     {
       "file": "art/plating/desktop/0002.webp",
-      "sha256": "57b74eb114f4d79aa84dc6bccbd940aef1d12cb00f1ee3a3751222e08cfe6cf7"
+      "sha256": "444f5ae46b6401a6b6d25805202494977dfb0fce3ffe639d94bf1f781c3131a1"
     },
     {
       "file": "art/plating/desktop/0003.webp",
-      "sha256": "1b86fa2452d1cea5274e4febd8a51c97669ebc5f5a5e95b1129eda8a51be2b8e"
+      "sha256": "f0fb99a8fc014b9589d39c5e9679be10e536a47dfe9f0b7818abf2a11cbe98bd"
     },
     {
       "file": "art/plating/desktop/0004.webp",
-      "sha256": "980b2793dcf5d507da6ad2d5ff1e212d883ccb10744f23ed84c1d4bead6f7ece"
+      "sha256": "f0cd3911f6b2b78d474df0f3d7adb5f082d4110b62763f73d50e61501ee3a490"
     },
     {
       "file": "art/plating/desktop/0005.webp",
-      "sha256": "7f673543ff3ea68f7265523d03fe51e1248674f7966d575884ebe9a7e9080928"
+      "sha256": "effd15d7116440e4714163d59b3758f5324ac6aae8656ac8c3636e9ca3dc0990"
     },
     {
       "file": "art/plating/desktop/0006.webp",
-      "sha256": "36a4d7338c403b854c7b6a59503dce41c207148f0f14f57494bf6ad55ce1aa64"
+      "sha256": "9474820c98676d2cfe0ebfed5343d6954c3158d4974b15a911e052e4ec99666c"
     },
     {
       "file": "art/plating/desktop/0007.webp",
-      "sha256": "5c3a730cf1f3367727b40cbad742d86f6e5913cfe50ddc9b9d4de99e25e51fa0"
+      "sha256": "3132360aeee9e0dee068e759e3c89ff1950ed276a1edceaae6dc4cce4d768794"
     },
     {
       "file": "art/plating/desktop/0008.webp",
-      "sha256": "eaf2d60970b310146525d2fcd542db3ea610671d9ec69565ed366cb0ea6e0937"
+      "sha256": "8e94a38939aa4c95a6eb45b8ce85b66ec176135b1a4aa4dfef95557df6f086f4"
     },
     {
       "file": "art/plating/desktop/0009.webp",
-      "sha256": "b1f1762dde37c2977031e4fc8fdc7fd2ba3a8c78c9b7601af20458ce08cb2a45"
+      "sha256": "165363acd8ac790d7b965a364ec684d996386700b6184978a70df29c6420b90b"
     },
     {
       "file": "art/plating/desktop/0010.webp",
-      "sha256": "a84a445b550eed0a7ba7767531b0f469f993d092dbeea4c44e32cc7b96c2fb89"
+      "sha256": "5e1245597071d273eb825fccfc86c6cf72057da3a08ccbad1d810bf527319952"
     },
     {
       "file": "art/plating/desktop/0011.webp",
-      "sha256": "8d50c746ebb8f2a2235b658ad622ba4a35b1eb77b809af2af7778cc1d05d8b34"
+      "sha256": "0d96f0034494a05a27b37fd8559646b134bbead960cd0fcf18c214899c7bd984"
     },
     {
       "file": "art/plating/desktop/0012.webp",
-      "sha256": "2a7c09e1f5cb111709308292087b48932ad4325c520ca9209ce4236c7820b28a"
+      "sha256": "2feee282de5c887ad7332ccedd8b136ab6c14a8c27945c0361192b181aa53839"
     },
     {
       "file": "art/plating/desktop/0013.webp",
-      "sha256": "f86b1c65182d05f438c8a47d644b19003fb1a3c13c1b047b2f9c267cec52cb6a"
+      "sha256": "085d1cafcfbf49c7ef94da0194adcf0dc877a26e43aaa03a68aaaef954347691"
     },
     {
       "file": "art/plating/desktop/0014.webp",
-      "sha256": "fb6c487ee6ac2b149705c3f73aecbd1651b92f8d5e6176733cf2acd4e1e7b949"
+      "sha256": "d198ab7990f26cd08340bd5e7a74a414aeeec5f4978d2c5240594ee92037909d"
     },
     {
       "file": "art/plating/desktop/0015.webp",
-      "sha256": "f166514bedafe574cae4543eeb9962f6c8f652a622c4eb0392d363b229131966"
+      "sha256": "2edf186c31bbfcce2bafc2306370ad75148b3b027db7b13f40f2b28351793de0"
     },
     {
       "file": "art/plating/desktop/0016.webp",
-      "sha256": "759caea79fea582e4f6332707e66faa00c2cbb75c078fdbfbac0b79a86f86a05"
+      "sha256": "5f45da4f1356f547f617ef6344b514f5fa4ef9f23fa823ef5c625ea2b6758c2c"
     },
     {
       "file": "art/plating/desktop/0017.webp",
-      "sha256": "cea401055471723fe380b0c73d9335b7400043aa6574b07cb4b9b58550c659db"
+      "sha256": "aa451215ef9337fadf753700f7b5d71c366b2d9caff076bd388e3fb4669a0f38"
     },
     {
       "file": "art/plating/desktop/0018.webp",
-      "sha256": "4036196b119b6cc4e70e85890268417f0ba82966561856afef6b8b0c935c8390"
+      "sha256": "2f927a775b4f6b660333a4c89e6cfa3efd91e1a72c6eb37e2953465f118e15a2"
     },
     {
       "file": "art/plating/desktop/0019.webp",
-      "sha256": "86455552af7b7e086a74ef4610ea99dc5b52c9769f0876c6f7a18ae15883c27d"
+      "sha256": "46030b23f031a0b6c612b1ecab139357410de1820e0abe428552aada8b27d719"
     },
     {
       "file": "art/plating/desktop/0020.webp",
-      "sha256": "c20fb1204f593dbaf009a7c7191b71812746dfad6c0bfd57ab1df3b6375159a0"
+      "sha256": "879f2e0932fa8c4a8dffbee78787f298547bb847b2976fcd35bcb872964f3617"
     },
     {
       "file": "art/plating/desktop/0021.webp",
-      "sha256": "1aba98f5673cb6b28b22ee742ca31060d369bb567d08de56c2ea45d590c9ee50"
+      "sha256": "3e034af476a16027a553ee3e8cc5d9eea5e2a5a0a8f76913dd2ffee3afd786db"
     },
     {
       "file": "art/plating/desktop/0022.webp",
-      "sha256": "ff78e766bffc9836cfee7842f2b93cfa1b372f47f812d60edd23df6e24c03b04"
+      "sha256": "6a213ff19395715f0c356ada3dbf208dde830ca20baec9e14e58a064a8cd61dd"
     },
     {
       "file": "art/plating/desktop/0023.webp",
-      "sha256": "875242c1e7c07e681a55106f3994a9a14ecd60cc5c02aa03a03eaf2fe48db210"
+      "sha256": "bb79e04c40a3f507ac9c7beec11dc0543aba9edbc765085654eb7415f5c3ec46"
     },
     {
       "file": "art/plating/desktop/0024.webp",
-      "sha256": "9dbb8553e8c1f6fedbab704e32d6d366f2a2a6cbbdec80ab97ec53a45aeee17c"
+      "sha256": "cfe626a4c193edb84e13df0850a077cc7a620daada02300790704b18eadc3ea5"
     },
     {
       "file": "art/plating/desktop/0025.webp",
-      "sha256": "a5e988a1219264564279bbe16512a37cd4d8266e4d1d9f3c329689c349c07be5"
+      "sha256": "193ae491dfb8f4fb97569b79dda7972e47a6b5052c0fd44a26b72f76d28ea990"
     },
     {
       "file": "art/plating/desktop/0026.webp",
-      "sha256": "9f4dababa9e4c335657a08b327e5792818d3520a094703be3ea285c707445e50"
+      "sha256": "df69f0f464ca19e6ba793edf6a78e5040681237f18753bbdda313bbd63d7f620"
     },
     {
       "file": "art/plating/desktop/0027.webp",
-      "sha256": "3c793ce2763c2c1bea7bce8eabd13584b80c80bab47b2ec076d8e5557f708fe9"
+      "sha256": "0a8189f00ab768a2e0ccb6572243c46ac43f6cb2147230a39c78297f6fc333ba"
     },
     {
       "file": "art/plating/desktop/0028.webp",
-      "sha256": "35f0b4c77f5440e059c3c5d3a43e7cd86373d4dc0ef48d91e4fe1149e87a36ed"
+      "sha256": "870cc698a1c7dc1320bdf870cea70e6c24d0b11e011f2696b920b8be3cedf73b"
     },
     {
       "file": "art/plating/desktop/0029.webp",
-      "sha256": "d854d072c0461e014e959ccb1b13ae0ec7f3e41144f4cb909d388a1acbd9d4b8"
+      "sha256": "656e5daa1e6c80e1c15cece4c09c5e0136c9e5582ce34fb299f2c0a868cd5651"
     },
     {
       "file": "art/plating/desktop/0030.webp",
-      "sha256": "e01595901d0ff3e7d96a209242df5461c33f130bbe163cd9130c2296be9a8225"
+      "sha256": "96904bb9ec115bc142491d65d3e106b959ae8eb8098e224b30685f8c8534c945"
     },
     {
       "file": "art/plating/desktop/0031.webp",
-      "sha256": "17f5fa214f109af519c69675ce1d59cfd62a4d041012847eb7f56fc5e76dc556"
+      "sha256": "36d4b789c78834e162511be656cefd17160cc1dab86bf01ff76d04353cc20d15"
     },
     {
       "file": "art/plating/desktop/0032.webp",
-      "sha256": "ddec5d896308cdbcabef8d249b04c7269dee67a5916ea2c974b712e24f78e270"
+      "sha256": "12ce97dfc71fbfe1e4de705f3c487092c31b982e3440f7591bbbba19fa726b85"
     },
     {
       "file": "art/plating/desktop/0033.webp",
-      "sha256": "7596b3af0048a620573e7295263dec9780d1812a0276e8ac0e5ac81f117f4e72"
+      "sha256": "69fdaf26297c72d3fbbe337eff299827ba81b54df0efd0fab7da8a6227742da2"
     },
     {
       "file": "art/plating/desktop/0034.webp",
-      "sha256": "45d50ecbb7068d797d632467c17b9aba98d8bac8ff3c7fc61fc862ed484c5662"
+      "sha256": "ba9dd539ef5fbdffbd3c5bed50daf62791c41786bfdfd81d2adca60373897843"
     },
     {
       "file": "art/plating/desktop/0035.webp",
-      "sha256": "f6480ef7a17fd613ae605045f56e44feb1bc1e37e621b6850b0dbb2dd0ebfc18"
+      "sha256": "5b48bac4718a5439a35ab7be8925e8f6390a216d47fcd7f3e06a4cc5723c897e"
     },
     {
       "file": "art/plating/desktop/0036.webp",
-      "sha256": "dbfdb7d1693f0aa2639d7f0bb5489d01202705968c3d3594f9ba8bf74daeb173"
+      "sha256": "bf87dba323ae31bbe5bf66b8efcf413fa093d5670f5ec583728ee5d04c42a993"
     },
     {
       "file": "art/plating/desktop/0037.webp",
-      "sha256": "f8793846f95d1046e0dc1d7617a7c6007053f332882499d044771231d5857a35"
+      "sha256": "ca91ca7cbb35ff0ee98f666ad9ad3ffc4995b56b4d0e810bc457e18483aaf817"
     },
     {
       "file": "art/plating/desktop/0038.webp",
-      "sha256": "e053fdc59671833e195cce0831609dee5d40e4e7d7bac9234f3217205c86c070"
+      "sha256": "6966eb1a9604a400eb671699916b1dc54e6d77ba680514bfa936cdf58ba9e7b1"
     },
     {
       "file": "art/plating/desktop/0039.webp",
-      "sha256": "9dd3fd6acaec686fae1a7f478b075238da20fc3ccf478128f66c75e59d5ddcc7"
+      "sha256": "b9c4d4eeaedbef19f3563849e07258d72d5054d51dab6bc7f73e2c3a6407e999"
     },
     {
       "file": "art/plating/desktop/0040.webp",
-      "sha256": "01cad1c0617d4bd77d4166c16f928878cb903dbf1773b6c92f731261ced1f2c0"
+      "sha256": "2ec55660f40e5fb3fd75df8e7852150e17a07cebb964a4c3e92f246ec6ac5141"
     },
     {
       "file": "art/plating/desktop/0041.webp",
-      "sha256": "563f9657c6c58f444c1b7d1dd579513b53a60db40b9030427818d542dd1eacbf"
+      "sha256": "0138f2f09abe0c2fad646337ca45937fa0aaaede7de18ccebcb4a99ca2ad2073"
     },
     {
       "file": "art/plating/desktop/0042.webp",
-      "sha256": "0bf620f2be8bd976b63a4ac8029a311708e5a2ae39169c3d723e046a431ed848"
+      "sha256": "67acbf6f3790f3471ad4be10fa66dde6fa6ec591faaab4e370d7dc930d447422"
     },
     {
       "file": "art/plating/desktop/0043.webp",
-      "sha256": "accfb7b553aa5d65c2ddde839e6e94e394e9bd4914fc68a18045de442b26a22b"
+      "sha256": "1624894ab7a5f4c8e297be1de8e7d89148fc3294bfbd3a6f8d4de2a101d05022"
     },
     {
       "file": "art/plating/desktop/0044.webp",
-      "sha256": "d6ce73c5d08d8b1e26db2e4de75afbd380b6b0750a777943c6d4b4aa70fe645b"
+      "sha256": "e3801c1f349727c791e683b51851a2c05a9980ae2c9f64936563812ebc7a612a"
     },
     {
       "file": "art/plating/desktop/0045.webp",
-      "sha256": "47350a83cff3f179be81b568c03ba5b7d499d057c52e929c1d62c6816faef712"
+      "sha256": "5f7364aee109d898d64430b1bedad6db5c2a4b838d33389fe2c371041f237b8f"
     },
     {
       "file": "art/plating/desktop/0046.webp",
-      "sha256": "3a5ff31a51c9aaef761cdc4b056b4189a09fcc045466b51c2f331bafccf5989a"
+      "sha256": "2be0252e886897627c9f86a9ece7b41f5d2bf1903577015d8551b43273526ada"
     },
     {
       "file": "art/plating/desktop/0047.webp",
-      "sha256": "a7ef4b3c6a2c69bce588a5f6f6963aaf863c6b1143839a63aa8f46dd8cd28008"
+      "sha256": "ee99a723fea9bd5d892abae042258052ba55d7b2fa9db1a06eaf6669fcc14349"
     },
     {
       "file": "art/plating/desktop/0048.webp",
-      "sha256": "73ea956e36496346d554a53ef968e221e96127494fd6c10dddfc43945ed3af75"
+      "sha256": "511ed2004d78fcae2e58e33445cb95e55ac444ed0c75f30e9ca7e658a06d9ad1"
     },
     {
       "file": "art/plating/desktop/0049.webp",
-      "sha256": "dd3bb98e5993b7d45b11d637578c426562af0e23af9eaae094270b7bdd95177a"
+      "sha256": "1d546e9fb237c25ae30612b42f010d97770caab8208063c2a515529a0c8975e4"
     },
     {
       "file": "art/plating/desktop/0050.webp",
-      "sha256": "08a153e6f2e1eab610d617e9f975ceaea3b4ba414f2905400bf6e38a8acd1f54"
+      "sha256": "5220b06106a95ebe9e44b1f8a65eaf5a18a3e46ac80c73e0d4bcc13aa7faf10a"
     },
     {
       "file": "art/plating/desktop/0051.webp",
-      "sha256": "57ef7217981392e96d52ee56371e19b9145e03fefa2df4b94c6136a833f6074a"
+      "sha256": "c2238580b49e15334ad5c59053deab65b9d461bbb4ac01a530e26cda9c0c286b"
     },
     {
       "file": "art/plating/desktop/0052.webp",
-      "sha256": "856502fa216946dcd8e6e9185b765724a6585fcbc5f62bd53d688946ae8e23ee"
+      "sha256": "89208f8eb5576cf1abf5a9ff1fb8ec764e3f7619269d675d1f18f96f7bf7fe87"
     },
     {
       "file": "art/plating/desktop/0053.webp",
-      "sha256": "9c0db63208019960b4a7877b457781b35f8af981662a3204cd02f62eee71514f"
+      "sha256": "653900d59c836c12b0351c2cda30b43a80fe78463c2c3deaa8dabfe29ce714dd"
     },
     {
       "file": "art/plating/desktop/0054.webp",
-      "sha256": "b903157c033930f39f5dae1cd0463ffa73bb0ad64dc73afd05460d97b412d0ca"
+      "sha256": "53314ec6a20e3ff7aab1870eb06a2890e7bc129b856cdb265a9de2f21a13ca58"
     },
     {
       "file": "art/plating/desktop/0055.webp",
-      "sha256": "2b7d899a639dcca3a6f9fee05f4a14ef3de4eb9c5a80e3bf048a1822859f361d"
+      "sha256": "f0d83e49318df7345c6a49948a9a915cb283893aa16daea4f22457726b42b89d"
     },
     {
       "file": "art/plating/desktop/0056.webp",
-      "sha256": "ba7fa335898705934069efc7a9f35dd30b3e783684ca7fa7a6bd364418124313"
+      "sha256": "b2b4711f4996eadf47db60af02b3a2220930e1de6807aceb84e9cc8515e09f06"
     },
     {
       "file": "art/plating/desktop/0057.webp",
-      "sha256": "f62068428eec3dd3f7905e31651817b6923aef09f91c7462dee6d75f1be2a046"
+      "sha256": "7002985289837685f63edb829f0a59c9bdb0d325c02348429aa24a4e4eb222e2"
     },
     {
       "file": "art/plating/desktop/0058.webp",
-      "sha256": "743c28f3704b7f3ac7457d44c4f8f81fe4bb6b8e197f949180da2c834208bca8"
+      "sha256": "98078fdd61639a75ee6535da2320285fe9ccf3364647bf43b84b8e0fb6a0ff8b"
     },
     {
       "file": "art/plating/desktop/0059.webp",
-      "sha256": "17cd861430d294bd6c5260bacb3276eec9ae6f9b1fe5ff2a92609d456a2c173c"
+      "sha256": "d05c86df58bea660b3d4561e1c4de760dd93821ef75b98e393c907f92fc1e0b1"
     },
     {
       "file": "art/plating/desktop/0060.webp",
-      "sha256": "186a8432b2429b7b2d5e4e041e14a12df43297276a0a5288c6355934563a602c"
+      "sha256": "e31ffffef0f889e105630a7ad4ac66773fae91b1f6335795b7d832bfa1e18cb3"
     },
     {
       "file": "art/plating/desktop/0061.webp",
-      "sha256": "7c871a19282d214fc667dc179d213263922a77da3967fe65a355e0c4b5c3fd2f"
+      "sha256": "a8b9e0d0afd6ccf7b63fc9063bd23a14b644e108351d0ab17879c286e3c690e0"
     },
     {
       "file": "art/plating/desktop/0062.webp",
-      "sha256": "65eb050e0a95157ed915f463867a8e0397bd68af149354b9316c3bd8b8499324"
+      "sha256": "e8cbee5e0508fb458c543f9c430a1d61fa704ee30a64e870bce2dbabca037ea6"
     },
     {
       "file": "art/plating/desktop/0063.webp",
-      "sha256": "fa2bee49bc081922ae5446e1147858fe85f2255bb7ebe394a0b46bd62e9ab176"
+      "sha256": "703dab5dd1a10da94a47930e675e3d74910494842a73c08489de51b47f96de28"
     },
     {
       "file": "art/plating/desktop/0064.webp",
-      "sha256": "cede3a162fdb8e820791cfac4ced03627fc216dbb8c8f7b53d88b6eac2952686"
+      "sha256": "4dc266bfead94d9d2a0e2ad4fa8884b3fdae516fd47c269d0f97af2a837ccf08"
     },
     {
       "file": "art/plating/desktop/0065.webp",
-      "sha256": "0164dd7367aa9984f370c2bfe49cd851bd84ed8a709ae4be06d57ef79b60b77d"
+      "sha256": "702402808281c909552b7068e181067c1a3fbbdaf3041bdbc77a517a2f0e8a2f"
     },
     {
       "file": "art/plating/desktop/0066.webp",
-      "sha256": "31ba4ce1c005ec3b1f0557fb9b91d8d8fc40da801f9a3c57f7e48674bd18f4a2"
+      "sha256": "ae4519aa3c6d612bcd088abae31b79ee390b27b9443ed0bd3ab346814f8dd86c"
     },
     {
       "file": "art/plating/desktop/0067.webp",
-      "sha256": "5ce3b0d641ac7b7a698cef9d8184aa85ec150284893245c7ff1847a2455a25cb"
+      "sha256": "5e975320449ec5936f310b19712d265b7a5e8eaa8dc025a81009e23246077317"
     },
     {
       "file": "art/plating/desktop/0068.webp",
-      "sha256": "8b662a61aaa2dd6486a2db84ccefa69720ed7c3b518bcb65a7332639e48458e7"
+      "sha256": "f90050fb37652363df7df6eb4352db75ec152e09678e1f75357ca933b3f031a6"
     },
     {
       "file": "art/plating/desktop/0069.webp",
-      "sha256": "faf77fc2ca3cc6efaac7310781f3e0399619ed4703d38eccfbc60de2d215e212"
+      "sha256": "ad9e274e8506d39ec45a8e203440734389516c2526e2221b0ab3397ef2967adc"
     },
     {
       "file": "art/plating/desktop/0070.webp",
-      "sha256": "0566f8fd6940f283e42f5a762afcfcfe2ffeaf8ae204808ad96e8f1850a32628"
+      "sha256": "f593f0879bcf72d2880fbac1c8aa4426551b28a67d8466200751a3e18184c3b6"
     },
     {
       "file": "art/plating/desktop/0071.webp",
-      "sha256": "75720239c923ac3bfd4da513d43dd16869237a8f56f20836c7a4642062d4559b"
+      "sha256": "9fe5f88e89c2284c0e581ff96e36a705efd0c7dc8f7b2cc11dd0bd75a39bd830"
     },
     {
       "file": "art/plating/desktop/0072.webp",
-      "sha256": "829cf81190bb4753757e59969378fc5535c0a039ea90b3f6b7cb7e1ce7562144"
+      "sha256": "65b0fafcd381ea5c3cdd768d9bc3c87fb7560f72040999472d8f13060c83de19"
     },
     {
       "file": "art/plating/mobile/0000.webp",
-      "sha256": "bf63c2c39895a3e847e1cb63a9104e7fe14e5e59a1b99ffa39faf71ac47d1577"
+      "sha256": "b70058a058e90c05707cbdf703350de2e6457dd6a929f014d94d2616c22bd16f"
     },
     {
       "file": "art/plating/mobile/0001.webp",
-      "sha256": "20b8c1256ad253d9174959450164c8484db1348378f1d868b2938dbc53b4c3b0"
+      "sha256": "ba001c4fec6d048be067b6da41921f1c9482ae8e30b4f603db375aa05f6ab392"
     },
     {
       "file": "art/plating/mobile/0002.webp",
-      "sha256": "976806d59b8d9476236e09fdc9e40c6f8113ff50c365f288255e17c65553ac3f"
+      "sha256": "e9a5502865d9df701ef04d39ea1cf1488a0287e6f085ef4a0b81732f593184e3"
     },
     {
       "file": "art/plating/mobile/0003.webp",
-      "sha256": "9c172362d5f084a03e4737221a189f4f79ec099e5c3f04d0e832275cf1e7dc90"
+      "sha256": "721c5cd8b47b995626dc7ffa30465268ad69d53752ac77c212ea40a582184699"
     },
     {
       "file": "art/plating/mobile/0004.webp",
-      "sha256": "7ae20207ed6e004b4b443285215c0142626c37ab9278d7c12034c4a7812ef4eb"
+      "sha256": "c65045ac08b850ae5b16e4d8e16ef9531c6751ce2aed0e8bbb478a9ffbec7499"
     },
     {
       "file": "art/plating/mobile/0005.webp",
-      "sha256": "164da5fba18570278d13e6fc4bc4692d65b3e4f57c76531407bf548f048f2e5a"
+      "sha256": "cb16f607d79ca2937da58919f9220482ba27f6ce52f7b21e9e3c214526972643"
     },
     {
       "file": "art/plating/mobile/0006.webp",
-      "sha256": "6726e667a1367502479fcb3d80ecdc421c8e3eea52ced941f80a1400c46cef7d"
+      "sha256": "6840c764ee179f2fe451583115a169ddce1e264d73fad0850189fab1fd19bbf2"
     },
     {
       "file": "art/plating/mobile/0007.webp",
-      "sha256": "93c88df8f5683132888635179cfecb4a010b0ea304fab5862ee1cb6a105758c6"
+      "sha256": "2e047c010ed6e71b02c09c333ddbf72636db31321d55e7567eafad7c0044a4f3"
     },
     {
       "file": "art/plating/mobile/0008.webp",
-      "sha256": "793cc99d43b271eb11e1f33976780bc927871ec75974045f9e086924f0e76cd8"
+      "sha256": "ddddabf3b55263f9c4edd3efcb958475864941d5214ca09d1b8fe3bf73b5c98c"
     },
     {
       "file": "art/plating/mobile/0009.webp",
-      "sha256": "8ef10b3e7fca2d4b17f70edb0610f2078e2327b7b5d08235cf5475691358676d"
+      "sha256": "176330bc0b910138fe052fdfc35e1a9ccc52f5096efaa801d191fd6a239be563"
     },
     {
       "file": "art/plating/mobile/0010.webp",
-      "sha256": "b0092115f4940ab454578f74e7965fc0de11cb9fee7bbfb03de686a234eb5cec"
+      "sha256": "da8e9e099498b812d3ae4169fdbab5fe75102508c92129df05794efd498d2f15"
     },
     {
       "file": "art/plating/mobile/0011.webp",
-      "sha256": "2f2a50db6a220251a824ea221c25ba8cbc218db601b53dd04988b13eb979a550"
+      "sha256": "c80910b0345cffd41c343be31f91bf71cd4988c19cc209a0be4510880c6e1a06"
     },
     {
       "file": "art/plating/mobile/0012.webp",
-      "sha256": "f6e90330965e7129e91b58f2c7e0073858778844ad9c2ce409351e55b5bdfc56"
+      "sha256": "13bc346f6ea6a43407bf657ccc40f09a81417b634084ee7ad98ae8a7c24687dd"
     },
     {
       "file": "art/plating/mobile/0013.webp",
-      "sha256": "4c7209da821193bcc788269f952581faa70a92d87c6bbad42f4719d7ce9f8348"
+      "sha256": "382489ef489acf1db66a57d74da5a9301e9675e3c07197941602430eb488fdf0"
     },
     {
       "file": "art/plating/mobile/0014.webp",
-      "sha256": "71e30ed83c05855d383aa97a12f894bb8c49cad8417c1841ceb2085a9a82b581"
+      "sha256": "bbaf567519270a2c20ca25f7be34d52f70eda0f27501f5c62a5f22bf2bc69c44"
     },
     {
       "file": "art/plating/mobile/0015.webp",
-      "sha256": "b722afb2b4ffb40ab8b8136715dfd6a7c14ed6183403d57bec7ecc8283d9714b"
+      "sha256": "542cc5273b5b5b4dbe1cae151062f3d50de61ec9427d66a8a5b2a25edf36d657"
     },
     {
       "file": "art/plating/mobile/0016.webp",
-      "sha256": "3fc08d9f32037a83f72d15c39e87e3cb6d4e11cc24a9153f18a489354d867736"
+      "sha256": "8bf4501350322f9b78aba66506052d74f0a4c922f813a045c5ab6e471f3da57d"
     },
     {
       "file": "art/plating/mobile/0017.webp",
-      "sha256": "d3d84b58871ff6b1643b378f7b97893f6a8e1981f6f2965ca14ca47ab67dd721"
+      "sha256": "5a6f941436bd34b82a1b84d0caa266e3181db70b139e7dfc5c3dd0fca29e9d1e"
     },
     {
       "file": "art/plating/mobile/0018.webp",
-      "sha256": "b183a971ec17b39099b8325a83d440b976818631cfa0d90a6ff0593798901d10"
+      "sha256": "3d4c410498933c4eee54187684b312ec920626e007f4428d975dc26acf29316d"
     },
     {
       "file": "art/plating/mobile/0019.webp",
-      "sha256": "8c64c82346134b73b35e1512846e90d0bd3f570acfd3d39246dc23bd22ab7e7d"
+      "sha256": "ad175183946b47a57cbe15a651093b7a46470d5b862f2482691f6512f6bbd559"
     },
     {
       "file": "art/plating/mobile/0020.webp",
-      "sha256": "717baf8b62fd4f9ba1ac1f58e92024c05f210e9c9eecfc9036c2a45062f7e683"
+      "sha256": "cbe1844e3570ddfd26c59afac6b9b8854fe30abd9936f86df015f712ce8bbd2d"
     },
     {
       "file": "art/plating/mobile/0021.webp",
-      "sha256": "2ec5c40dc6e99f5a7443580b54f1db131dc2de57bdc9e4152028d79d17902c27"
+      "sha256": "974d29d6346ad6110fe1c091c3671bb6199bf9e39499a0a7d7fb5ba17e71bb73"
     },
     {
       "file": "art/plating/mobile/0022.webp",
-      "sha256": "b5fe53cd228901c29fd6529f31830d6ee22b7712cacb62281caeb1eaed300556"
+      "sha256": "eab4b287e4de0755188437b9d055fae7a32cd0f33967bf01d9618bfbbbdeb31e"
     },
     {
       "file": "art/plating/mobile/0023.webp",
-      "sha256": "ef2bd3cbe51b8f2671cd27a820cd0cec2312affe08491ce756df738bddea2b8e"
+      "sha256": "487af0b1da2c233f918cd69dec00cb66e957547adddd5acc2353ed5c0bf2daba"
     },
     {
       "file": "art/plating/mobile/0024.webp",
-      "sha256": "e62260f8e5125d65fa4713b266313fc253946ad6d7054e742b6f5b4abeac72a7"
+      "sha256": "c1af72e68501136e5045da8971212158da396b42d19bb9319b93fe5bc1d6c5e3"
     },
     {
       "file": "art/plating/mobile/0025.webp",
-      "sha256": "3fe879aa41d46d40e12ae0b19b1062ed3f8658c9d6540441bfb95ec6ec0b327f"
+      "sha256": "fe8b3edbc1ca6592a5e946418a21826c6ab4e0e15d475f3ebf0509c72528d98b"
     },
     {
       "file": "art/plating/mobile/0026.webp",
-      "sha256": "4a0193993ae2fddc3ed04ddf1a5b1a2c09e800f3df3a3ea40ba060d524925467"
+      "sha256": "f508c907f1c135d0688d535173643c2c32df754f2e29db604585516eba29b301"
     },
     {
       "file": "art/plating/mobile/0027.webp",
-      "sha256": "ca4e94d58a7a2f8b88a3bb4087c391d4c5d7f577ba6b8c19aac2f6d9182dc426"
+      "sha256": "2d91007c0bae82e7fdba9f2fb569666ab7bf9f11cc2d1db5451879aa9ca7022a"
     },
     {
       "file": "art/plating/mobile/0028.webp",
-      "sha256": "eb33e359ec1bc3656494da21cf4bdafe597dbd29aadc5973e75dca6593ef3611"
+      "sha256": "b3827c1c587ffb3a2d4890ce62e15c8b02793b90e3f6b0924a2bbbc99cca42ff"
     },
     {
       "file": "art/plating/mobile/0029.webp",
-      "sha256": "d4ca214db2d91a743ca38372078328801cf46e3b6e66fd9e14e969a42240c4f0"
+      "sha256": "0cdda8022997422d39cdf6645884938aeddadc0709bc6c4876eb1db8accbceca"
     },
     {
       "file": "art/plating/mobile/0030.webp",
-      "sha256": "bdbad51ac133cac7106cb6332d669b68d6465e6832e043cda7548d9804b8dd05"
+      "sha256": "98e680f08bdb41fff55126cc4d8f046f3e375b407e1e4d252e99854089a84baa"
     },
     {
       "file": "art/plating/mobile/0031.webp",
-      "sha256": "849c9bd034e0ae1c5f93ca58876bcfd7dc6658477dd7a29c8d16db4dbb830dbf"
+      "sha256": "6ee5e3a82fab7497cae8bde9275165ea650247c97e00bfb78c1d3420b8ef87a5"
     },
     {
       "file": "art/plating/mobile/0032.webp",
-      "sha256": "7372154d0fdf2241f21148b232353fe6b1cdf51d64d6433f9f3261e6fc869158"
+      "sha256": "d9c0fac58cf57e4f87f0f89d52dd78243898901098308d8dda3a2513cc48569b"
     },
     {
       "file": "art/plating/mobile/0033.webp",
-      "sha256": "5f54e0706630186e60f02614c0a15c2eb8cfc090ec4be79a16141c6917838236"
+      "sha256": "efa3047700c6c18d38d0747ede3c32f8c0d16f175bba8e94c2cce316457d416e"
     },
     {
       "file": "art/plating/mobile/0034.webp",
-      "sha256": "b27472b9210530a51c7efd1bfbfd7153687e0b30816d0b165b6895029307554b"
+      "sha256": "9a9087d78e22890d3222492fc010c853148b4c9d7add7c2e2f0140265b66273c"
     },
     {
       "file": "art/plating/mobile/0035.webp",
-      "sha256": "aa91af7d6188a8b0ad389907100d4ba5e6a479cdbbedb67ca37316ea94eb5350"
+      "sha256": "903d97082ecee3b42b57d50b2251b7b6ffc17a4f097c773079badf0bd5e3e80b"
     },
     {
       "file": "art/plating/mobile/0036.webp",
-      "sha256": "ca94d37407b92cac9917af66129a4394cef07294036ab13545b0784b3abedc27"
+      "sha256": "b9cad46e70c66dd92fe60e5e452d58429baba7936724138d25322ed7aa038f1c"
     },
     {
       "file": "art/plating/mobile/0037.webp",
-      "sha256": "136f48e9d78da629beef95b1350eef907a87a82bd361d442bf53d3ddf990aa02"
+      "sha256": "d18e537b8682e15fb8eb1fb2d2af541ed9e519d44025685954c85f15b94f2382"
     },
     {
       "file": "art/plating/mobile/0038.webp",
-      "sha256": "055108b23479d5fcf95dfeb03d8fc89d0caecf14911bbb0a0811f214f00561d8"
+      "sha256": "2aaa24c5d15434a0750c18d758d504adf6745e49f9e7b2b707f4123dd3995c61"
     },
     {
       "file": "art/plating/mobile/0039.webp",
-      "sha256": "94e76f8ba31b97c38a92d244af9dc39f4f6b4cc57bb8d349fe95718ff0445a74"
+      "sha256": "c241f66c3e4da890a08b7093aa16d9740151e7012a09cf1962097896be9b25e8"
     },
     {
       "file": "art/plating/mobile/0040.webp",
-      "sha256": "4f6a098e6c387b5cfc7392dddf45177fbbbdf1684c29060a789b294719398e15"
+      "sha256": "ca9ca8abf77d037115d7005cb7aba1a63f6967d93270ff5f76bd50ca38071f4a"
     },
     {
       "file": "art/plating/mobile/0041.webp",
-      "sha256": "62c65c181576b57c566b557c215470983893f05b45ca8120374cf1fee36215ba"
+      "sha256": "b34b8aeb619c28a0da558072fbbf03523d7f56da7361222478568d2519fb9f89"
     },
     {
       "file": "art/plating/mobile/0042.webp",
-      "sha256": "ac4d093cc0fc65e3be7d51f7ed4d5c224edb2080c1e215d916b678c1c5e9f211"
+      "sha256": "b521820645821fb310656141272a40248aee47dd0f1449c9b797651a28714120"
     },
     {
       "file": "art/plating/mobile/0043.webp",
-      "sha256": "f1bd514c9dea61abf3068ce893f48e235b7a62f63eb02d4ffbdc64a7c6be9bc7"
+      "sha256": "6c5d2e6aad9e8205791878e0300d73112fdbfa014cd7993d45d658259d1dcf1e"
     },
     {
       "file": "art/plating/mobile/0044.webp",
-      "sha256": "88688bfc0cab0f787d4b1778e078564c45c62b212ba7cd3c7886454dcd99a484"
+      "sha256": "69ec2d573d3d8f3f50fece7fa65b774daa803ed052855a1ffa7e8ce8e7d4dfd6"
     },
     {
       "file": "art/plating/mobile/0045.webp",
-      "sha256": "d394d9ffdc6e8b30099d1536383fa4e74725aefda7c42a764b23795faf21366b"
+      "sha256": "3f85b3ffa21f173d6442293fbdf1db34771fe06db0077a2618be8a6a499f7b62"
     },
     {
       "file": "art/plating/mobile/0046.webp",
-      "sha256": "5d9839391b23fa36428d3e6d0b27085ea35e583c6abcff88597533b7e4304aed"
+      "sha256": "cfe214b33ea5d860b00822512abcd8206906fe8fb7304ceacc20dd271e52e14f"
     },
     {
       "file": "art/plating/mobile/0047.webp",
-      "sha256": "afb1b38562298e535317ada28454d57ee132b71f56ba85c1703156997a177525"
+      "sha256": "b06dfbb8fe22c4f584bd182f608dd2cb903eab4d76cf60a8074bf6ba213e2eef"
     },
     {
       "file": "art/plating/mobile/0048.webp",
-      "sha256": "a7d884ec5dec17d8b9fe55617ada61133e5e025f566ae763d27fdd873ca7a787"
+      "sha256": "8570ba9a156c8edf6b9d0994b8689d156fcf9951619dfc0d966bfe28d373850e"
     },
     {
       "file": "art/plating/mobile/0049.webp",
-      "sha256": "4804136ede04ddbe4645054f7871544566876a5a20cdbe12a6e240841cf4b3a6"
+      "sha256": "cf22cac52f49ca9e1e6408b713a15fbd1beba061a39996de3ac16bdc1618cea6"
     },
     {
       "file": "art/plating/mobile/0050.webp",
-      "sha256": "714b8d96afb07a5669e0feac0545b12703f8a3bb52f8a5919b75821d227ac07d"
+      "sha256": "61a17c378d07873fb447982c1b5872767d743cb2191e1a0ba2be5be1d7b484db"
     },
     {
       "file": "art/plating/mobile/0051.webp",
-      "sha256": "7bc399abd03339d42abcca66fd03f5e8c4658ec08de99a8f87a9d36f64c97d56"
+      "sha256": "6e78d1b733d34f1f0db553071f95292201fb2dcbb2266296f4846ba3b7ca9307"
     },
     {
       "file": "art/plating/mobile/0052.webp",
-      "sha256": "eaa683dd89c89c21328792ce33614f23442b8ea1f52d004ad272d1458944903e"
+      "sha256": "247a1cb72f5ad5a72b3ed7a096ba75b11bd557d7f905c8439723d77803b48d82"
     },
     {
       "file": "art/plating/mobile/0053.webp",
-      "sha256": "3c82b5f961a24060714c30549040e5d5e1ba8dacea41e1e3ac3a41649c42baf7"
+      "sha256": "dff5222aba65f1b45186663fae2554a38f1d7c88de4f5593b3577c72ade730bd"
     },
     {
       "file": "art/plating/mobile/0054.webp",
-      "sha256": "718845e9f36a4851c0064f249675ed2de612b415ab53f7546ab5b301bf6de2a8"
+      "sha256": "0bacaf1a62ec6ac1150a10bb5da8f4c8d87ce3213eb41e8264da1f500c54a1fc"
     },
     {
       "file": "art/plating/mobile/0055.webp",
-      "sha256": "6ee737e45ebe883d1320988634438bec4006eda91f88fa1c8d4d19416efbae06"
+      "sha256": "5e7706795283d2fa7e033d9f1ef47c96015692dc85e63768414efd2888a28e75"
     },
     {
       "file": "art/plating/mobile/0056.webp",
-      "sha256": "2a14c9a2d7edae6908d3d1b32e9a4f0be66ade810b6318b77cf294604143cb09"
+      "sha256": "c4a2e4aedf59a0345b4cc73e2c3555af09345560a5a2d24ce31fc963b6f3ecf0"
     },
     {
       "file": "art/plating/mobile/0057.webp",
-      "sha256": "8714b95018fe214378c007594378e9f2ae407386de34c8027bbf7cc3e9fa41db"
+      "sha256": "38a54c0417c20388e743239d17a1e6b91f1d67eb5c230f152cf3c25250027310"
     },
     {
       "file": "art/plating/mobile/0058.webp",
-      "sha256": "3ef1cd4a7a213fc3636c528d93cc9b4a1255a244847b62ac6e677c8b02f09e61"
+      "sha256": "ec02d6922fed4c42e40fe46ac0e5baacc4bf5b64ca8ff1c244e825ef58e0c198"
     },
     {
       "file": "art/plating/mobile/0059.webp",
-      "sha256": "572a191a6b171a2075d669b31688814d3d3191ceabd042b3e40e5c228a9d578e"
+      "sha256": "e2b31e03b27ad92f86ae36e581b07b0ae27fab45addc2d5aa150e72437be1290"
     },
     {
       "file": "art/plating/mobile/0060.webp",
-      "sha256": "25aa2771ad48568fbdb8d47e6bf908f1f00914ce5a0e5da17ce0cc4cb0094a61"
+      "sha256": "b7f40aaac831064b0c3c7aa4b0f5aae025a05a44d30118c85db2c419542797c2"
     },
     {
       "file": "art/plating/mobile/0061.webp",
-      "sha256": "5519dd4b09593ce33a8fe46e4df3cd3c3ae1ab849f61df3d2cffea69df28f4de"
+      "sha256": "855a56ed192d8de29f2ec60e9fc36f922e0e0e2eafc5c3cf0f754c9a124ffe7b"
     },
     {
       "file": "art/plating/mobile/0062.webp",
-      "sha256": "dbc8125097b612e5ed23c985299557a50367f4e707c5e7eccef7cb4079179d88"
+      "sha256": "f1d9fc76139d925ea42e312e4a53ab9a1508ddf23445a8332663169fb7f3e92d"
     },
     {
       "file": "art/plating/mobile/0063.webp",
-      "sha256": "1b3f943d071ee8f7d6f685b98f51db752237b74585fdecb36188fb42c6992370"
+      "sha256": "288cf4576aa4e038fe9cff6059774d253473486ae2cf1e9b14fedeee645b9feb"
     },
     {
       "file": "art/plating/mobile/0064.webp",
-      "sha256": "29583177fa672e5627f0b280131b124ae5f3f2afa194700c5cd2dd24d25b42ca"
+      "sha256": "a6b92284b482545fd6cd936a9eaea0429cc003c4d73e15adcb6dd8791110c131"
     },
     {
       "file": "art/plating/mobile/0065.webp",
-      "sha256": "f4b926acdb3f25053ad0975fe03e9edc693fa1b07c55a01a27ae360b81a93f61"
+      "sha256": "b13f4d06cf899730a6eacc6bbab1960a9eeab8c8175ad39be61b8d15dc18dcc6"
     },
     {
       "file": "art/plating/mobile/0066.webp",
-      "sha256": "510d2c6ba4e99ddd4a94adf2216ffbbcd29f08c704fa7f31c01ebdf43cd9d0ca"
+      "sha256": "0947fd1697c318a2144827cb56610a5bd92367b11c24216acfeeb37514aa0b48"
     },
     {
       "file": "art/plating/mobile/0067.webp",
-      "sha256": "1d9846f62c1a7683803beb08ab23c25651b916621446b9a6f23553b66b7266b2"
+      "sha256": "186989ede64122e97b510fe9a6a78fe7850bfe5f5274d7f410bb003f32ee9c92"
     },
     {
       "file": "art/plating/mobile/0068.webp",
-      "sha256": "fe74ba355ac8e1e4fee3bd1c9fa16342ebdd1215eb4b35a11e2783b7a2747262"
+      "sha256": "e4dd4442e6a07f89fc62f43105438cbf908ccc4348adf2a30b2f82ce0668c0ad"
     },
     {
       "file": "art/plating/mobile/0069.webp",
-      "sha256": "89698028eeebf6b3568691827ea11877f1cd20f2fc9016c69b2b39ee1e94710f"
+      "sha256": "97bed8944a55e2fc37b98e10fd59cc6946c232c99f0d7f581d175294b93030df"
     },
     {
       "file": "art/plating/mobile/0070.webp",
-      "sha256": "d02a59806fdcfb5442390f15e6a54673c6317141808f645dd97b94cec21c0937"
+      "sha256": "438b31ab684c890514d4866a1ff75ac26bff533b4b9ae4025c798dbf1df07232"
     },
     {
       "file": "art/plating/mobile/0071.webp",
-      "sha256": "85cae4cce20b3a413304f70bd5db28bcf69dc61b905036b1c6d4d6a480c77175"
+      "sha256": "16445d839af6d58dd31e8d68571d90aa1777771d3fc985e66ac6f13de23ebb22"
     },
     {
       "file": "art/plating/mobile/0072.webp",
-      "sha256": "de6de0d9f81d61cd3927c5ebe38a5c00ebe8a95b64d4623314e4973377d09e2d"
+      "sha256": "9d5b002fbdc831759717729cba5450ab37bf6ab57cc5336c6a17dda2352e4199"
     },
     {
       "file": "art/plating/poster-1280.webp",
-      "sha256": "5f614990abbcc40f9a2de14a92ae5253890a938fd401a23614ea72622ff56033"
+      "sha256": "c75663a08d356b2870bbe7523ba50759f5fcf21bd15447c586c615615d024946"
     },
     {
       "file": "art/plating/poster-1920.webp",
-      "sha256": "829cf81190bb4753757e59969378fc5535c0a039ea90b3f6b7cb7e1ce7562144"
+      "sha256": "65b0fafcd381ea5c3cdd768d9bc3c87fb7560f72040999472d8f13060c83de19"
     },
     {
       "file": "art/plating/poster-640.webp",
-      "sha256": "965df61ac615574044d44a95e8c7f27f998b680f9e12f8959f1999f272ac3120"
+      "sha256": "ee35e64f37c9cecea78d7b2ba888703851e304d5f4bc55a1cfd2376f23be997b"
     }
   ]
 }

@@ -19,6 +19,263 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 
+class CrescentTransport:
+    """Bend frozen straight-trail geometry without scaling its cross sections.
+
+    ``world_points`` samples the desired ground-plane centerline in metres.
+    Its arclength must match ``source_x_span``: source X becomes intrinsic
+    arclength, and source Y becomes signed distance along the transported
+    normal. Source Z is copied exactly. End caps continue along the endpoint
+    tangents rather than clamping all their vertices onto one cross section.
+
+    This is an authored photographic centerline deformation of an existing
+    solved field, not a new simulation. Its Jacobian is ``1-curvature*y``;
+    callers must independently measure the closed mesh volume after bending.
+    No height or volume correction is silently applied.
+    """
+
+    def __init__(self, world_points, source_x_span=(-0.192, 0.096), *,
+                 source_center_y=0.0, length_tolerance_m=0.000002):
+        points = np.asarray(world_points, dtype=np.float64)
+        if (points.ndim != 2 or points.shape[0] < 3 or points.shape[1] not in (2, 3)
+                or not np.isfinite(points).all()):
+            raise ValueError('A crescent needs at least three finite 2D/3D ground samples')
+        source = np.asarray(source_x_span, dtype=np.float64)
+        if source.shape != (2,) or not np.isfinite(source).all() or source[1] <= source[0]:
+            raise ValueError('source_x_span must contain two increasing metre coordinates')
+        if not math.isfinite(source_center_y) or not math.isfinite(length_tolerance_m) or length_tolerance_m < 0:
+            raise ValueError('Invalid crescent source center or length tolerance')
+        self._points = points[:, :2].copy()
+        lengths = np.sqrt(np.sum(np.diff(self._points, axis=0) ** 2, axis=1))
+        if np.any(lengths <= 1e-12):
+            raise ValueError('Crescent ground samples must be distinct')
+        self._arc = np.concatenate(([0.0], np.cumsum(lengths)))
+        self.intrinsic_length_m = float(self._arc[-1])
+        self.source_length_m = float(source[1] - source[0])
+        if abs(self.intrinsic_length_m - self.source_length_m) > length_tolerance_m:
+            raise ValueError(f'Crescent arclength {self.intrinsic_length_m:.12g}m differs from '
+                             f'accepted source span {self.source_length_m:.12g}m')
+        self._source_span = source
+        self._source_center_y = float(source_center_y)
+        derivative = np.gradient(self._points, self._arc, axis=0, edge_order=2)
+        speed = np.sqrt(np.sum(derivative ** 2, axis=1))
+        if np.any(speed <= 1e-12):
+            raise ValueError('Crescent centerline contains a degenerate tangent')
+        self._tangents = derivative / speed[:, None]
+        tangent_derivative = np.gradient(self._tangents, self._arc, axis=0, edge_order=2)
+        self._curvature = (self._tangents[:, 0] * tangent_derivative[:, 1]
+                           - self._tangents[:, 1] * tangent_derivative[:, 0])
+        self._largest_source_half_width_m = 0.0
+        self._minimum_jacobian = 1.0
+        self._maximum_jacobian = 1.0
+
+    def _sample(self, xs):
+        arc = np.asarray(xs, dtype=np.float64) - self._source_span[0]
+        return self._sample_arc(arc)
+
+    def _sample_arc(self, arc):
+        arc = np.asarray(arc, dtype=np.float64)
+        center = np.column_stack([np.interp(arc, self._arc, self._points[:, axis]) for axis in range(2)])
+        tangent = np.column_stack([np.interp(arc, self._arc, self._tangents[:, axis]) for axis in range(2)])
+        tangent /= np.sqrt(np.sum(tangent ** 2, axis=1))[:, None]
+        before, after = np.minimum(arc, 0.0), np.maximum(arc - self.intrinsic_length_m, 0.0)
+        center += before[:, None] * self._tangents[0] + after[:, None] * self._tangents[-1]
+        curvature = np.interp(arc, self._arc, self._curvature)
+        curvature[(arc < 0) | (arc > self.intrinsic_length_m)] = 0.0
+        return center, tangent, curvature
+
+    def map_points(self, points):
+        """Return a new N×3 array; the input and every source Z are untouched."""
+        source = np.asarray(points, dtype=np.float64)
+        if source.ndim != 2 or source.shape[1] != 3 or not np.isfinite(source).all():
+            raise ValueError('map_points expects finite N×3 metre coordinates')
+        if not len(source):
+            return source.copy()
+        center, tangent, curvature = self._sample(source[:, 0])
+        offset = source[:, 1] - self._source_center_y
+        jacobian = 1.0 - curvature * offset
+        if np.any(jacobian <= 0.0):
+            raise ValueError('Crescent curvature folds the supplied finite-width trail')
+        result = source.copy()
+        result[:, 0] = center[:, 0] - tangent[:, 1] * offset
+        result[:, 1] = center[:, 1] + tangent[:, 0] * offset
+        self._largest_source_half_width_m = max(self._largest_source_half_width_m, float(np.max(np.abs(offset))))
+        self._minimum_jacobian = min(self._minimum_jacobian, float(np.min(jacobian)))
+        self._maximum_jacobian = max(self._maximum_jacobian, float(np.max(jacobian)))
+        return result
+
+    def map_point(self, point):
+        return self.map_points(np.asarray(point, dtype=np.float64).reshape(1, 3))[0]
+
+    def angle_at_x(self, x):
+        if not math.isfinite(x):
+            raise ValueError('The spoon anchor X must be finite')
+        _, tangent, _ = self._sample(np.asarray([x], dtype=np.float64))
+        return math.atan2(float(tangent[0, 1]), float(tangent[0, 0]))
+
+    def provenance(self):
+        return {
+            'method': 'arclength and parallel-normal transport of accepted frozen liquid geometry',
+            'revision': 'crescent-transport-v1', 'render_only': True,
+            'authored_centerline': True, 'authored_liquid_cross_sections': False,
+            'physical_solver_rerun': False, 'source_dataset_modified': False,
+            'source_z_preserved': True, 'transverse_scale': 1.0,
+            'height_normalization_applied': False,
+            'source_x_span_m': self._source_span.tolist(),
+            'source_center_y_m': self._source_center_y,
+            'intrinsic_length_m': self.intrinsic_length_m,
+            'source_length_m': self.source_length_m,
+            'intrinsic_length_error_m': self.intrinsic_length_m - self.source_length_m,
+            'centerline_samples': int(len(self._points)),
+            'centerline_world_xy_m': self._points.tolist(),
+            'maximum_abs_curvature_per_m': float(np.max(np.abs(self._curvature))),
+            'largest_mapped_source_half_width_m': self._largest_source_half_width_m,
+            'minimum_local_area_jacobian': self._minimum_jacobian,
+            'maximum_local_area_jacobian': self._maximum_jacobian,
+            'end_caps': 'straight tangent extrapolation beyond both source endpoints',
+            'volume_caveat': 'Finite-width bending changes local area by 1-curvature*y; closed mesh volume is independently checked after transport.',
+        }
+
+
+class AnchoredCrescentTransport(CrescentTransport):
+    """Place accepted pools at exact anchors, stretching only their connectors.
+
+    A protected window around each source knot has unit longitudinal scale
+    and constant source-center Y. Connector gaps use a monotone C1 cubic with
+    unit endpoint slopes, while their center Y follows a zero-slope smoothstep.
+    Cross-trail distances and source Z remain unchanged. The authored connector
+    stretching can change the displayed geometric volume; it is not a new
+    physical solve, nor is the displayed volume silently normalised.
+    """
+
+    def __init__(self, world_points, target_arc_knots, source_x_knots,
+                 source_y_knots, *, protected_half_width_m=0.018):
+        points = np.asarray(world_points, dtype=np.float64)
+        if points.ndim != 2 or points.shape[0] < 3 or points.shape[1] not in (2, 3):
+            raise ValueError('An anchored crescent needs finite sampled ground points')
+        curve_length = float(np.sqrt(np.sum(np.diff(points[:, :2], axis=0) ** 2, axis=1)).sum())
+        super().__init__(points, source_x_span=(0.0, curve_length))
+        xs, ys, arcs = (np.asarray(values, dtype=np.float64)
+                        for values in (source_x_knots, source_y_knots, target_arc_knots))
+        if (xs.ndim != 1 or len(xs) < 2 or ys.shape != xs.shape or arcs.shape != xs.shape
+                or not np.isfinite(xs).all() or not np.isfinite(ys).all()
+                or not np.isfinite(arcs).all() or np.any(np.diff(xs) <= 0)
+                or np.any(np.diff(arcs) <= 0)):
+            raise ValueError('Anchor X and target arc knots must be finite and strictly increasing')
+        half_width = float(protected_half_width_m)
+        if not math.isfinite(half_width) or half_width <= 0:
+            raise ValueError('Protected pool half-width must be positive and finite')
+        if abs(float(arcs[0])) > 1e-7 or abs(float(arcs[-1]) - self.intrinsic_length_m) > 1e-7:
+            raise ValueError('Target arc knots must span the entire sampled crescent')
+        source_gap = np.diff(xs) - 2 * half_width
+        target_gap = np.diff(arcs) - 2 * half_width
+        if np.any(source_gap <= 0) or np.any(target_gap <= 0):
+            raise ValueError('Protected source or target pool windows overlap')
+        gap_secant = target_gap / source_gap
+        minimum_derivative = np.minimum(1.0, 1.0 + 1.5 * (gap_secant - 1.0))
+        maximum_derivative = np.maximum(1.0, 1.0 + 1.5 * (gap_secant - 1.0))
+        if np.any(minimum_derivative <= 1e-9):
+            raise ValueError('A target connector is too compressed for monotone unit-slope cubic transport')
+        self._source_knots = xs.copy()
+        self._source_y_knots = ys.copy()
+        self._target_knots = arcs.copy()
+        self._protected_half_width_m = half_width
+        self._source_span = xs[[0, -1]].copy()
+        self.source_length_m = float(xs[-1] - xs[0])
+        self._source_gap = source_gap
+        self._target_gap = target_gap
+        self._minimum_gap_derivative = minimum_derivative
+        self._maximum_gap_derivative = maximum_derivative
+        self._anchored_minimum_jacobian = math.inf
+        self._anchored_maximum_jacobian = -math.inf
+
+    def _arc_mapping(self, xs):
+        xs = np.asarray(xs, dtype=np.float64)
+        insertion = np.searchsorted(self._source_knots, xs)
+        left = np.clip(insertion - 1, 0, len(self._source_knots) - 1)
+        right = np.clip(insertion, 0, len(self._source_knots) - 1)
+        nearest = np.where(np.abs(xs - self._source_knots[left]) <= np.abs(xs - self._source_knots[right]), left, right)
+        arc = xs - self._source_knots[nearest] + self._target_knots[nearest]
+        center_y = self._source_y_knots[nearest].copy()
+        derivative = np.ones_like(xs)
+        gap = np.clip(np.searchsorted(self._source_knots, xs, side='right') - 1, 0, len(self._source_gap) - 1)
+        gap_start = self._source_knots[gap] + self._protected_half_width_m
+        gap_end = self._source_knots[gap + 1] - self._protected_half_width_m
+        active = (xs > gap_start) & (xs < gap_end)
+        if np.any(active):
+            selected = gap[active]
+            length = self._source_gap[selected]
+            t = (xs[active] - gap_start[active]) / length
+            smooth = t * t * (3.0 - 2.0 * t)
+            delta = self._target_gap[selected] - length
+            arc[active] = self._target_knots[selected] + self._protected_half_width_m + length * t + delta * smooth
+            derivative[active] = 1.0 + 6.0 * (delta / length) * t * (1.0 - t)
+            center_y[active] = (self._source_y_knots[selected]
+                                + (self._source_y_knots[selected + 1] - self._source_y_knots[selected]) * smooth)
+        return arc, center_y, derivative
+
+    def _sample(self, xs):
+        arc, _, _ = self._arc_mapping(xs)
+        return self._sample_arc(arc)
+
+    def jacobian_at_points(self, points):
+        """Return the signed XY area scale before committing any mesh change."""
+        source = np.asarray(points, dtype=np.float64)
+        if source.ndim != 2 or source.shape[1] != 3 or not np.isfinite(source).all():
+            raise ValueError('jacobian_at_points expects finite N×3 metre coordinates')
+        if not len(source):
+            return np.empty(0, dtype=np.float64)
+        arc, center_y, derivative = self._arc_mapping(source[:, 0])
+        _, _, curvature = self._sample_arc(arc)
+        return derivative * (1.0 - curvature * (source[:, 1] - center_y))
+
+    def minimum_jacobian(self, points):
+        values = self.jacobian_at_points(points)
+        return float(np.min(values)) if len(values) else 1.0
+
+    def map_points(self, points):
+        source = np.asarray(points, dtype=np.float64)
+        if source.ndim != 2 or source.shape[1] != 3 or not np.isfinite(source).all():
+            raise ValueError('map_points expects finite N×3 metre coordinates')
+        if not len(source):
+            return source.copy()
+        arc, center_y, derivative = self._arc_mapping(source[:, 0])
+        jacobian = self.jacobian_at_points(source)
+        if np.any(jacobian <= 0.0):
+            raise ValueError('Anchored crescent folds the supplied finite-width trail')
+        centered = source.copy()
+        centered[:, 1] -= center_y
+        result = super().map_points(centered)
+        self._anchored_minimum_jacobian = min(self._anchored_minimum_jacobian, float(np.min(jacobian)))
+        self._anchored_maximum_jacobian = max(self._anchored_maximum_jacobian, float(np.max(jacobian)))
+        return result
+
+    def provenance(self):
+        result = super().provenance()
+        result.pop('intrinsic_length_error_m')
+        result.update({
+            'method': 'protected-pool anchored crescent with authored connector-only longitudinal stretching',
+            'revision': 'anchored-crescent-transport-v1',
+            'authored_longitudinal_connector_stretch': True,
+            'protected_pool_half_width_m': self._protected_half_width_m,
+            'protected_pool_longitudinal_scale': 1.0,
+            'source_x_knots_m': self._source_knots.tolist(),
+            'source_y_knots_m': self._source_y_knots.tolist(),
+            'target_arc_knots_m': self._target_knots.tolist(),
+            'source_center_y_interpolation': 'constant inside protected pools; zero-slope cubic smoothstep in connector gaps',
+            'longitudinal_mapping': 'unit slope inside protected pools; monotone C1 cubic Hermite with unit endpoint slopes in connector gaps',
+            'source_connector_lengths_m': self._source_gap.tolist(),
+            'display_connector_lengths_m': self._target_gap.tolist(),
+            'minimum_connector_longitudinal_scale': self._minimum_gap_derivative.tolist(),
+            'maximum_connector_longitudinal_scale': self._maximum_gap_derivative.tolist(),
+            'presentation_arc_excess_m': self.intrinsic_length_m - self.source_length_m,
+            'minimum_local_area_jacobian': self._anchored_minimum_jacobian if math.isfinite(self._anchored_minimum_jacobian) else None,
+            'maximum_local_area_jacobian': self._anchored_maximum_jacobian if math.isfinite(self._anchored_maximum_jacobian) else None,
+            'volume_caveat': 'Authored connector stretching changes displayed geometric volume; accepted source volume/flow/timing remain frozen and displayed volume is measured separately without normalization.',
+        })
+        return result
+
+
 def _shift(array, dx, dy, fill=0):
     result = np.full_like(array, fill)
     height, width = array.shape

@@ -11,11 +11,11 @@
 .plating-heading h2 { font-size: clamp(2.25rem, 3.5vw, 3rem); line-height: 1.08; margin: 0; scroll-margin-top: 5rem; }
 .plating-scroll-hint { display: none; font: 400 .875rem/1.5 var(--f-ui); margin: 0; }
 .home-plating[data-pinned='true'] .plating-scroll-hint { display: block; }
-.plating-art { position: relative; height: clamp(245px, 28vw, 360px); margin: 4px 0 0; pointer-events: none; }
+.plating-art { position: relative; height: 0; padding-bottom: calc(31.25% + 16px); margin: 4px 0 0; pointer-events: none; }
 .plating-still, .plating-scene { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
 .plating-still { transition: opacity .35s; }
-.plating-still { display: flex; flex-direction: column; overflow: hidden; }
-.plating-still img { display: block; flex: none; width: 100%; height: auto; margin-top: auto; }
+.plating-still { overflow: hidden; }
+.plating-still img { display: block; box-sizing: border-box; width: 100%; height: 100%; padding: 8px 0; object-fit: contain; object-position: center bottom; }
 .plating-scene canvas { display: block; width: 100%; height: 100%; }
 .home-plating[data-graphics='ready'] .plating-still { opacity: 0; }
 .plating-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 80%; list-style: none; padding: 0; margin: 0; }
@@ -43,7 +43,7 @@
   .plating-heading h2 { font-size: clamp(2.125rem, 7.5vw, 2.5rem); }
   .plating-scroll-hint { font-size: .8125rem; white-space: nowrap; }
   .home-plating[data-pinned='true'] .plating-scroll-hint { display: none; }
-  .plating-art { height: clamp(145px, 43vw, 210px); margin-top: 10px; }
+  .plating-art { margin-top: 10px; }
   .plating-steps { grid-template-columns: 1fr; gap: 26px; width: 100%; }
   .plating-steps > li { padding: 0; }
   .plating-steps > li::before { display: none; }
@@ -67,7 +67,6 @@
 @media (min-width: 1001px) and (max-height: 780px) {
   .plating-frame { padding: 12px 0; }
   .plating-heading h2 { font-size: 2.25rem; }
-  .plating-art { height: 340px; }
   .plating-steps > li { padding-top: 16px; }
   .plating-steps h3 { font-size: 1.5rem; }
   .plating-steps h3 button { min-height: 48px; }
@@ -77,7 +76,7 @@
 /* Short browser panels retain a pinned, readable composition and all stops. */
 .home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-frame { padding: 12px 0; }
 .home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-heading h2 { font-size: 2rem; }
-.home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-art { width: var(--plating-art-width); max-width: 100%; height: var(--plating-art-height); margin-top: 4px; }
+.home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-art { width: var(--plating-art-width); max-width: 100%; height: var(--plating-art-height); padding-bottom: 0; margin-top: 4px; }
 .home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-mobile-stops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: calc(var(--plating-art-width) * .8); max-width: 80%; margin: 0 0 12px; }
 .home-plating[data-compact-layout='true'] .plating-mobile-stops button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; background: transparent; border: 0; color: rgb(var(--c-ink)); font: 400 .875rem/1.4 var(--f-ui); padding: 12px 2px 7px; min-height: 58px; }
 .home-plating[data-compact-layout='true'] .plating-mobile-stops button::before { content: ''; position: absolute; top: 0; width: 1px; height: 8px; left: 50%; background: rgb(var(--c-rule)); }
