@@ -36,6 +36,11 @@ function LookSwitcher() {
   )
 }
 
+/** Content pages share the homepage's depth scroll: smoothed, weighted travel
+ * with each section settling back as the next arrives. Booking, account and
+ * admin flows keep native scrolling. */
+const DEPTH_ROUTES = new Set(['/', '/privatedining/', '/cookingclasses/', '/catering/', '/sergios-table/', '/about/', '/gift/'])
+
 export function Layout({ route, children }: { route: string; children: ReactNode }) {
   const content = (
     <>
@@ -52,7 +57,7 @@ export function Layout({ route, children }: { route: string; children: ReactNode
         </section>
       )}
       <SiteHeader route={route} />
-      {route === '/' ? (
+      {DEPTH_ROUTES.has(route) ? (
         <HomeDepth><main id="main">{children}</main><SiteFooter /></HomeDepth>
       ) : (
         <><main id="main">{children}</main><SiteFooter /></>

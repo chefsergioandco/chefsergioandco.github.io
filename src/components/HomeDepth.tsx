@@ -22,7 +22,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
   useEffect(() => {
     const element = root.current!, header = document.querySelector<HTMLElement>('[data-site-header]')
     const arrival = document.querySelector<HTMLElement>('[data-home-arrival]')
-    const planes = Array.from(element.querySelectorAll<HTMLElement>(':scope > main > section, :scope > footer'))
+    const planes = Array.from(element.querySelectorAll<HTMLElement>(':scope > main > section, :scope > main > article > section, :scope > footer'))
     const reduced = matchMedia('(prefers-reduced-motion: reduce)')
     let enabled = false, measureFrame = 0, headerHeight = 0, disposed = false
     let touchY: number | null = null, touchX = 0, touchOriginY = 0, touchVertical = false, touchTime = 0, touchVelocity = 0, touchCaptured = false, coastFrame = 0
