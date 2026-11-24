@@ -5,6 +5,9 @@
   aspect-ratio: 425.696 / 64.54713;
 }
 .brand-logo > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* Appearance: one of the ink mark and its reverse twin is shown (styles.css). */
+.brand-logo.brand-logo--tone-ink { display: var(--logo-ink-display, block); }
+.brand-logo.brand-logo--tone-reverse { display: var(--logo-reverse-display, none); }
 .brand-logo--compact { aspect-ratio: 273.0477 / 42.62134; }
 .sergio-header .sergio-header-brand { display: flex; align-items: center; min-height: 44px; }
 .sergio-header-brand .brand-logo { width: 17.5rem; }

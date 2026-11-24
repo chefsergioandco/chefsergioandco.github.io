@@ -72,6 +72,7 @@
     --c-paper: 230 225 216;
     --c-ink: 45 43 39;
     --c-ink-muted: 45 43 39;
+    --c-ink-soft: 101 95 85;
     --c-cta: 142 53 47;
     --c-cta-deep: 116 41 34;
     --c-cta-ink: 252 250 245;
@@ -87,6 +88,48 @@
     --display-stretch: 100%;
     --r-btn: 0px;
     --r-card: 0px;
+  }
+
+  /* Appearance: follows the system unless a visitor chooses Light or Dark
+     (theme-init.js sets html[data-theme] before first paint). The admin
+     workspace has its own fixed palette and always stays light.
+     Dark keeps Sergio's warm paper identity: warm near-black canvas, paper-white
+     ink, a lifted rouge for accents (dark text on rouge buttons keeps AA
+     contrast), and brand-deep as the recessed band for footer-like surfaces.
+     Contrast (WCAG): ink/canvas 14.5, cta/canvas 6.3, cta-ink/cta 6.3,
+     on-brand/brand 4.6, brand/canvas 3.2 (selection marks). */
+  :root { color-scheme: light; --logo-ink-display: block; --logo-reverse-display: none; }
+  @media screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']):not([data-admin-route]) {
+      color-scheme: dark;
+      --c-canvas: 25 23 20; --c-paper: 36 33 29; --c-rule: 62 57 50;
+      --c-ink: 237 231 220; --c-ink-muted: 237 231 220; --c-ink-soft: 176 168 156;
+      --c-cta: 222 127 114; --c-cta-deep: 234 155 144; --c-cta-ink: 25 23 20;
+      --c-sage: 222 127 114; --c-alert: 222 127 114;
+      --c-brand: 112 102 89; --c-brand-deep: 16 15 13; --c-on-brand: 237 231 220; --c-focus-on-brand: 237 231 220;
+      --logo-ink-display: none; --logo-reverse-display: block;
+    }
+  }
+  /* Screen only: printing always uses the light palette. */
+  @media screen {
+    :root[data-theme='dark']:not([data-admin-route]) {
+      color-scheme: dark;
+      --c-canvas: 25 23 20; --c-paper: 36 33 29; --c-rule: 62 57 50;
+      --c-ink: 237 231 220; --c-ink-muted: 237 231 220; --c-ink-soft: 176 168 156;
+      --c-cta: 222 127 114; --c-cta-deep: 234 155 144; --c-cta-ink: 25 23 20;
+      --c-sage: 222 127 114; --c-alert: 222 127 114;
+      --c-brand: 112 102 89; --c-brand-deep: 16 15 13; --c-on-brand: 237 231 220; --c-focus-on-brand: 237 231 220;
+      --logo-ink-display: none; --logo-reverse-display: block;
+    }
+  }
+  /* Printed objects stay paper in either theme, like a card on a dark table. */
+  .menu-card, .theme-paper {
+    color-scheme: light;
+    --c-brand: 45 43 39; --c-brand-deep: 45 43 39; --c-on-brand: 252 250 245;
+    --c-canvas: 252 250 245; --c-paper: 230 225 216; --c-ink: 45 43 39; --c-ink-muted: 45 43 39; --c-ink-soft: 101 95 85;
+    --c-cta: 142 53 47; --c-cta-deep: 116 41 34; --c-cta-ink: 252 250 245; --c-focus-on-brand: 252 250 245;
+    --c-sage: 142 53 47; --c-rule: 230 225 216; --c-alert: 142 53 47;
+    --logo-ink-display: block; --logo-reverse-display: none;
   }
 
   :root {

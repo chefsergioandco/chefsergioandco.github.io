@@ -91,3 +91,18 @@
   .footer-link svg { width: 16px; height: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .site-footer *, .site-footer *::before, .site-footer *::after { transition: none !important; } .footer-rule::before, .footer-invitation h2 span { animation: none !important; transform: none !important; } }
+
+/* Appearance: three text choices on the colophon line; the current one is underlined. */
+.footer-appearance { display: flex; align-items: center; gap: 2px; min-width: 0; font-family: var(--f-ui); }
+.footer-appearance-label { margin-inline-end: 8px; color: rgb(var(--footer-paper) / .72); }
+.footer-appearance label { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; cursor: pointer; color: rgb(var(--footer-paper) / .72); }
+.footer-appearance input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.footer-appearance label:hover span, .footer-appearance input:checked + span { color: rgb(var(--footer-paper)); }
+.footer-appearance input:checked + span { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.footer-appearance input:focus-visible + span { outline: 2px solid rgb(var(--footer-paper)); outline-offset: 4px; }
+@media (max-width: 700px) {
+  .footer-colophon { flex-wrap: wrap; }
+  .footer-appearance { order: 3; flex-basis: 100%; margin-inline-start: -8px; }
+  .footer-appearance-label { margin-inline-start: 8px; }
+}
+

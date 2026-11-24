@@ -6,6 +6,11 @@
   background: rgb(var(--c-canvas));
   font-synthesis: none;
 }
+/* Dark appearance: About's lighter paper and muted ink get their dark counterparts. */
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-admin-route]) :is(.about-shell, .about-theme) { --c-paper: 36 33 29; --c-ink-muted: 176 168 156; }
+}
+@media screen { :root[data-theme='dark']:not([data-admin-route]) :is(.about-shell, .about-theme) { --c-paper: 36 33 29; --c-ink-muted: 176 168 156; } }
 .about-shell > header { background: rgb(var(--c-canvas)); backdrop-filter: none; }
 .about-shell > header > .wrap { height: 88px; max-width: 1328px; }
 .about-shell > header > .wrap > a { font-size: 28px; font-weight: 500; }
@@ -14,8 +19,8 @@
 .about-shell > footer .wrap { max-width: 1280px; }
 .about-prototype-notice { padding: 9px 20px; border-bottom: 1px solid rgb(var(--c-rule)); color: rgb(var(--c-ink-muted)); font: 400 12px/1.5 var(--f-ui); text-align: center; }
 .about-shell :focus-visible, .about-theme :focus-visible { outline-color: rgb(var(--c-cta)); outline-offset: 5px; }
-.about-shell .on-brand :focus-visible, .about-theme.on-brand :focus-visible { outline-color: rgb(var(--c-canvas)); }
-.about-menu { font-family: var(--f-ui); background: rgb(var(--c-brand-deep)); color: rgb(var(--c-canvas)); }
+.about-shell .on-brand :focus-visible, .about-theme.on-brand :focus-visible { outline-color: rgb(var(--c-on-brand)); }
+.about-menu { font-family: var(--f-ui); background: rgb(var(--c-brand-deep)); color: rgb(var(--c-on-brand)); }
 
 .about-page { font-family: var(--f-display); font-size: 20px; line-height: 1.5; }
 .about-wrap { width: min(100%, 1248px); padding-left: 48px; padding-right: 48px; margin-left: auto; margin-right: auto; }

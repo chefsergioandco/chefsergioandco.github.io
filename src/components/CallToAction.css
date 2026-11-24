@@ -94,6 +94,8 @@
 
 /* The Ivory boundary keeps the same Rouge primary identifiable on Ink. */
 .cta-on-dark .cta-link {
+  /* Dark bands stay dark in both appearances, so their ivory is on-brand, not the page. */
+  --cta-ivory: rgb(var(--c-on-brand));
   --cta-primary-border: var(--cta-ivory);
   --cta-primary-hover-border: var(--cta-ivory);
   --cta-primary-pressed-border: var(--cta-ivory);
@@ -103,7 +105,7 @@
   --cta-focus-color: var(--cta-ivory);
 }
 [data-cta-card]:focus-visible { outline: 3px solid rgb(var(--c-ink)); outline-offset: 4px; }
-.cta-on-dark [data-cta-card]:focus-visible { outline-color: rgb(var(--c-canvas)); }
+.cta-on-dark [data-cta-card]:focus-visible { outline-color: rgb(var(--c-on-brand)); }
 [data-cta-card]:focus-visible .cta-link--secondary { text-decoration-thickness: 2px; }
 .cta-link:disabled {
   color: var(--cta-disabled-color);

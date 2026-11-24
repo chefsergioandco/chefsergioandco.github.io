@@ -5,6 +5,7 @@ import { Icon } from './Icons'
 import { CtaLink } from './CallToAction'
 import { href, track } from './ui'
 import { Logo } from './Logo'
+import { AppearanceControl } from './AppearanceControl'
 import { useOnceVisible } from './useOnceVisible'
 import { FooterAccount } from './AccountAccess'
 
@@ -114,6 +115,7 @@ export function SiteFooter() {
         <FooterAccount/>
         <div className="footer-colophon">
           <p>© {new Date().getFullYear()} {site.name}</p>
+          <AppearanceControl/>
           <a href="#main"><span>Back to top</span><Icon name="arrow-up" size={16} /></a>
         </div>
       </div>

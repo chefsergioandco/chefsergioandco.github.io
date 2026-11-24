@@ -27,11 +27,11 @@
 .home-card-title{font-family:var(--f-display,'EB Garamond',Georgia,serif);font-size:29px;line-height:1.08;font-weight:500;letter-spacing:-.005em;margin:0;white-space:nowrap}
 .home-card-rule{display:block;width:34px;height:1px;background:rgb(var(--home-rule));margin:20px 0 13px}
 .home-card-close{font-family:var(--f-ui,'Archivo',system-ui,sans-serif);font-size:14px;line-height:20px;margin:0;font-weight:400}
-.home-handoff{--home-muted:var(--c-rule,230 225 216);background:rgb(var(--home-ink));color:rgb(var(--home-paper));scroll-margin-top:32px}
+.home-handoff{--home-muted:230 225 216;--home-paper:var(--c-on-brand,252 250 245);background:rgb(var(--c-brand-deep,45 43 39));color:rgb(var(--home-paper));scroll-margin-top:32px}
 /* The same woven surface as the Experiences drawer, in its dark linen form:
    paper threads on ink, the band's edges shaded as if set into the page, and
    type engraved with a hairline shadow. */
-.home-handoff{background:var(--linen-paper) 0 0/220px 220px,rgb(var(--home-ink));box-shadow:inset 0 16px 18px -16px rgb(0 0 0/.55),inset 0 -16px 18px -16px rgb(0 0 0/.55)}
+.home-handoff{background:var(--linen-paper) 0 0/220px 220px,rgb(var(--c-brand-deep,45 43 39));box-shadow:inset 0 16px 18px -16px rgb(0 0 0/.55),inset 0 -16px 18px -16px rgb(0 0 0/.55)}
 .home-handoff-heading,.home-option-title,.home-option-description{text-shadow:0 -1px 0 rgb(0 0 0/.45)}
 .home-handoff-inner{max-width:1328px;margin:0 auto;padding:72px 24px;display:grid;grid-template-columns:.9fr 1.4fr;gap:65px}
 .home-handoff-heading>p{font-family:var(--f-ui,'Archivo',system-ui,sans-serif);font-size:14px;font-weight:400;line-height:20px;margin:0 0 14px;color:rgb(var(--home-muted))}
