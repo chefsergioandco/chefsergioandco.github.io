@@ -116,3 +116,9 @@ textarea.booking-input {resize:vertical;}
 @media(max-width:480px){.booking-receipt-facts>div{grid-template-columns:6rem 1fr;gap:.7rem;}}
 
 .booking-calendar-section:focus-visible,.booking-choices:focus-visible{outline:2px solid rgb(var(--c-ink));outline-offset:5px;}
+
+/* Experience choices carry the header's icon and guest range, so similar services read as different ones. */
+.booking-choice-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.booking-choice-heading > svg { flex: none; color: rgb(var(--c-cta)); }
+.booking-choice-heading .sergio-header-guest-tag { margin-left: auto; }
+@media (max-width: 480px) { .booking-choice-heading .sergio-header-guest-tag { margin-left: 0; } }

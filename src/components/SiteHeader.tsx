@@ -8,6 +8,8 @@ import { ExperienceNavIcon } from './ExperienceNavIcon'
 import { AccountMenu } from './AccountAccess'
 import { useReducedMotion } from 'framer-motion'
 import { useDrawer } from './drawer-motion'
+import { GuestTag } from './GuestTag'
+import type { FormatKey } from '../content/site'
 
 const services = [
   { path: '/privatedining/', label: 'Private dinners', description: 'A menu for your table.', format: 'dinner', icon: 'utensils-crossed' },
@@ -225,7 +227,7 @@ export function SiteHeader({ route }: { route: string }) {
                 <a key={service.path} href={href(service.path)} aria-current={route === service.path ? 'page' : undefined}>
                   <span className="sergio-header-service-heading">
                     <span className="sergio-header-service-title"><Icon name={service.icon} size={22} />{service.label}</span>
-                    <span className="sergio-header-guest-tag"><Icon name="users" size={14} />{site.formats[service.format].min}–{site.formats[service.format].max} guests</span>
+                    <GuestTag format={service.format as FormatKey} />
                   </span>
                   <span className="sergio-header-service-description">{service.description}</span>
                   <span className="sergio-header-service-action">Discover more<Icon name="arrow-right" size={15} /></span>

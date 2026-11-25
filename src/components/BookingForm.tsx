@@ -15,15 +15,18 @@ import { site } from '../content/site'
 import { BookingBrief } from './BookingBrief'
 import { MenuCard, type CardData } from './MenuCard'
 import { CtaButton } from './CallToAction'
-import { Icon } from './Icons'
+import { GuestTag } from './GuestTag'
+import { Icon, type IconName } from './Icons'
 import { href, track } from './ui'
 import './BookingForm.css'
 
-const KINDS: { key: Kind; title: string; detail: string }[] = [
-  { key: 'dinner', title: 'A private dinner', detail: 'A personal menu, cooked and served for your people.' },
-  { key: 'class', title: 'A cooking class', detail: 'Cook with Sergio, then gather around what you made.' },
-  { key: 'event', title: 'A small event', detail: 'A graduation, a milestone, a reason to bring everyone together.' },
-  ...(site.features.sergiosTable ? [{ key: 'table' as const, title: 'Seats at Sergio’s table', detail: 'Choose a published evening with its own menu and fellow guests.' }] : []),
+// The same icons and guest ranges as the header's Experiences menu, so a private dinner and a small event read as
+// two different services (and two prices), not two names for one.
+const KINDS: { key: Kind; title: string; detail: string; icon: IconName; tag: ReactNode }[] = [
+  { key: 'dinner', title: 'A private dinner', icon: 'utensils-crossed', tag: <GuestTag format="dinner" />, detail: 'A personal menu, cooked in your kitchen and served at your table.' },
+  { key: 'class', title: 'A cooking class', icon: 'chef-hat', tag: <GuestTag format="class" />, detail: 'Cook with Sergio, then gather around what you made.' },
+  { key: 'event', title: 'A small event', icon: 'party-popper', tag: <GuestTag format="event" />, detail: 'Fully catered for a bigger group: staff, tablecloths, dinnerware and glassware in one all-inclusive proposal.' },
+  ...(site.features.sergiosTable ? [{ key: 'table' as const, title: 'Seats at Sergio’s table', icon: 'armchair' as const, tag: <GuestTag>Up to {booking.table.maxSeatsPerBooking} seats</GuestTag>, detail: 'A published evening at Sergio’s home, with its own menu and fellow guests. Priced per seat.' }] : []),
 ]
 const DIETARY = ['Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free']
 const STEPS = ['Your gathering', 'What’s settled', 'Your starting ideas', 'Review and continue']
@@ -36,8 +39,8 @@ function Field({ id, label, hint, error, children }: { id: string; label: string
 function Check({ id, label, checked, onChange }: { id: string; label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return <div className="booking-check"><Checkbox.Root id={id} checked={checked} onCheckedChange={value => onChange(value === true)} className="booking-checkbox"><Checkbox.Indicator><Icon name="check" size={15}/></Checkbox.Indicator></Checkbox.Root><label htmlFor={id}>{label}</label></div>
 }
-function Choices<T extends string>({ id, label, value, onChange, options, error }: { id: string; label: string; value?: T; onChange: (value: T) => void; options: { value: T; label: string; detail?: string }[]; error?: string }) {
-  return <fieldset className="booking-field" id={`wrap-${id}`}><legend>{label}</legend><RadioGroup.Root id={id} tabIndex={-1} aria-label={label} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} value={value} onValueChange={value => onChange(value as T)} className="booking-choices">{options.map(option => <RadioGroup.Item key={option.value} value={option.value} className={`booking-choice ${option.detail ? 'booking-choice--detailed' : ''}`}><span className="booking-choice-marker"><RadioGroup.Indicator/></span><span><span className="booking-choice-label">{option.label}</span>{option.detail && <span className="booking-choice-detail">{option.detail}</span>}</span></RadioGroup.Item>)}</RadioGroup.Root><ErrorText id={id} error={error}/></fieldset>
+function Choices<T extends string>({ id, label, value, onChange, options, error }: { id: string; label: string; value?: T; onChange: (value: T) => void; options: { value: T; label: string; detail?: string; icon?: IconName; tag?: ReactNode }[]; error?: string }) {
+  return <fieldset className="booking-field" id={`wrap-${id}`}><legend>{label}</legend><RadioGroup.Root id={id} tabIndex={-1} aria-label={label} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} value={value} onValueChange={value => onChange(value as T)} className="booking-choices">{options.map(option => <RadioGroup.Item key={option.value} value={option.value} className={`booking-choice ${option.detail ? 'booking-choice--detailed' : ''}`}><span className="booking-choice-marker"><RadioGroup.Indicator/></span><span>{option.icon || option.tag ? <span className="booking-choice-heading">{option.icon && <Icon name={option.icon} size={18} />}<span className="booking-choice-label">{option.label}</span>{option.tag}</span> : <span className="booking-choice-label">{option.label}</span>}{option.detail && <span className="booking-choice-detail">{option.detail}</span>}</span></RadioGroup.Item>)}</RadioGroup.Root><ErrorText id={id} error={error}/></fieldset>
 }
 function NumberStepper({ id, value, min, max, onChange, label, error }: { id: string; value?: number; min: number; max: number; onChange: (value?: number) => void; label: string; error?: string }) {
   return <div className="booking-stepper"><button type="button" aria-label={`One fewer ${label}`} disabled={(value ?? min) <= min} onClick={() => onChange(Math.max(min, (value ?? min + 1) - 1))}>−</button><input className={inputClass} id={id} type="number" inputMode="numeric" min={min} max={max} aria-label={label} aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined} value={value ?? ''} onChange={event => onChange(event.target.value ? Number(event.target.value) : undefined)}/><button type="button" aria-label={`One more ${label}`} disabled={(value ?? 0) >= max} onClick={() => onChange(Math.min(max, (value ?? min - 1) + 1))}>+</button></div>
@@ -176,7 +179,7 @@ export function BookingForm() {
       {!!Object.keys(errors).length && <div className="booking-error-summary" role="alert"><strong>A few details need your attention.</strong><ul>{Object.entries(errors).map(([key, value]) => <li key={key}><button type="button" onClick={() => document.getElementById(`f-${key}`)?.focus()}>{value}</button></li>)}</ul></div>}
       <AnimatePresence initial={false} mode="wait" custom={direction}><m.div key={`${step}-${table}`} custom={direction} initial={reduced ? false : { opacity: 0, x: direction * 14 }} animate={{ opacity: 1, x: 0 }} exit={reduced ? undefined : { opacity: 0, x: direction * -10 }} transition={{ duration: reduced ? 0 : 0.18 }} className="booking-step-content" data-step={step}>
         {step === 0 && <>
-          <Choices id="f-kind" label="What are you planning?" value={s.kind} onChange={kind => set({ kind, where: kind === 'dinner' ? s.where : s.where === 'his' ? 'home' : s.where })} options={KINDS.map(item => ({ value: item.key, label: item.title, detail: item.detail }))} error={errors.kind}/>
+          <Choices id="f-kind" label="What are you planning?" value={s.kind} onChange={kind => set({ kind, where: kind === 'dinner' ? s.where : s.where === 'his' ? 'home' : s.where })} options={KINDS.map(item => ({ value: item.key, label: item.title, detail: item.detail, icon: item.icon, tag: item.tag }))} error={errors.kind}/>
           {!table && <Field id="f-occasion" label="What’s the occasion?" hint="Optional. A graduation, an anniversary, or simply dinner together."><input id="f-occasion" className={inputClass} maxLength={1000} value={s.occasion} onChange={event => set({ occasion: event.target.value })} placeholder="A college graduation with our family" aria-describedby="f-occasion-hint"/></Field>}
           <p className="booking-small">Giving an experience? <a className="link" href={href('/gift/')}>Explore gift cards</a>.</p>
         </>}
