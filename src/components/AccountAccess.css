@@ -17,7 +17,7 @@
 .account-access-panel nav>a>svg:last-child:not(:first-child){color:rgb(var(--c-ink-muted))}
 .account-access-note{display:flex;flex-direction:column;gap:8px;border-top:1px solid rgb(var(--c-rule));padding:13px 21px;margin:0;font-size:11px;line-height:1.7;color:rgb(var(--c-ink-muted))}
 .account-access-note>button{align-self:flex-start;border:0;padding:4px 0;min-height:32px;background:transparent;color:rgb(var(--c-cta));text-decoration:underline;text-underline-offset:4px;cursor:pointer}
-.account-access-fallback{display:flex;align-items:center;min-height:44px}
+.account-access-fallback{display:flex;align-items:center;gap:7px;min-height:44px}
 .account-access :focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:4px}
 html:not(.js) .sergio-header .account-access .account-access-trigger{display:none}
 .footer-account{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:26px 0 28px;border-top:1px solid rgb(var(--footer-paper)/.24);font-family:var(--f-ui);color:rgb(var(--footer-paper))}

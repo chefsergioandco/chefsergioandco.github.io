@@ -66,7 +66,7 @@ export function AccountMenu({ navigationOpen, onOpen }: { navigationOpen: boolea
       {state.kind === 'loading' && <p className="account-access-note" role="status">Checking account status…</p>}
       {state.kind === 'unavailable' && <div className="account-access-note"><span>Account status is unavailable here. You can still open your account.</span><button type="button" onClick={refresh}>Check again</button></div>}
     </div>
-    <noscript><a className="account-access-fallback" href={accountHref('bookings')}>My account</a></noscript>
+    <noscript><a className="account-access-fallback" href={accountHref('bookings')}><Icon name="users" size={17}/>My account</a></noscript>
   </div>
 }
 

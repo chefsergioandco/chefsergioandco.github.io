@@ -39,6 +39,8 @@ function watch(page, label) {
 async function open(page, width, noScript = false) {
   if (noScript) await page.setJavaScriptEnabled(false)
   await page.setViewport({ width, height: width === 320 ? 568 : 900, deviceScaleFactor: 1 })
+  // Test the settled homepage: the first-visit arrival holds the hero and header until it finishes.
+  await page.evaluateOnNewDocument(() => { try { sessionStorage.setItem('sergio.home-arrival.v1', 'settled') } catch {} })
   await page.goto(`${ORIGIN}/`, { waitUntil: 'networkidle0' })
   await page.evaluate(() => document.fonts.ready)
 }
@@ -175,6 +177,10 @@ try {
       await page.focus(`${PANEL} .sergio-header-experiences>a`)
       await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle0' }), page.keyboard.press('Enter')])
       pass('private-dinner card opens its real service route', new URL(page.url()).pathname.endsWith('/privatedining/'))
+      // The site routes in the page: the URL changes first, then the new page renders, the overview closes and focus
+      // moves to the page. Reopen only after that, as a visitor would.
+      await page.waitForFunction(panel => document.querySelector(panel)?.hidden && /private dinner/i.test(document.querySelector('main h1')?.textContent ?? ''), {}, PANEL)
+      await settle(page)
       await expand(page, true)
       const current = await checkServices(page, 'private-dinner route')
       pass('private-dinner route identifies only its own service current', current[0]?.current === 'page' && current.filter(service => service.current === 'page').length === 1)
