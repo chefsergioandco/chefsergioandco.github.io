@@ -28,7 +28,11 @@ function useReturnTo() {
 const accountLink = accountReturnHref
 export function AuthRequired({ children }: { children: ReactNode }) {
   const { state, refresh } = useAuth()
+  // "My account" leads here; a signed-out visitor goes straight to sign-in and
+  // returns to this exact page (query and private #fragment included).
+  useEffect(() => { if (state.kind === 'signed-out') navigateAccount(signInHref(), true) }, [state.kind])
   if (state.kind === 'authenticated') return <>{children}</>
+  if (state.kind === 'signed-out') return <section className="arrival signed-out"><p className="introduction" role="status">Opening sign-in…</p></section>
   return <section className="arrival signed-out"><p className="eyebrow arrival-subtitle">your evenings with sergio</p><h1>A place to return to.</h1><p className="introduction">Keep your plans, approved menus and receipts together, from the first conversation to another evening at your table.</p>{state.kind === 'loading' ? <p className="quiet" role="status">Opening your account…</p> : <><a className="button" href={signInHref()}>Continue to your account</a>{state.kind === 'unavailable' && <><p className="notice error" role="alert">{state.error}</p><button className="text-link link-reset" onClick={() => void refresh()}>Try again</button></>}</>}<div className="arrival-note"><p>You can plan an evening without creating an account.</p><a className="text-link" href="/book/">Start planning</a></div></section>
 }
 export function VerificationPanel({ page = false }: { page?: boolean }) {

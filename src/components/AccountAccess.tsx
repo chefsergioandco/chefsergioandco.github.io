@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { accountHref } from '../content/account'
 import { useAuth } from '../account/AuthProvider'
 import { Icon } from './Icons'
@@ -38,35 +38,18 @@ function AccountLinks({ onNavigate }: { onNavigate?: () => void }) {
   </>
 }
 
-export function AccountMenu({ navigationOpen, onOpen }: { navigationOpen: boolean; onOpen: () => void }) {
-  const { state, refresh } = useContext(AccountContext)
-  const [open, setOpen] = useState(false)
-  const root = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null)
-  const id = useId()
+/** The header's account entry is a direct link to the dashboard, which sends a
+ * signed-out visitor through sign-in and back. Sign-out lives in the dashboard's
+ * own navigation and in the footer's account section. */
+export function AccountMenu({ onOpen }: { navigationOpen: boolean; onOpen: () => void }) {
+  const { state } = useContext(AccountContext)
   const signedIn = state.kind === 'ready' && state.value.authenticated
-  useEffect(() => { if (navigationOpen) setOpen(false) }, [navigationOpen])
-  useEffect(() => {
-    if (!open) return
-    const outside = (event: PointerEvent) => { if (event.target instanceof Node && !root.current?.contains(event.target)) setOpen(false) }
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); setOpen(false); trigger.current?.focus({ preventScroll: true }) } }
-    document.addEventListener('pointerdown', outside); document.addEventListener('keydown', escape)
-    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape) }
-  }, [open])
-  return <div className="account-access" ref={root} onBlur={event => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) setOpen(false) }}>
-    <button ref={trigger} className="account-access-trigger" type="button" aria-expanded={open} aria-controls={id}
-      aria-label={signedIn && state.value.displayName ? `My account, signed in as ${state.value.displayName}` : 'My account'}
-      onClick={() => { if (!open) onOpen(); setOpen(value => !value) }}>
+  return <div className="account-access">
+    <a className="account-access-trigger" href={accountHref('bookings')} onClick={onOpen}
+      aria-label={signedIn && state.value.displayName ? `My account, signed in as ${state.value.displayName}` : 'My account'}>
       <span className="account-access-icon"><Icon name="users" size={18}/>{signedIn && <span className="account-signed-in-dot" aria-hidden="true"/>}</span>
-      <span>My account</span><Icon name="chevron-down" size={13} className="account-access-chevron"/>
-    </button>
-    <div className="account-access-panel" id={id} hidden={!open}>
-      <div className="account-access-intro"><p>{signedIn ? state.value.displayName ? `Welcome, ${state.value.displayName}.` : 'Welcome back.' : 'Your plans, close at hand.'}</p>
-        <span>{signedIn ? state.value.emailVerified ? 'Evenings, menus and receipts, together.' : 'Verify your email to link your bookings.' : 'Open your evenings, menus and receipts.'}</span></div>
-      <nav aria-label="Your account"><AccountLinks onNavigate={() => setOpen(false)}/></nav>
-      {state.kind === 'loading' && <p className="account-access-note" role="status">Checking account status…</p>}
-      {state.kind === 'unavailable' && <div className="account-access-note"><span>Account status is unavailable here. You can still open your account.</span><button type="button" onClick={refresh}>Check again</button></div>}
-    </div>
-    <noscript><a className="account-access-fallback" href={accountHref('bookings')}><Icon name="users" size={17}/>My account</a></noscript>
+      <span>My account</span>
+    </a>
   </div>
 }
 

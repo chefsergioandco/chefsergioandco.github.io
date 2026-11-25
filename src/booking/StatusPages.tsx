@@ -32,7 +32,7 @@ function nextSteps(b: BookingReceipt, config: PlanningConfig | null) {
     paid ? 'Your deposit is received and will count in full toward your event bill.' : 'Your planning request is saved. No payment has been collected and no card is saved.',
     p?.dateReserved ? 'Your event date is reserved as shown above.' : 'Your event date is still to be agreed and reserved. Flexible-date planning does not block a calendar day.',
     'Your menu interview brings together the open questions about your date, people, kitchen, food and spending range.',
-    'Agree a spending ceiling with Sergio during the call. He then finishes a menu within it and sends your final details and invitations.',
+    'Agree a spending ceiling with Sergio during the call. He then finishes a menu within it and sends you your final details and invitation.',
   ]
 }
 function interviewLabel(status?: string) {

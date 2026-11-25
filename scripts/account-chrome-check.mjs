@@ -53,44 +53,35 @@ try {
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
   await page.goto(origin + '/', { waitUntil: 'networkidle0' })
   const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
-  await check('account navigation fits desktop, intermediate and narrow mobile viewports', async () => {
+  // My account is a plain link: the dashboard handles signed-out visitors by sending them through sign-in and back.
+  const until = async (predicate, ms = 15000) => { for (const end = Date.now() + ms; Date.now() < end; await new Promise(resolve => setTimeout(resolve, 100))) { try { if (await predicate()) return } catch { /* Navigating. */ } } throw new Error('Timed out waiting for the account destination') }
+  await check('My account is a direct dashboard link that fits desktop, intermediate and narrow mobile viewports', async () => {
     for (const width of [1440, 1200, 1080, 960, 800, 700, 390, 320]) {
       await page.setViewport({ width, height: 900 }); await settle()
-      const layout = await page.$eval('.account-access-trigger', element => { const box = element.getBoundingClientRect(); return { width: box.width, height: box.height, left: box.left, right: box.right, pageWidth: document.documentElement.scrollWidth, viewport: innerWidth } })
+      const layout = await page.$eval('.account-access-trigger', element => { const box = element.getBoundingClientRect(); return { tag: element.tagName, href: element.getAttribute('href'), expanded: element.getAttribute('aria-expanded'), width: box.width, height: box.height, left: box.left, right: box.right, pageWidth: document.documentElement.scrollWidth, viewport: innerWidth } })
+      assert.equal(layout.tag, 'A'); assert.equal(layout.href, '/dashboard/'); assert.equal(layout.expanded, null, 'No disclosure state on a link')
       assert(layout.width >= 44 && layout.height >= 44, `Account target too small at ${width}: ${JSON.stringify(layout)}`)
       assert(layout.left >= 0 && layout.right <= width, `Account target overflow at ${width}`)
       assert(layout.pageWidth <= layout.viewport + 1, `Horizontal overflow at ${width}`)
-      await page.click('.account-access-trigger'); await settle()
-      const panel = await page.$eval('.account-access-panel', element => { const box = element.getBoundingClientRect(); return { left: box.left, right: box.right, visible: !element.hidden } })
-      assert(panel.visible && panel.left >= 0 && panel.right <= width, `Account disclosure overflow at ${width}`)
-      await page.keyboard.press('Escape')
     }
+    assert.equal(await page.$('.account-access-panel'), null, 'The header has no account dropdown')
   })
-  await check('keyboard, outside dismissal and Experiences remain independent and accessible', async () => {
+  await check('opening My account while signed out goes through sign-in and returns to the dashboard', async () => {
     await page.setViewport({ width: 1440, height: 900 }); await settle()
     await page.focus('.account-access-trigger'); await page.keyboard.press('Enter')
-    assert.equal(await page.$eval('.account-access-trigger', element => element.getAttribute('aria-expanded')), 'true')
-    await page.keyboard.press('Tab')
-    assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()), 'Your evenings')
-    await page.keyboard.press('Escape')
-    assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('account-access-trigger')), true)
-    await page.click('.account-access-trigger'); await page.click('main h1')
-    assert.equal(await page.$eval('.account-access-trigger', element => element.getAttribute('aria-expanded')), 'false')
-    await page.click('.account-access-trigger'); await page.click('.sergio-header-desktop [data-site-navigation-toggle]'); await settle()
-    assert.equal(await page.$eval('.account-access-panel', element => element.hidden), true)
-    assert.equal(await page.$eval('#site-navigation-overview', element => element.hidden), false)
-    await page.click('.account-access-trigger'); await settle()
-    assert.equal(await page.$eval('#site-navigation-overview', element => element.hidden), true)
-    await page.keyboard.press('Escape')
+    await until(() => new URL(page.url()).pathname === '/account/sign-in/')
+    assert.equal(new URL(page.url()).searchParams.get('returnTo'), '/dashboard/')
+    await page.goto(origin + '/', { waitUntil: 'networkidle0' }); await settle()
   })
-  await check('footer routes match the header and cross-site status requests stay disabled', async () => {
-    const header = await page.$$eval('.account-access-panel nav a', links => links.map(link => ({ text: link.textContent.trim(), href: link.href })))
+  await check('footer offers the same dashboard destination with sign-in, and cross-site status requests stay disabled', async () => {
+    const header = await page.$eval('.account-access-trigger', link => link.href)
     const footer = await page.$$eval('.footer-account nav a', links => links.map(link => ({ text: link.textContent.trim(), href: link.href })))
-    assert.deepEqual(footer, header); assert.equal(statusRequests.length, 0); assert.deepEqual(errors, [])
+    assert(footer.some(link => link.text === 'Your evenings' && link.href === header), JSON.stringify({ header, footer }))
+    assert(footer.some(link => link.text === 'Sign in')); assert.equal(statusRequests.length, 0); assert.deepEqual(errors, [])
     await fs.mkdir('output/account-chrome', { recursive: true })
     await page.setViewport({ width: 1440, height: 960 }); await page.screenshot({ path: 'output/account-chrome/desktop.png' })
-    await page.setViewport({ width: 390, height: 844 }); await page.click('.account-access-trigger'); await page.screenshot({ path: 'output/account-chrome/mobile-account.png' })
-    await page.keyboard.press('Escape'); await page.$eval('.footer-account', element => element.scrollIntoView({ block: 'center' })); await settle(); await page.screenshot({ path: 'output/account-chrome/mobile-footer.png' })
+    await page.setViewport({ width: 390, height: 844 }); await settle(); await page.screenshot({ path: 'output/account-chrome/mobile-account.png' })
+    await page.$eval('.footer-account', element => element.scrollIntoView({ block: 'center' })); await settle(); await page.screenshot({ path: 'output/account-chrome/mobile-footer.png' })
   })
   await check('request handoff keeps proof in the local fragment and waits for an explicit verified claim', async () => {
     const proof = 'f'.repeat(43), reference = 'WEB-account-fixture'
@@ -116,8 +107,9 @@ try {
     let claims = 0
     page.on('request', request => { if (request.url().includes('/customer/claim')) claims++ })
     await page.click('.booking-account-access a')
-    await page.waitForFunction(() => location.pathname === '/dashboard/' && !!document.querySelector('main a[href^="/account/sign-in/"]'))
-    const signIn = new URL(await page.$eval('main a[href^="/account/sign-in/"]', link => link.href))
+    // Signed out, the dashboard sends the visitor straight to sign-in, carrying the exact claim target.
+    await until(() => new URL(page.url()).pathname === '/account/sign-in/')
+    const signIn = new URL(page.url())
     assert.equal(signIn.searchParams.get('returnTo'), '/dashboard/?ref=' + reference); assert.equal(signIn.hash, '#access=' + proof); assert(!signIn.search.includes(proof)); assert.equal(claims, 0)
   })
   console.log(`${passed} account chrome checks passed. Authenticated states used fictional fixtures; no real sign-in or booking requests were submitted.`)

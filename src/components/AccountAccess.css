@@ -1,23 +1,8 @@
 .account-access{position:relative;font-family:var(--f-ui);font-size:14px;line-height:1.45;flex-shrink:0}
 .sergio-header .account-access .account-access-trigger{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 0;border:0;background:transparent;cursor:pointer;color:rgb(var(--c-ink));white-space:nowrap}
-.sergio-header .account-access .account-access-trigger:hover,.sergio-header .account-access .account-access-trigger[aria-expanded=true]{color:rgb(var(--c-cta))}
+.sergio-header .account-access .account-access-trigger:hover{color:rgb(var(--c-cta))}
 .account-access-icon{position:relative;display:inline-flex;align-items:center}
 .account-signed-in-dot{position:absolute;right:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:rgb(var(--c-cta));box-shadow:0 0 0 2px rgb(var(--c-canvas))}
-.account-access-chevron{transition:transform .15s var(--ease)}
-.sergio-header .account-access .account-access-trigger[aria-expanded=true] .account-access-chevron{transform:rotate(180deg)}
-.account-access-panel{position:absolute;top:calc(100% + 17px);right:0;width:290px;max-width:calc(100vw - 40px);max-height:calc(var(--sergio-panel-space,60dvh) - 12px);overflow-y:auto;overscroll-behavior:contain;background:rgb(var(--c-canvas));border:1px solid rgb(var(--c-rule));box-shadow:0 10px 24px rgb(var(--c-ink)/.09);z-index:5;text-align:left}
-.account-access-panel[hidden]{display:none}
-.account-access-intro{padding:21px 21px 17px;border-bottom:1px solid rgb(var(--c-rule))}
-.account-access-intro>p{font:500 25px/1.15 var(--f-display);letter-spacing:-.015em;margin:0 0 9px;overflow-wrap:anywhere}
-.account-access-intro>span{display:block;font-size:12px;line-height:1.7;color:rgb(var(--c-ink-muted))}
-.account-access-panel nav{padding:8px 12px}
-.account-access-panel nav>a{display:flex;align-items:center;gap:11px;min-height:44px;padding:11px 9px;color:rgb(var(--c-ink));font-size:13px;line-height:1.5;text-decoration:none}
-.account-access-panel nav>a:hover{background:rgb(var(--c-paper));color:rgb(var(--c-cta))}
-.account-access-panel nav>a>span{flex:1}
-.account-access-panel nav>a>svg:last-child:not(:first-child){color:rgb(var(--c-ink-muted))}
-.account-access-note{display:flex;flex-direction:column;gap:8px;border-top:1px solid rgb(var(--c-rule));padding:13px 21px;margin:0;font-size:11px;line-height:1.7;color:rgb(var(--c-ink-muted))}
-.account-access-note>button{align-self:flex-start;border:0;padding:4px 0;min-height:32px;background:transparent;color:rgb(var(--c-cta));text-decoration:underline;text-underline-offset:4px;cursor:pointer}
-.account-access-fallback{display:flex;align-items:center;gap:7px;min-height:44px}
 .account-access :focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:4px}
 html:not(.js) .sergio-header .account-access .account-access-trigger{display:none}
 .footer-account{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:26px 0 28px;border-top:1px solid rgb(var(--footer-paper)/.24);font-family:var(--f-ui);color:rgb(var(--footer-paper))}
@@ -35,9 +20,8 @@ html:not(.js) .sergio-header .account-access .account-access-trigger{display:non
 .booking-account-access p{font:400 14px/1.7 var(--f-body);margin:0 0 10px;color:rgb(var(--c-ink-muted))}
 .booking-account-access a{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:rgb(var(--c-cta));font:400 13px/1.5 var(--f-ui);text-underline-offset:4px}
 .booking-account-access :focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:4px}
-@media(min-width:960px) and (max-width:1199px){.sergio-header-main{gap:14px}.sergio-header-desktop{gap:12px}.sergio-header-desktop>a,.sergio-header .account-access .account-access-trigger{font-size:13px}.sergio-header .account-access .account-access-trigger{gap:6px}.account-access-chevron{display:none}}
+@media(min-width:960px) and (max-width:1199px){.sergio-header-main{gap:14px}.sergio-header-desktop{gap:12px}.sergio-header-desktop>a,.sergio-header .account-access .account-access-trigger{font-size:13px}.sergio-header .account-access .account-access-trigger{gap:6px}}
 @media(min-width:960px) and (max-width:1099px){.sergio-header-main{flex-wrap:wrap}.sergio-header-brand{margin-right:auto}.sergio-header-desktop{order:3;flex:1 0 100%;justify-content:space-between;padding-top:8px;border-top:1px solid rgb(var(--c-rule))}}
-@media(max-width:700px){.account-access{min-width:0;align-self:stretch}.sergio-header .account-access .account-access-trigger{width:100%;min-width:0;min-height:54px;flex-direction:column;gap:5px;padding:0 2px;font-size:14px;line-height:18px;white-space:normal;text-align:center}.account-access-chevron{display:none}.account-access-panel{top:calc(100% + 10px);right:-1px;width:290px}.account-access-intro{padding:19px 19px 15px}.account-access-panel nav>a{font-size:14px}.footer-account{align-items:flex-start;flex-direction:column;gap:17px;padding:25px 0 24px}.footer-account nav{gap:5px 23px;align-items:flex-start}.footer-account nav>a{font-size:13px}.footer-account-copy h3{font-size:26px}.booking-account-access{padding:20px 17px;gap:12px}.booking-account-access h2{font-size:24px}.booking-account-access p{font-size:14px}}
-@media(max-width:359px){.sergio-header .account-access .account-access-trigger{font-size:12px;line-height:18px}.account-access-panel{width:280px;max-width:calc(100vw - 32px)}.footer-account nav{gap:3px 18px}}
-@media(forced-colors:active){.account-access-panel{border-color:CanvasText}.account-signed-in-dot{background:Highlight}}
-@media(prefers-reduced-motion:reduce){.account-access-chevron{transition:none}}
+@media(max-width:700px){.account-access{min-width:0;align-self:stretch}.sergio-header .account-access .account-access-trigger{width:100%;min-width:0;min-height:54px;flex-direction:column;gap:5px;padding:0 2px;font-size:14px;line-height:18px;white-space:normal;text-align:center}.footer-account{align-items:flex-start;flex-direction:column;gap:17px;padding:25px 0 24px}.footer-account nav{gap:5px 23px;align-items:flex-start}.footer-account nav>a{font-size:13px}.footer-account-copy h3{font-size:26px}.booking-account-access{padding:20px 17px;gap:12px}.booking-account-access h2{font-size:24px}.booking-account-access p{font-size:14px}}
+@media(max-width:359px){.sergio-header .account-access .account-access-trigger{font-size:12px;line-height:18px}.footer-account nav{gap:3px 18px}}
+@media(forced-colors:active){.account-signed-in-dot{background:Highlight}}
