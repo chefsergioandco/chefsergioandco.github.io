@@ -184,7 +184,9 @@ try {
       await expand(page, true)
       const current = await checkServices(page, 'private-dinner route')
       pass('private-dinner route identifies only its own service current', current[0]?.current === 'page' && current.filter(service => service.current === 'page').length === 1)
-      await page.keyboard.press('Escape')
+      // Choosing the page you are already on changes no route, so the overview has to close on the choice itself.
+      await page.click(`${PANEL} .sergio-header-experiences>a[aria-current=page]`)
+      pass('choosing the current page closes the overview at once', await page.$eval(PANEL, panel => panel.hidden) && new URL(page.url()).pathname.endsWith('/privatedining/'))
     }
     await page.$eval('footer', footer => footer.scrollIntoView({ block: 'start', behavior: 'instant' }))
     await (await page.$('footer')).screenshot({ path: path.join(SHOTS, `navigation-affordances-${width}-footer.png`) })

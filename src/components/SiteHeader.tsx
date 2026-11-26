@@ -120,10 +120,23 @@ export function SiteHeader({ route }: { route: string }) {
         close(!!(document.activeElement && header.current?.contains(document.activeElement)))
       }
     }
+    // Any navigation closes the overview at once: a choice in it, a link elsewhere on the page, Back or Forward. The
+    // header is not remounted between routes, and a choice of the current page does not change the route at all.
+    const navigated = () => close()
     document.addEventListener('pointerdown', outside)
     document.addEventListener('keydown', escape)
-    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape) }
+    window.addEventListener('site:navigate', navigated)
+    window.addEventListener('popstate', navigated)
+    return () => {
+      document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape)
+      window.removeEventListener('site:navigate', navigated); window.removeEventListener('popstate', navigated)
+    }
   }, [open])
+  /** A plain activation of any link in the overview (including a call link, or a page outside the in-page router). */
+  const chose = (event: MouseEvent<HTMLElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (event.target instanceof Element && event.target.closest('a[href]')) close()
+  }
 
   useEffect(() => {
     // Account for the prototype notice and the mobile browser's changing viewport.
@@ -213,7 +226,7 @@ export function SiteHeader({ route }: { route: string }) {
           {trigger(true)}
         </div>
       </div>
-      <section id="site-navigation-overview" ref={panel} className="sergio-header-overview" hidden={!open} aria-labelledby="site-navigation-title"
+      <section id="site-navigation-overview" ref={panel} className="sergio-header-overview" hidden={!open} aria-labelledby="site-navigation-title" onClick={chose}
         onPointerEnter={event => { if (event.pointerType === 'mouse') clearTimeout(dismissTimer.current) }}
         onPointerLeave={event => { if (event.pointerType === 'mouse') leaveHover() }}>
         <div className="sergio-header-overview-inner">
