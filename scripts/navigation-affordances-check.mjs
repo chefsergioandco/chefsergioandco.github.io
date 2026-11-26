@@ -29,8 +29,14 @@ const services = [
 })
 const settle = page => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
 
-function watch(page, label) {
+async function watch(page, label) {
   page.on('pageerror', error => errors.push(`${label}: ${error.message}`))
+  // The homepage asks the booking service for client reviews; answer locally instead of calling the live Worker.
+  await page.setRequestInterception(true)
+  page.on('request', request => {
+    if (new URL(request.url()).pathname === '/api/reviews' && !request.url().startsWith(ORIGIN)) return request.respond({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': ORIGIN }, body: JSON.stringify({ reviews: [] }) })
+    return request.continue()
+  })
   page.on('console', message => {
     if (message.type() === 'error' && !/\/favicon\.ico(?:\?|$)/.test(message.location().url || '')) errors.push(`${label}: ${message.text()}`)
   })
@@ -151,7 +157,7 @@ try {
   for (const width of [1440, 320]) {
     const context = await browser.createBrowserContext(), page = await context.newPage()
     const label = `${width}px`
-    watch(page, label)
+    await watch(page, label)
     await open(page, width)
     await checkReading(page, label)
     await checkIcons(page, `${label} closed`)
@@ -198,7 +204,7 @@ try {
   }
   {
     const context = await browser.createBrowserContext(), page = await context.newPage()
-    watch(page, 'no-JS 320px')
+    await watch(page, 'no-JS 320px')
     await open(page, 320, true)
     await checkReading(page, 'no-JS 320px')
     await checkIcons(page, 'no-JS 320px')

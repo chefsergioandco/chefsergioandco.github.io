@@ -2,12 +2,13 @@ import { Faq, FAQ } from '../components/Faq'
 import { HomeHandoff, HomeHero } from '../components/HomeHero'
 import { PlatingTimeline } from '../components/PlatingTimeline'
 import { CtaLink } from '../components/CallToAction'
-import { href, Photo, SectionHead, TBD } from '../components/ui'
+import { href, Photo } from '../components/ui'
 import { DishCarousel } from '../components/DishCarousel'
 import { DeferredImage } from '../components/DeferredImage'
 import { sergioPortrait } from '../content/portrait'
-import { reviews, site } from '../content/site'
+import { site } from '../content/site'
 import { HomeGift } from '../components/HomeGift'
+import { HomeReviews } from '../components/HomeReviews'
 
 export function Home() {
   return (
@@ -59,27 +60,7 @@ export function Home() {
         </div>
       </section>
 
-      <section aria-labelledby="reviews" className="bg-paper py-16 md:py-24">
-        <div className="wrap">
-          <SectionHead id="reviews" title="What clients say" />
-          {reviews.length ? (
-            <ul className="mt-10 grid gap-10 md:grid-cols-3">
-              {reviews.map((r) => (
-                <li key={r.name}>
-                  <blockquote className="font-display text-xl">“{r.quote}”</blockquote>
-                  <p className="mt-3 text-sm text-ink-muted">
-                    {r.name}, {r.context}. {r.url ? <a className="link" href={r.url}>{r.source}</a> : r.source}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-6 max-w-prose">
-              <TBD k="reviews">Add three real reviews, each with the client's permission and a source (Google, Yelp or a saved message).</TBD>
-            </p>
-          )}
-        </div>
-      </section>
+      <HomeReviews />
 
       <HomeGift />
 

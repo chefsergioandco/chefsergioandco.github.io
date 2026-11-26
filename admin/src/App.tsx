@@ -9,18 +9,19 @@ import Website from './Website'
 import {BillingRecords} from './Billing'
 import {receivedFor,quorumFor} from './operations'
 import Communications from './Communications'
+import Reviews from './Reviews'
 import Newsletter from './Newsletter'
 import { getAdminNavigation } from './api-client'
 
-type WindowName = 'requests' | 'bookings' | 'calendar' | 'table' | 'payments' | 'communications' | 'newsletter' | 'website' | 'activity'
-const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Sergio’s Table',payments:'Billing & records',communications:'Communications',newsletter:'Newsletter',website:'Your website',activity:'Recent activity'}
+type WindowName = 'requests' | 'bookings' | 'calendar' | 'table' | 'payments' | 'communications' | 'reviews' | 'newsletter' | 'website' | 'activity'
+const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Sergio’s Table',payments:'Billing & records',communications:'Communications',reviews:'Client reviews',newsletter:'Newsletter',website:'Your website',activity:'Recent activity'}
 function fromHash():WindowName|null {
  const hash=location.hash.slice(1)
  if(hash==='overview'||!hash)return null
  if(hash==='nights')return 'table'
  return Object.hasOwn(windowTitles,hash)?hash as WindowName:null
 }
-const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Sergio’s Table',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'}]
+const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Sergio’s Table',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'reviews',label:'Reviews',icon:'people'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'}]
 const twoDigits=(value:number)=>String(Math.round(value)).padStart(2,'0')
 export default function App(){
  const accountNavigation=getAdminNavigation()
@@ -115,6 +116,7 @@ export default function App(){
     <button className="kiosk-tool" onClick={()=>openWindow('calendar')}><span className="kiosk-tool-icon"><Icon name="calendar" size={35}/></span><span><strong>Calendar</strong><span>Dates & availability</span></span></button>
     <button className="kiosk-tool" onClick={()=>openWindow('website')}><span className="kiosk-tool-icon"><Icon name="globe" size={35}/></span><span><strong>Your website</strong><span>Words, menus & images</span></span></button>
     <button className="kiosk-tool communications-kiosk-tool" onClick={()=>openWindow('communications')}><span className="kiosk-tool-icon"><Icon name="mail" size={35}/></span><span><strong>Communications</strong><span>Guest emails & receipts</span></span></button>
+    <button className="kiosk-tool reviews-kiosk-tool" onClick={()=>openWindow('reviews')}><span className="kiosk-tool-icon"><Icon name="people" size={35}/></span><span><strong>Client reviews</strong><span>What clients say, on your homepage</span></span></button>
     <button className="kiosk-tool" onClick={()=>openWindow('activity')}><span className="kiosk-tool-icon"><Icon name="history" size={35}/></span><span><strong>Recent activity</strong><span>What’s been happening</span></span></button>
    </section>
   </main>
@@ -128,6 +130,7 @@ export default function App(){
    {activeWindow==='website'&&<Website embedded/>}
    {activeWindow==='payments'&&<BillingRecords/>}
    {activeWindow==='communications'&&<Communications/>}
+   {activeWindow==='reviews'&&<Reviews/>}
    {activeWindow==='newsletter'&&<Newsletter/>}
    {activeWindow==='activity'&&<section className="kiosk-activity"><ol>{state.activity.map(a=><li key={a.id}><span className="kiosk-activity-icon"><Icon name="check" size={18}/></span><div><p>{a.text}</p><time dateTime={a.at}>{new Date(a.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</time></div></li>)}</ol>{!state.activity.length&&<p className="empty-state">Your recent actions will appear here.</p>}</section>}
   </WorkspaceWindow>}

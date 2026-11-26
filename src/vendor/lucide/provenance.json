@@ -164,6 +164,16 @@
       "upstream_name": "arrow-up",
       "source": "https://raw.githubusercontent.com/lucide-icons/lucide/f12b0de177fbc2a6795e99be065887e72b237123/icons/arrow-up.svg",
       "sha256": "8c22c25874c80bb062bef985d207d8f1d4a4d7847237d0a8cf720a3235968518"
+    },
+    "pause": {
+      "upstream_name": "pause",
+      "source": "https://raw.githubusercontent.com/lucide-icons/lucide/f12b0de177fbc2a6795e99be065887e72b237123/icons/pause.svg",
+      "sha256": "0f4280e6dcc1047551bbc6ef8a9f1a34959de13c7f077d9667d12ab90c8fbca7"
+    },
+    "play": {
+      "upstream_name": "play",
+      "source": "https://raw.githubusercontent.com/lucide-icons/lucide/f12b0de177fbc2a6795e99be065887e72b237123/icons/play.svg",
+      "sha256": "e646902a5a8ba055ce573c6f51d10bb6eb9d230e7d6e84a9e6c81f599778ffc1"
     }
   }
 }

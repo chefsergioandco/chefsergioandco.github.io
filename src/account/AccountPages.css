@@ -275,3 +275,14 @@
 :root[data-theme=dark]:not([data-admin-route]) .account-shell .wordmark img.wordmark-tone--reverse{display:block}
 :root[data-theme=dark]:not([data-admin-route]) .account-shell .booking,:root[data-theme=dark]:not([data-admin-route]) .account-shell .auth-panel{background:rgb(var(--c-paper))}
 }
+
+/* Reviews: one card per evening; the review reads like a quote, consent sits beside its checkbox. */
+.account-shell .evenings-account .ev-review { display: block; padding: 2rem 0; border-top: 1px solid var(--rule); scroll-margin-top: 6rem; }
+.account-shell .evenings-account .ev-review h2 { margin: .25rem 0 0; }
+.account-shell .evenings-account .ev-review .ev-form { margin-top: 1.25rem; }
+.account-shell .evenings-account .ev-review-quote { max-width: 60ch; margin: 1rem 0 .5rem; font-family: var(--f-display, 'EB Garamond', serif); font-size: 1.25rem; line-height: 1.5; }
+.account-shell .evenings-account .ev-check { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: .75rem; }
+.account-shell .evenings-account .ev-check input { width: 1.125rem; height: 1.125rem; margin-top: .2rem; accent-color: var(--rouge); }
+.account-shell .evenings-account .ev-error { color: var(--rouge); font-size: .875rem; line-height: 1.6; }
+.account-shell .evenings-account .ev-review-upcoming { padding: 1rem 0; border-top: 1px solid var(--rule); }
+.account-shell .evenings-account .ev-review-upcoming h3 { margin: 0; }

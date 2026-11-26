@@ -1,6 +1,6 @@
 // Generated from the vendored official Lucide SVGs. See LICENSE and provenance.json.
 // Regenerate offline with: python3 src/vendor/lucide/generate.py
-export type IconName = "utensils-crossed" | "chef-hat" | "party-popper" | "armchair" | "book-open" | "gift" | "arrow-up-right" | "arrow-right" | "phone" | "mail" | "map-pin" | "instagram" | "facebook" | "menu" | "x" | "chevron-down" | "check" | "home" | "image" | "users" | "calendar-days" | "clock" | "circle-check" | "external-link" | "camera" | "heart-handshake" | "plus" | "chevron-left" | "chevron-right" | "arrow-left" | "arrow-up"
+export type IconName = "utensils-crossed" | "chef-hat" | "party-popper" | "armchair" | "book-open" | "gift" | "arrow-up-right" | "arrow-right" | "phone" | "mail" | "map-pin" | "instagram" | "facebook" | "menu" | "x" | "chevron-down" | "check" | "home" | "image" | "users" | "calendar-days" | "clock" | "circle-check" | "external-link" | "camera" | "heart-handshake" | "plus" | "chevron-left" | "chevron-right" | "arrow-left" | "arrow-up" | "pause" | "play"
 type IconNode = readonly [tag: string, attributes: Readonly<Record<string, string>>]
 export const iconNodes: Record<IconName, readonly IconNode[]> = {
   "utensils-crossed": [
@@ -618,6 +618,36 @@ export const iconNodes: Record<IconName, readonly IconNode[]> = {
       "path",
       {
         "d": "M12 19V5"
+      }
+    ]
+  ],
+  "pause": [
+    [
+      "rect",
+      {
+        "x": "14",
+        "y": "4",
+        "width": "4",
+        "height": "16",
+        "rx": "1"
+      }
+    ],
+    [
+      "rect",
+      {
+        "x": "6",
+        "y": "4",
+        "width": "4",
+        "height": "16",
+        "rx": "1"
+      }
+    ]
+  ],
+  "play": [
+    [
+      "polygon",
+      {
+        "points": "6 3 20 12 6 21 6 3"
       }
     ]
   ]

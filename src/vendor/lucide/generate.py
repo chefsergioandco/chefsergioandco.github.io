@@ -22,7 +22,7 @@ NAMES = [
     "arrow-up-right", "arrow-right", "phone", "mail", "map-pin", "instagram", "facebook",
     "menu", "x", "chevron-down", "check", "home", "image", "users", "calendar-days", "clock",
     "circle-check", "external-link", "camera", "heart-handshake",
-    "plus", "chevron-left", "chevron-right", "arrow-left", "arrow-up",
+    "plus", "chevron-left", "chevron-right", "arrow-left", "arrow-up", "pause", "play",
 ]
 ALIASES = {"home": "house"}
 TAGS = {"path", "circle", "line", "polyline", "polygon", "rect", "ellipse"}

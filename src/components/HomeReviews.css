@@ -1,0 +1,31 @@
+/* What clients say: a masthead. One quote in display type between two rules; each new one rises in from the
+   direction of travel. The stage keeps its height between quotes so nothing below it shifts. */
+.home-reviews-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.5rem 2rem}
+.home-reviews-note{display:inline-flex;align-items:center;gap:.4rem;margin:0;font:400 .875rem/1.5 var(--f-ui,Archivo,sans-serif);color:rgb(var(--c-ink-soft))}
+.home-reviews-note svg{color:rgb(var(--c-cta));flex:none}
+.home-reviews-stage{position:relative;margin-top:2.5rem;padding:2.75rem 0 1.25rem;border-top:1px solid rgb(var(--c-ink)/.85);border-bottom:1px solid rgb(var(--c-rule));min-height:clamp(17rem,34vw,21rem);display:flex;flex-direction:column;justify-content:space-between;touch-action:pan-y;outline:none}
+.home-reviews-stage::before{content:'';position:absolute;left:0;right:0;top:4px;border-top:1px solid rgb(var(--c-ink)/.35)}
+.home-review{margin:0;max-width:52rem;animation:home-review-in .62s cubic-bezier(.2,.75,.25,1) both}
+.home-review[data-direction='-1']{animation-name:home-review-back}
+@keyframes home-review-in{from{opacity:0;transform:translateX(2.25rem);filter:blur(1.5px)}}
+@keyframes home-review-back{from{opacity:0;transform:translateX(-2.25rem);filter:blur(1.5px)}}
+.home-review-quote{margin:0;font-family:var(--f-display,'EB Garamond',serif);font-size:clamp(1.5rem,1.1rem + 1.6vw,2.4rem);line-height:1.28;letter-spacing:-.005em;text-wrap:pretty}
+.home-review-quote p{margin:0}
+.home-review-quote p::before{content:'“';margin-left:-.42em;color:rgb(var(--c-cta))}
+.home-review-quote p::after{content:'”'}
+.home-review-by{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem 1rem;margin-top:1.5rem;font:400 .9375rem/1.5 var(--f-ui,Archivo,sans-serif);color:rgb(var(--c-ink-soft))}
+.home-review-name{color:rgb(var(--c-ink));font-weight:500}
+.home-review-name::before{content:'— '}
+.home-review-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.15rem .55rem;border:1px solid rgb(var(--c-cta)/.28);color:rgb(var(--c-cta));background:rgb(var(--c-cta)/.05);font-size:.8125rem}
+.home-reviews-controls{display:flex;align-items:center;gap:.25rem;margin-top:2rem;font:400 .875rem/1 var(--f-ui,Archivo,sans-serif)}
+.home-reviews-controls button{display:inline-grid;place-items:center;min-width:44px;min-height:44px;padding:0 .5rem;color:rgb(var(--c-ink));background:none;border:1px solid transparent;cursor:pointer}
+.home-reviews-controls button:hover{border-color:rgb(var(--c-rule))}
+.home-reviews-controls button:focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:2px}
+.home-reviews-count{min-width:4.5rem;text-align:center;font-variant-numeric:tabular-nums;color:rgb(var(--c-ink-soft))}
+.home-reviews-pause{margin-left:auto}
+.home-reviews-empty .home-review-quote{max-width:40rem;color:rgb(var(--c-ink-soft))}
+.home-reviews-empty .home-review-quote::before,.home-reviews-empty .home-review-quote::after{content:none}
+.home-reviews-cta{margin:1.25rem 0 0;font:400 .9375rem/1.6 var(--f-ui,Archivo,sans-serif);color:rgb(var(--c-ink-soft))}
+.home-reviews-cta-quiet{color:rgb(var(--c-ink-soft)/.85)}
+@media(max-width:640px){.home-review-quote p::before{margin-left:0}.home-reviews-cta-quiet{display:block}}
+@media(prefers-reduced-motion:reduce){.home-review{animation:none}}

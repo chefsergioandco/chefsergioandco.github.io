@@ -1,0 +1,17 @@
+.admin-reviews{display:grid;gap:18px;max-width:880px}
+.admin-reviews-intro,.admin-reviews-empty,.admin-reviews-count{margin:0;color:#5f5a52;line-height:1.6}
+.admin-reviews-count{font-size:.875rem}
+.admin-reviews-error{margin:0;color:#8f2f25}
+.admin-reviews-list{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.admin-review{display:grid;gap:8px;padding:22px 0;border-top:1px solid #dfdbd2}
+.admin-review[data-visible=false] blockquote{color:#8a847a}
+.admin-review blockquote{margin:0;font-family:'EB Garamond',Georgia,serif;font-size:1.3rem;line-height:1.45}
+.admin-review-by{margin:0;font-weight:500}
+.admin-review-meta{margin:0;color:#6b665d;font-size:.875rem}
+.admin-review-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.admin-review-status{font-size:.875rem;color:#5f5a52}
+.admin-review[data-visible=true] .admin-review-status{color:#2f6b3a}
+/* Five tools on the overview: one row when there is room, then three and two, then pairs (Communications.css). */
+.dashboard-shell .kiosk-tools:has(.reviews-kiosk-tool){grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1350px){.dashboard-shell .kiosk-tools:has(.reviews-kiosk-tool){grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1000px){.dashboard-shell .kiosk-tools:has(.reviews-kiosk-tool){grid-template-columns:repeat(2,minmax(0,1fr))}}
