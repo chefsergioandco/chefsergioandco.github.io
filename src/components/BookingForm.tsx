@@ -4,6 +4,7 @@ import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useActivated } from '../activation'
 import { api } from '../booking/api'
+import { attachFriend, forgetFriendCode, lookupFriend, pendingFriendCode, type FriendInvite } from '../booking/referral'
 import { navigateAccount } from '../account/navigation'
 import { Calendar } from '../booking/Calendar'
 import { addMonths, clock, longDate, money } from '../booking/format'
@@ -69,6 +70,9 @@ export function BookingForm() {
   const [month, setMonth] = useState(() => todayET().slice(0, 7)), [nights, setNights] = useState<Night[] | null>(null), [nightsError, setNightsError] = useState(''), [nightsRetry, setNightsRetry] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({}), [submissionError, setSubmissionError] = useState(''), [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<{ id: number; text: string; more: number } | null>(null)
+  // A friend's invitation link (?friend=CODE): shown as a welcome, recorded on the booking once it is made.
+  const [friend, setFriend] = useState<FriendInvite | null>(null)
+  useEffect(() => { const pending = pendingFriendCode(); if (pending) lookupFriend(pending.code, pending.source).then(setFriend, () => {}) }, [])
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 5200); return () => clearTimeout(timer) }, [toast])
   const [draft, setDraft] = useState<SavedDraft | null>(null), [hydrated, setHydrated] = useState(false), [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null), inFlight = useRef(false), reduced = useReducedMotion()
@@ -177,6 +181,10 @@ export function BookingForm() {
     inFlight.current = true; setBusy(true); setSubmissionError('')
     try {
       const result = await api.hold(planningRequest(s), honeypot)
+      if (friend && s.kind !== 'table') {
+        try { await attachFriend(result.ref, result.accessToken, friend); forgetFriendCode() }
+        catch { /* The request stands; Sergio can still honour the welcome by hand. */ }
+      }
       try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
       const destination = new URL(result.url, window.location.href)
       // "Continue to deposit" goes straight to Stripe. The saved request stands if
@@ -209,6 +217,7 @@ export function BookingForm() {
       <ol className="booking-progress" aria-label="Booking progress">{labels.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined} className={index <= step ? 'reached' : ''}><span className="sr-only">{label}{index < step ? ', completed' : ''}</span></li>)}</ol>
       {configError && <div className="booking-notice" role="alert" id="f-config" tabIndex={-1}><p>{configError}</p><button type="button" className="link" onClick={() => setConfigRetry(value => value + 1)}>Reload booking settings</button></div>}
       {!!Object.keys(errors).length && <div className="booking-error-summary" role="alert"><strong>A few details need your attention.</strong><ul>{Object.entries(errors).map(([key, value]) => <li key={key}><button type="button" onClick={() => reveal(key)}>{value}</button></li>)}</ul></div>}
+      {friend && <p className="booking-friend"><Icon name="gift" size={18}/><span><strong>Invited by {friend.name}{friend.name.endsWith('.') ? '' : '.'}</strong> {s.kind === 'table' ? 'The welcome gift applies to private dinners, cooking classes and small events.' : `Your first evening with Sergio comes with ${money(friend.welcome)} off the final bill.`}</span></p>}
       {toast && <div key={toast.id} className="booking-toast" aria-hidden="true" onClick={() => setToast(null)}><p><strong>{toast.text}</strong>{toast.more > 0 && <span>{toast.more} more {toast.more === 1 ? 'detail needs' : 'details need'} attention.</span>}</p></div>}
       <AnimatePresence initial={false} mode="wait" custom={direction}><m.div key={`${step}-${table}`} custom={direction} initial={reduced ? false : { opacity: 0, x: direction * 14 }} animate={{ opacity: 1, x: 0 }} exit={reduced ? undefined : { opacity: 0, x: direction * -10 }} transition={{ duration: reduced ? 0 : 0.18 }} className="booking-step-content" data-step={step}>
         {step === 0 && <>

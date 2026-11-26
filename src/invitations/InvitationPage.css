@@ -66,3 +66,12 @@
   .invitation-print-menu { display: block; break-before: page; page-break-before: always; width: 5in; margin: 0 auto; }
   .invitation-print-menu svg { display: block; width: 5in; height: 8in; }
 }
+
+/* After the evening: a thank-you and a quiet way to host one's own. */
+.invitation-after{margin-top:2.5rem;padding-top:2rem;border-top:1px solid rgb(var(--c-rule));max-width:36rem}
+.invitation-after-eyebrow{margin:0;font-family:var(--f-display,'EB Garamond',serif);font-style:italic;color:rgb(var(--c-ink-soft))}
+.invitation-after h2{margin:.35rem 0 .75rem;font-family:var(--f-display,'EB Garamond',serif);font-size:1.75rem;line-height:1.2;font-weight:400}
+.invitation-after p{line-height:1.6}
+.invitation-after-action{display:inline-flex;align-items:center;min-height:44px;margin-top:1rem;padding:.75rem 1.25rem;background:rgb(var(--c-cta));color:#fff;text-decoration:none;font-family:var(--f-ui,Archivo,sans-serif);font-size:.9375rem}
+.invitation-after-action:focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:3px}
+@media print{.invitation-after{display:none}}

@@ -134,3 +134,8 @@ textarea.booking-input {resize:vertical;}
 @keyframes booking-attention {0%,35%{box-shadow:0 0 0 4px rgb(var(--c-cta)/.32)}100%{box-shadow:0 0 0 0 rgb(var(--c-cta)/0)}}
 .booking-field[data-attention],.booking-calendar-section[data-attention] {border-radius:2px;}
 @media (prefers-reduced-motion:reduce) {.booking-toast,[data-attention] {animation:none;}[data-attention] {box-shadow:0 0 0 3px rgb(var(--c-cta)/.3);}}
+
+/* Arriving through a friend's link: a quiet welcome above the steps. */
+.booking-friend {display:flex;align-items:flex-start;gap:.6rem;margin-top:1.2rem;padding:.85rem 1rem;border:1px solid rgb(var(--c-cta)/.25);background:rgb(var(--c-cta)/.05);font-size:.9375rem;line-height:1.55;}
+.booking-friend svg {flex:none;margin-top:.15rem;color:rgb(var(--c-cta));}
+.booking-friend strong {font-weight:500;}

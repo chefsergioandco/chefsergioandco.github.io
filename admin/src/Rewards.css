@@ -1,0 +1,16 @@
+.admin-rewards{display:grid;gap:14px;max-width:920px}
+.admin-rewards h3{display:flex;justify-content:space-between;align-items:baseline;margin:18px 0 0;font-family:'EB Garamond',Georgia,serif;font-size:1.5rem;font-weight:400}
+.admin-rewards h3 span{font-size:1.1rem;color:#5f5a52}
+.admin-rewards-intro,.admin-rewards-empty{margin:0;color:#5f5a52;line-height:1.6}
+.admin-rewards-provisional{display:block;margin-top:6px;color:#8f2f25}
+.admin-rewards-error{margin:0;color:#8f2f25}
+.admin-rewards-list{display:grid;margin:0;padding:0;list-style:none}
+.admin-reward{display:grid;gap:6px;padding:16px 0;border-top:1px solid #dfdbd2}
+.admin-reward-main{margin:0;line-height:1.5}
+.admin-reward-main span{color:#6b665d}
+.admin-reward-meta{margin:0;color:#6b665d;font-size:.875rem}
+.admin-reward-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:4px}
+.admin-reward-actions label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.875rem;color:#5f5a52}
+.admin-reward-actions select{min-height:40px;max-width:100%;padding:0 10px;border:1px solid #cfcac0;background:#fff;font:inherit;color:#2d2b27}
+.admin-rewards-history summary{cursor:pointer;color:#5f5a52;padding:8px 0}
+.admin-rewards-perks{margin:0;padding-left:1.1rem;line-height:1.7}

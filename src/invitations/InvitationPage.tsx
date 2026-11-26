@@ -14,6 +14,7 @@ import { observeInvitation, parseInvitationAttention, acknowledgeMenu, type Invi
 import { useInvitationSequence } from './useInvitationSequence'
 import { InvitationResponse } from './InvitationResponse'
 import './InvitationPage.css'
+import { InvitationAfterEvening } from './InvitationAfterEvening'
 
 const API_BASE = (import.meta.env.VITE_INVITATION_API_BASE as string | undefined)?.replace(/\/$/, '')
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
@@ -176,6 +177,7 @@ export function InvitationPage({ preview = false }: { preview?: boolean }) {
               <InvitationLocation document={invitation} preview={preview} />
               <section className="invitation-contact"><h3>A question before the evening?</h3><p>For anything you’d like Sergio to know before you arrive, get in touch directly.</p><a href={`mailto:${site.email}`}>Email Sergio</a><a href={site.phoneHref}>Call {site.phone}</a></section>
               {!preview && responseProof && <InvitationResponse {...responseProof} invitationVersion={calendarRevision}/>}
+              {!preview && responseProof && <InvitationAfterEvening {...responseProof}/>}
               <p className="invitation-signature">With pleasure,<br /><span>Sergio</span></p>
             </section>
           </div>

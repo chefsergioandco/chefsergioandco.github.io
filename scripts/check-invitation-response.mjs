@@ -69,10 +69,13 @@ try {
     const page = await context.newPage(), calls = [], errors = []
     page.setDefaultTimeout(10_000); page.on('pageerror', error => errors.push(error.message))
     let saved = null, mutationMode = 'uncertain', mutationCount = 0, pendingReply, pendingArrival
+    const hostLinkCalls = []
     await context.route('https://rsvp.example.test/api/invitation**', async route => {
       const request = route.request(), url = new URL(request.url()), headers = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'content-type,x-booking-request', 'Access-Control-Allow-Methods': 'POST,OPTIONS' }
       if (request.method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return }
       const body = request.postDataJSON()
+      // After the evening, the page asks for the host's link with the same private proof; before it, there's none.
+      if (url.pathname === '/api/invitation/referral') { hostLinkCalls.push(body); assert.equal(body.id, invitationId); assert.equal(body.accessToken, accessToken); await route.fulfill({ json: { available: false }, headers }); return }
       calls.push({ path: url.pathname, method: request.method(), body, headers: request.headers() })
       assert.equal(body.id, invitationId); assert.equal(body.accessToken, accessToken)
       if (url.pathname === '/api/invitation') {
