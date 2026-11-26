@@ -22,11 +22,12 @@ const layers: Layer[] = [
 const layoutRect = (element: HTMLElement): LayoutRect => { let left = 0, top = 0; for (let node: HTMLElement | null = element; node; node = node.offsetParent as HTMLElement | null) { left += node.offsetLeft; top += node.offsetTop } return { left, top, width: element.offsetWidth, height: element.offsetHeight } }
 const rectQuad = (rect: LayoutRect): Quad => [{ x: rect.left, y: rect.top }, { x: rect.left + rect.width, y: rect.top }, { x: rect.left + rect.width, y: rect.top + rect.height }, { x: rect.left, y: rect.top + rect.height }]
 
-/** The actual homepage stays in the DOM; its paper surface is exposed by one input owner. */
+/** The actual homepage stays in the DOM. On a first visit Sergio's invitation opens by itself (HomeDepth plays it),
+ * then the page lifts off its paper. Any scroll or key hurries the rest; Escape, a link or the skip link ends it. */
 export function HomeArrival({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null), skip = useRef<HTMLButtonElement>(null)
   const [active, setActive] = useState(false), [progress, setProgress] = useState(1)
-  const [geometry, setGeometry] = useState({ width: 1024, height: 768, footer: 140 })
+  const [geometry, setGeometry] = useState({ width: 1024, height: 768, footer: 0 })
   const layout = useRef<Record<string, { node: HTMLElement; rect: LayoutRect }>>({}), repaint = useRef<() => void>(() => {})
   const initialized = useRef(false)
   useEffect(() => {
@@ -43,7 +44,7 @@ export function HomeArrival({ children }: { children: ReactNode }) {
       if (settled && !finished) {
         finished = true; setActive(false); element.dataset.arrivalActive = 'false'; markSeen()
         const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null
-        const explicitBypass = focused === skip.current || !!focused?.closest('.home-arrival-cue')
+        const explicitBypass = focused === skip.current
         requestAnimationFrame(() => {
           if (explicitBypass) element.querySelector<HTMLElement>('#main')?.focus({ preventScroll: true })
           else if (focused?.isConnected && focused === document.activeElement && focused.matches(':focus-visible')) {
@@ -57,9 +58,9 @@ export function HomeArrival({ children }: { children: ReactNode }) {
     const settle = () => window.dispatchEvent(new Event('home:arrival-skip'))
     const measure = () => {
       frame = 0
-      const footer = element.querySelector<HTMLElement>('.site-footer')
       for (const layer of layers) { const node = element.querySelector<HTMLElement>(layer.selector); if (node) layout.current[layer.id] = { node, rect: layoutRect(node) } }
-      const next = { width: innerWidth, height: innerHeight, footer: element.dataset.arrivalActive === 'true' ? footer?.offsetHeight || 140 : 140 }
+      // The invitation opens on a bare page: no footer strip or controls, so the card centres in the whole viewport.
+      const next = { width: innerWidth, height: innerHeight, footer: 0 }
       setGeometry(previous => Object.keys(next).every(key => Math.abs(previous[key as keyof typeof next] - next[key as keyof typeof next]) < .5) ? previous : next)
       repaint.current()
     }
@@ -106,9 +107,9 @@ export function HomeArrival({ children }: { children: ReactNode }) {
     const header = element.querySelector<HTMLElement>('[data-site-header]'), main = element.querySelector<HTMLElement>('#main'), footer = element.querySelector<HTMLElement>('.site-footer'), ways = element.querySelector<HTMLElement>('#ways')
     if (header) { const concealed = active && progress < .78; header.inert = concealed; if (concealed) header.setAttribute('aria-hidden', 'true'); else header.removeAttribute('aria-hidden') }
     if (main) { const concealed = active && progress < COPY_READY; main.inert = concealed; main.tabIndex = -1; if (concealed) main.setAttribute('aria-hidden', 'true'); else main.removeAttribute('aria-hidden') }
-    if (footer) { footer.inert = active && progress >= .33; if (active && progress >= .33) footer.setAttribute('aria-hidden', 'true'); else footer.removeAttribute('aria-hidden') }
+    if (footer) { footer.inert = active; if (active) footer.setAttribute('aria-hidden', 'true'); else footer.removeAttribute('aria-hidden') }
     if (ways) { ways.inert = active; if (active) ways.setAttribute('aria-hidden', 'true'); else ways.removeAttribute('aria-hidden') }
-  }, [active, progress >= .33, progress >= COPY_READY, progress >= .78])
+  }, [active, progress >= COPY_READY, progress >= .78])
 
   const fold = smooth((initialized.current ? progress : 0) / .45), surface = progress >= COPY_READY
   const sheet = Math.min(560, Math.max(220, geometry.width - 64), Math.max(220, (geometry.height - geometry.footer - 128) * 1.4))
@@ -163,14 +164,13 @@ export function HomeArrival({ children }: { children: ReactNode }) {
     return () => observer.disconnect()
   }, [active])
 
-  const styles = { '--home-arrival-footer-exit': clamp(progress / .35), '--home-arrival-card-opacity': 1 - smooth((progress - .92) / .08) } as React.CSSProperties
+  const styles = { '--home-arrival-card-opacity': 1 - smooth((progress - .92) / .08) } as React.CSSProperties
   return <div ref={root} className="home-arrival" data-home-arrival data-arrival-active={active} data-arrival-progress={progress} data-arrival-surface={surface} data-arrival-choreography="emergence" style={active ? styles : undefined} onClickCapture={event => { if (active && event.target instanceof Element && event.target.closest('a,[data-site-header] button')) window.dispatchEvent(new Event('home:arrival-skip')) }}>
     {children}
-    <div className="home-arrival-opening" data-opening-active={active} aria-hidden={!active} aria-label="Open Sergio’s invitation" role={surface ? 'region' : 'main'}>
+    <div className="home-arrival-opening" data-opening-active={active} aria-hidden={!active} aria-label="Sergio’s invitation" role={surface ? 'region' : 'main'}>
       {!surface && <h1 className="sr-only">An invitation from Sergio.</h1>}
       <button ref={skip} className="home-arrival-skip" type="button" tabIndex={active ? 0 : -1} onClick={() => window.dispatchEvent(new Event('home:arrival-skip'))}>Skip opening and enter site</button>
       <div ref={node => { if (node) node.inert = true }} className="home-arrival-card" aria-hidden="true" style={{ width: currentSheet + 40, left: (geometry.width - currentSheet - 40) / 2, top }}><InvitationCard artwork={artwork} openProgress={fold} maxSheetWidth={currentSheet} showTranscript={false} surfaceMarkers /></div>
-      <div className="home-arrival-cue" aria-hidden={progress >= .18 ? true : undefined} style={{ top: firstTop + sheet * 5 / 7 + 80 }}><span>Scroll to open</span><button type="button" tabIndex={!active || progress >= .18 ? -1 : 0} onClick={() => window.dispatchEvent(new Event('home:arrival-skip'))}>Enter site</button></div>
     </div>
   </div>
 }

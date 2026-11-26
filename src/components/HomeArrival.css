@@ -6,8 +6,10 @@
 .home-arrival-opening{display:none;position:fixed;inset:0;z-index:45;pointer-events:none;overflow:hidden}
 .home-arrival-card{position:absolute;opacity:var(--home-arrival-card-opacity);pointer-events:none;will-change:top,width,left}
 .home-arrival-card .invitation-card-stage{background:transparent}
-.home-arrival-cue{position:absolute;left:1rem;right:1rem;display:flex;justify-content:center;align-items:center;gap:1.2rem;font:400 .875rem/1.5 var(--f-ui,Archivo,sans-serif);color:rgb(var(--c-ink-soft));opacity:calc(1 - min(1,var(--home-arrival-progress) * 5))}
-.home-arrival-cue button{min-height:44px;padding:.5rem .15rem;color:rgb(var(--c-ink));background:none;border:0;text-decoration:underline;text-underline-offset:.3em;pointer-events:auto;touch-action:manipulation}
+/* The sealed card arrives on its own: it rises out of soft focus, rests, then opens (HomeDepth plays the opening). It
+ * animates the card's inner stage, so hydration and the card's own opacity variable never restart it. */
+@keyframes home-arrival-enter{from{opacity:0;transform:translateY(26px) scale(.955);filter:blur(2px)}60%{filter:blur(0)}}
+:is(.home-arrival-opening[data-opening-active=true],html[data-home-arrival-boot=pending] .home-arrival-opening) .home-arrival-card>*{animation:home-arrival-enter 1.05s cubic-bezier(.16,.84,.3,1) backwards;transform-origin:50% 60%}
 .home-arrival-skip{position:fixed;left:1rem;top:1rem;max-width:calc(100% - 2rem);min-height:44px;padding:.75rem 1rem;background:rgb(var(--c-canvas));color:rgb(var(--c-ink));border:1px solid rgb(var(--c-cta));font:400 1rem/1.5 var(--f-ui,Archivo,sans-serif);transform:translateY(-200%);pointer-events:auto;z-index:70}
 .home-arrival-skip:focus{transform:none;outline:2px solid rgb(var(--c-cta));outline-offset:3px}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [aria-label='Prototype notice']{visibility:hidden}
@@ -21,24 +23,15 @@
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-hero-copy{z-index:63;filter:drop-shadow(0 2px 2px rgb(var(--c-ink))10)}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-photograph{z-index:62;filter:drop-shadow(var(--emergence-shadow))}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) #ways{position:relative;z-index:61;box-shadow:var(--emergence-shadow)}
-/* The existing footer is the initial chrome; its full content returns to normal flow. */
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgb(var(--c-canvas));color:rgb(var(--c-ink));border-top:1px solid rgb(var(--c-rule));transform:translateY(calc(var(--home-arrival-footer-exit) * 100%));opacity:calc(1 - var(--home-arrival-footer-exit))}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer-inner{padding:1rem 1.5rem}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer :is(.seasonal-letter,.footer-account,.footer-invitation,.footer-column,.footer-rule,.footer-about>p:not(.footer-area),.footer-colophon a){display:none}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-directory{display:block;border:0;padding:0}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-about{display:flex;align-items:center;flex-direction:column}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-brand .brand-logo{width:144px;filter:brightness(0);opacity:.82}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-area{font:400 .875rem/1.5 var(--f-ui,Archivo,sans-serif);max-width:100%;color:rgb(var(--c-ink-soft));margin:.25rem 0 0}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-colophon{border:0;padding:.5rem 0 0;justify-content:center;color:rgb(var(--c-ink-soft));font:400 .75rem/1.5 var(--f-ui,Archivo,sans-serif)}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer :focus-visible{outline-color:rgb(var(--c-cta))}
+/* No chrome while the invitation opens: the footer waits in normal flow, hidden, like the rest of the page. */
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .site-footer{visibility:hidden}
 /* Keep fixed-size text treatments readable when the browser enlarges text. */
 .home-arrival :is(.home-description,.home-card-overline,.home-card-close,.home-guest-range,.home-location){line-height:1.48}
 .home-arrival .home-hero h1>span,.home-arrival .home-card-title{white-space:normal}
-@media(max-width:620px){:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-area{max-width:28ch;text-align:center}:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .footer-area svg{display:none}}
-@media(prefers-reduced-motion:reduce){.home-arrival-opening{display:none}:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) :is([data-site-header],[data-home-hero],.home-hero-copy,.home-photograph,.site-footer){transform:none;clip-path:none;opacity:1}.home-arrival-card{will-change:auto}}
+@media(prefers-reduced-motion:reduce){.home-arrival-opening{display:none}:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) :is([data-site-header],[data-home-hero],.home-hero-copy,.home-photograph,.site-footer){transform:none;clip-path:none;opacity:1;visibility:visible}.home-arrival-card{will-change:auto}.home-arrival-card>*{animation:none}}
 
 /* The server-rendered cover paints before hydration; a failed bundle reveals the full site. */
 .home-arrival-opening[data-opening-active=true],html[data-home-arrival-boot=pending] .home-arrival-opening{display:block}
-html[data-home-arrival-boot=pending]{--home-boot-sheet:min(560px,calc(100vw - 64px),max(220px,calc((100dvh - 268px) * 1.4)))}
-html[data-home-arrival-boot=pending] .home-arrival-card{width:calc(var(--home-boot-sheet) + 40px)!important;left:calc((100vw - var(--home-boot-sheet) - 40px) / 2)!important;top:max(24px,calc((100dvh - 140px - var(--home-boot-sheet) * .7142857 - 80px) / 2))!important;opacity:1}
+html[data-home-arrival-boot=pending]{--home-boot-sheet:min(560px,calc(100vw - 64px),max(220px,calc((100dvh - 128px) * 1.4)))}
+html[data-home-arrival-boot=pending] .home-arrival-card{width:calc(var(--home-boot-sheet) + 40px)!important;left:calc((100vw - var(--home-boot-sheet) - 40px) / 2)!important;top:max(24px,calc((100dvh - var(--home-boot-sheet) * .7142857 - 80px) / 2))!important;opacity:1}
 html[data-home-arrival-boot=pending] .home-arrival-card .invitation-card{--invitation-sheet-w:var(--home-boot-sheet)!important;--invitation-sheet-h:calc(var(--home-boot-sheet) * .7142857)!important;--invitation-stage-h:calc(var(--home-boot-sheet) * .7142857 + 80px)!important}

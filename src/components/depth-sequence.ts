@@ -16,6 +16,7 @@ export type DepthSequenceSnapshot = DepthGateSnapshot & {
   arrivalActive: boolean
   arrivalPosition: number
   arrivalTarget: number
+  arrivalPlaying: boolean
 }
 type DepthSequenceOptions = { boundaries: DepthBoundary[]; onUpdate: (state: DepthSequenceSnapshot) => void }
 
@@ -32,6 +33,10 @@ export function createDepthSequence(options: DepthSequenceOptions) {
   // remaining momentum to ordinary page travel. It cannot close once settled.
   let arrivalRange = 0, arrivalSettled = false
   const openingRange = 440, openingSpeed = 400
+  // The opening can also play by itself on its own clock, along a choreographed curve (normalized time to normalized
+  // progress). Input during playback hurries what remains instead of fighting it; Escape or navigation finishes it.
+  let play: { curve: (t: number) => number; duration: number; clock: number; speed: number; previous: number; frame: number } | null = null
+  const HURRY_MS = 520
   const charges: DepthSequenceSnapshot['charges'] = []
   const pagePosition = (value = position) => Math.max(0, value - arrivalRange)
   const opening = () => arrivalRange > 0 && !arrivalSettled
@@ -51,6 +56,7 @@ export function createDepthSequence(options: DepthSequenceOptions) {
       charges: charges.map(charge => ({ ...charge })), targetY: pagePosition(target), lagPx: target - position, velocityPx: velocity,
       arrivalProgress: arrivalRange ? Math.max(0, Math.min(1, position / arrivalRange)) : 1,
       arrivalActive: opening(), arrivalPosition: Math.min(arrivalRange, position), arrivalTarget: Math.min(arrivalRange, target),
+      arrivalPlaying: !!play,
     }
   }
   const emit = () => { if (!destroyed) options.onUpdate(snapshot()) }
@@ -72,11 +78,31 @@ export function createDepthSequence(options: DepthSequenceOptions) {
     nativeY = window.scrollY
     if (Math.abs(nativeY - pagePosition()) > 1) { position = target = arrivalRange + nativeY; velocity = 0 }
   }
+  const stopPlay = () => { if (play) { cancelAnimationFrame(play.frame); play = null } }
+  const hurry = () => {
+    if (!play) return
+    const remaining = (play.duration - play.clock) / play.speed
+    if (remaining > HURRY_MS) play.speed *= remaining / HURRY_MS
+  }
+  const playTick = (now: number) => {
+    if (!play || destroyed) return
+    // Same stall cap as the follower: a background tab resumes where it paused instead of jumping ahead.
+    const elapsed = play.previous ? Math.min(1000 / 30, Math.max(0, now - play.previous)) : 1000 / 60
+    play.previous = now
+    play.clock = Math.min(play.duration, play.clock + elapsed * play.speed)
+    const t = play.clock / play.duration
+    const next = arrivalRange * Math.max(0, Math.min(1, play.curve(t)))
+    if (t >= 1) { play = null; write(arrivalRange); position = target = arrivalRange + window.scrollY; emit(); return }
+    position = target = Math.max(position, next); write(position); emit()
+    play.frame = requestAnimationFrame(playTick)
+  }
   const rebase = () => {
+    if (play) return
     stop(); position = target = opening() ? position : clamp(arrivalRange + window.scrollY); nativeY = window.scrollY; direction = 0
     emit()
   }
   const finishArrival = () => {
+    stopPlay()
     if (!arrivalRange || arrivalSettled) return
     stop(); arrivalSettled = true; position = target = arrivalRange + window.scrollY; nativeY = window.scrollY; direction = 0
     emit()
@@ -121,6 +147,7 @@ export function createDepthSequence(options: DepthSequenceOptions) {
     beginGesture() { if (!destroyed) rebase() },
     handle(delta: number, kind: DepthInput = 'wheel'): boolean {
       if (destroyed || !Number.isFinite(delta) || delta === 0) return false
+      if (play) { if (delta > 0) hurry(); return true }
       // A discrete station/anchor may have written native scroll while its
       // scroll event is still queued. Reconcile before spending this input so
       // that queued event cannot later erase a newly accepted wheel delta.
@@ -170,11 +197,20 @@ export function createDepthSequence(options: DepthSequenceOptions) {
       else emit()
     },
     finishArrival,
+    /** Play the opening by itself. `curve` maps normalized time to normalized progress; it should rise from 0 to 1. */
+    playArrival(duration: number, curve: (t: number) => number) {
+      if (destroyed || !opening() || play) return false
+      stop(); direction = 0
+      play = { curve, duration: Math.max(1, duration), clock: 0, speed: 1, previous: 0, frame: requestAnimationFrame(playTick) }
+      emit()
+      return true
+    },
+    hurryArrival: hurry,
     reconcile(y: number) {
       if (destroyed) return
       finishArrival(); stop(); position = target = clamp(arrivalRange + y); nativeY = window.scrollY; direction = 0; emit()
     },
     cancel() { if (!destroyed) rebase() },
-    destroy() { destroyed = true; stop() },
+    destroy() { destroyed = true; stop(); stopPlay() },
   }
 }

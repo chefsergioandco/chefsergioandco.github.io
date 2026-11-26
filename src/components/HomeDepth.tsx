@@ -15,6 +15,20 @@ const layoutTop = (element: HTMLElement) => {
 }
 const poseKeys = ['--depth-y', '--depth-z', '--depth-tilt', '--depth-shade', '--depth-edge', '--depth-crop']
 
+/** The first-visit opening, played without input. Progress marks match HomeArrival: the card unfolds over 0–.45 and the
+ * page emerges from the paper and settles over .45–1. The sealed card rests until about `restUntilMs` after the page
+ * began loading (it rises into view from first paint), and never less than `minRestMs` once fonts and photo are ready. */
+const OPENING = { restUntilMs: 1350, minRestMs: 260, readyCapMs: 1500, unfoldMs: 1300, beatMs: 240, emergeMs: 1850, totalMs: 0 }
+OPENING.totalMs = OPENING.unfoldMs + OPENING.beatMs + OPENING.emergeMs
+const easeInOutCubic = (t: number) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2
+const openingCurve = (t: number) => {
+  const ms = t * OPENING.totalMs
+  if (ms <= OPENING.unfoldMs) return .45 * easeInOutCubic(ms / OPENING.unfoldMs)
+  if (ms <= OPENING.unfoldMs + OPENING.beatMs) return .45
+  return .45 + .55 * easeInOutSine((ms - OPENING.unfoldMs - OPENING.beatMs) / OPENING.emergeMs)
+}
+
 /** One gesture owner for the original homepage sections and footer. */
 export function HomeDepth({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null)
@@ -28,7 +42,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
     let touchY: number | null = null, touchX = 0, touchOriginY = 0, touchVertical = false, touchTime = 0, touchVelocity = 0, touchCaptured = false, coastFrame = 0
     let painted: HTMLElement[] = [], heights: number[] = []
     let arrivalConfigured = false, lastArrivalProgress = -1, lastArrivalSettled = false
-    let pointerFocus = false, pointerReset = 0
+    let pointerFocus = false, pointerReset = 0, openingTimer = 0
     const study: Record<string, unknown> = { enabled: false, reason: 'initializing', planes: [] }
     window.__depthStudy = study
     const ids = planes.map((plane, index) => plane.id || plane.getAttribute('aria-labelledby') || `section-${index + 1}`)
@@ -206,12 +220,29 @@ export function HomeDepth({ children }: { children: ReactNode }) {
       if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' ', 'Tab', 'Escape'].includes(event.key)) cancel()
     }
     const skipArrival = () => { stopCoast(); controller.finishArrival() }
+    // The opening plays by itself once its ink and photograph are ready: the sealed card rests for a moment, unfolds,
+    // holds open for a beat, then the page lifts off the paper and settles into place.
+    const playOpening = () => {
+      if (!controller.snapshot().arrivalActive) return
+      const photo = document.querySelector<HTMLImageElement>('[data-home-hero] .home-photograph img')
+      const ready = Promise.all([document.fonts.ready, photo?.decode ? photo.decode().catch(() => {}) : null])
+      Promise.race([ready, new Promise(resolve => setTimeout(resolve, OPENING.readyCapMs))]).then(() => {
+        if (disposed) return
+        const start = () => {
+          if (disposed || !controller.snapshot().arrivalActive) return
+          if (document.hidden) { document.addEventListener('visibilitychange', start, { once: true }); return }
+          controller.playArrival(OPENING.totalMs, openingCurve)
+        }
+        openingTimer = window.setTimeout(start, Math.max(OPENING.minRestMs, OPENING.restUntilMs - performance.now()))
+      })
+    }
     const readyArrival = () => {
       if (!arrival) return
       arrivalConfigured = true
       controller.configureArrival(arrival.dataset.arrivalActive === 'true' && enabled && !reduced.matches)
       paint(controller.snapshot())
       scheduleMeasure()
+      playOpening()
     }
     const focus = (event: FocusEvent) => {
       // Pointer focus arrives between down and up. Preserve the visible hit
@@ -257,7 +288,7 @@ export function HomeDepth({ children }: { children: ReactNode }) {
     reduced.addEventListener('change', scheduleMeasure)
     return () => {
       disposed = true
-      clearTimeout(pointerReset)
+      clearTimeout(pointerReset); clearTimeout(openingTimer)
       observer.disconnect(); cancelAnimationFrame(measureFrame); stopCoast()
       window.removeEventListener('wheel', wheel); window.removeEventListener('touchstart', touchStart)
       window.removeEventListener('plating:scroll-capture', timelineCapture)

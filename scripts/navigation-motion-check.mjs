@@ -22,6 +22,8 @@ let browser, server
 fs.mkdirSync(OUT, { recursive: true })
 
 async function installProbe(page) {
+  // Test the settled homepage: a first visit plays Sergio's invitation before the page is there to measure.
+  await page.evaluateOnNewDocument(() => { try { sessionStorage.setItem('sergio.home-arrival.v1', 'settled') } catch {} })
   await page.evaluateOnNewDocument(() => {
     window.__navigationDocument = Math.random().toString(36).slice(2)
     const probe = window.__navigationMotion = { token: window.__navigationDocument, reveal: [], swaps: [], supported: 'CSSViewTransitionRule' in window && 'onpagereveal' in window }

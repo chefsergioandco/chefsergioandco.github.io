@@ -34,6 +34,8 @@ function watch(page, label) {
 
 // Install before navigation so a quick first-view animation cannot finish before the test observes it.
 async function probe(page) {
+  // Test the settled homepage: a first visit plays Sergio's invitation before the page is there to measure.
+  await page.evaluateOnNewDocument(() => { try { sessionStorage.setItem('sergio.home-arrival.v1', 'settled') } catch {} })
   await page.evaluateOnNewDocument(() => {
     const record = window.__selectedMotionProbe = { number: [], footer: [], events: [], layoutShifts: [] }
     new PerformanceObserver(list => {
