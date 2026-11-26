@@ -67,6 +67,8 @@ export function BookingForm() {
   const [avail, setAvail] = useState<Availability | null>(null), [availabilityError, setAvailabilityError] = useState(''), [availabilityRetry, setAvailabilityRetry] = useState(0)
   const [month, setMonth] = useState(() => todayET().slice(0, 7)), [nights, setNights] = useState<Night[] | null>(null), [nightsError, setNightsError] = useState(''), [nightsRetry, setNightsRetry] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({}), [submissionError, setSubmissionError] = useState(''), [busy, setBusy] = useState(false)
+  const [toast, setToast] = useState<{ id: number; text: string; more: number } | null>(null)
+  useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 5200); return () => clearTimeout(timer) }, [toast])
   const [draft, setDraft] = useState<SavedDraft | null>(null), [hydrated, setHydrated] = useState(false), [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null), inFlight = useRef(false), reduced = useReducedMotion()
   // A prerendered form (next-page/) may never be opened: it must not leave a draft to resume.
@@ -133,11 +135,34 @@ export function BookingForm() {
     const found = validatePlanningStep(s, index, config, { openTimes: times, availabilityLoaded: !!avail && !availabilityError, night, seatsMax })
     if (index === 1 && table && night && !canRequestNight(night)) found.night = 'Choose a night with places still available.'
     setErrors(found)
-    const first = Object.keys(found)[0]
-    if (first) { requestAnimationFrame(() => (document.getElementById(`f-${first}`) ?? heading.current)?.focus()); track('booking_error', { step: String(index + 1), field: first }) }
+    const keys = Object.keys(found), first = keys[0]
+    if (first) {
+      setToast({ id: Date.now(), text: found[first], more: keys.length - 1 })
+      reveal(first)
+      track('booking_error', { step: String(index + 1), field: first })
+    }
     return !first
   }
-  function go(target: number) { setDirection(target > step ? 1 : -1); setStep(target); setErrors({}); requestAnimationFrame(() => heading.current?.focus()) }
+  /** Take the visitor to a field that stops the form: wait for its step to render, bring it to the middle of the
+   * screen (clear of the sticky header), focus it, and briefly mark it. The toast says why; screen readers get the
+   * error summary and the field's own error text, so the toast itself stays silent. */
+  function reveal(key: string) {
+    let tries = 0
+    const attempt = () => {
+      const target = document.getElementById(`f-${key}`)
+      if (!target && tries++ < 45) { requestAnimationFrame(attempt); return }
+      const element = target ?? heading.current
+      if (!element) return
+      const area = element.closest<HTMLElement>('.booking-field, .booking-calendar-section') ?? element
+      area.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
+      const focusable = element.getAttribute('role') === 'radiogroup' ? element.querySelector<HTMLElement>('[role=radio][data-state=checked]') ?? element.querySelector<HTMLElement>('[role=radio]') : element
+      ;(focusable ?? element).focus({ preventScroll: true })
+      area.removeAttribute('data-attention'); void area.offsetWidth; area.setAttribute('data-attention', '')
+      window.setTimeout(() => area.removeAttribute('data-attention'), 1700)
+    }
+    requestAnimationFrame(attempt)
+  }
+  function go(target: number) { setDirection(target > step ? 1 : -1); setStep(target); setErrors({}); setToast(null); requestAnimationFrame(() => heading.current?.focus()) }
   function next() { if (check(step)) { track('booking_step', { step: String(step + 2), kind: s.kind ?? '' }); go(step + 1) } }
   async function submit() {
     if (inFlight.current) return
@@ -176,7 +201,8 @@ export function BookingForm() {
       <h2 ref={heading} tabIndex={-1} className="booking-step-title">{labels[step]}</h2>
       <ol className="booking-progress" aria-label="Booking progress">{labels.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined} className={index <= step ? 'reached' : ''}><span className="sr-only">{label}{index < step ? ', completed' : ''}</span></li>)}</ol>
       {configError && <div className="booking-notice" role="alert" id="f-config" tabIndex={-1}><p>{configError}</p><button type="button" className="link" onClick={() => setConfigRetry(value => value + 1)}>Reload booking settings</button></div>}
-      {!!Object.keys(errors).length && <div className="booking-error-summary" role="alert"><strong>A few details need your attention.</strong><ul>{Object.entries(errors).map(([key, value]) => <li key={key}><button type="button" onClick={() => document.getElementById(`f-${key}`)?.focus()}>{value}</button></li>)}</ul></div>}
+      {!!Object.keys(errors).length && <div className="booking-error-summary" role="alert"><strong>A few details need your attention.</strong><ul>{Object.entries(errors).map(([key, value]) => <li key={key}><button type="button" onClick={() => reveal(key)}>{value}</button></li>)}</ul></div>}
+      {toast && <div key={toast.id} className="booking-toast" aria-hidden="true" onClick={() => setToast(null)}><p><strong>{toast.text}</strong>{toast.more > 0 && <span>{toast.more} more {toast.more === 1 ? 'detail needs' : 'details need'} attention.</span>}</p></div>}
       <AnimatePresence initial={false} mode="wait" custom={direction}><m.div key={`${step}-${table}`} custom={direction} initial={reduced ? false : { opacity: 0, x: direction * 14 }} animate={{ opacity: 1, x: 0 }} exit={reduced ? undefined : { opacity: 0, x: direction * -10 }} transition={{ duration: reduced ? 0 : 0.18 }} className="booking-step-content" data-step={step}>
         {step === 0 && <>
           <Choices id="f-kind" label="What are you planning?" value={s.kind} onChange={kind => set({ kind, where: kind === 'dinner' ? s.where : s.where === 'his' ? 'home' : s.where })} options={KINDS.map(item => ({ value: item.key, label: item.title, detail: item.detail, icon: item.icon, tag: item.tag }))} error={errors.kind}/>

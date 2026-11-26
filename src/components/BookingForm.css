@@ -122,3 +122,15 @@ textarea.booking-input {resize:vertical;}
 .booking-choice-heading > svg { flex: none; color: rgb(var(--c-cta)); }
 .booking-choice-heading .sergio-header-guest-tag { margin-left: auto; }
 @media (max-width: 480px) { .booking-choice-heading .sergio-header-guest-tag { margin-left: 0; } }
+
+/* A blocked Continue: the form scrolls to the field and this note says why. It floats above the page, inverted, and
+   clears itself after a few seconds or on a tap. The field it points to pulses once. */
+.booking-toast {position:fixed;left:50%;bottom:max(1.25rem,calc(env(safe-area-inset-bottom) + .75rem));z-index:80;width:min(30rem,calc(100vw - 2rem));padding:.95rem 1.15rem;border-left:3px solid rgb(var(--c-cta));background:rgb(var(--c-ink));color:rgb(var(--c-canvas));box-shadow:0 14px 34px rgb(0 0 0/.2);font-size:.9375rem;line-height:1.5;transform:translateX(-50%);animation:booking-toast-in .3s cubic-bezier(.2,.8,.2,1) both;cursor:default;}
+.booking-toast p {margin:0;display:grid;gap:.15rem;}
+.booking-toast strong {font-weight:500;}
+.booking-toast span {opacity:.78;font-size:.875rem;}
+@keyframes booking-toast-in {from{opacity:0;transform:translate(-50%,14px)}}
+[data-attention] {animation:booking-attention 1.6s ease-out;}
+@keyframes booking-attention {0%,35%{box-shadow:0 0 0 4px rgb(var(--c-cta)/.32)}100%{box-shadow:0 0 0 0 rgb(var(--c-cta)/0)}}
+.booking-field[data-attention],.booking-calendar-section[data-attention] {border-radius:2px;}
+@media (prefers-reduced-motion:reduce) {.booking-toast,[data-attention] {animation:none;}[data-attention] {box-shadow:0 0 0 3px rgb(var(--c-cta)/.3);}}
