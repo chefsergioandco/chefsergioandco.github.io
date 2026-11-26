@@ -18,6 +18,7 @@ import { CtaButton } from './CallToAction'
 import { GuestTag } from './GuestTag'
 import { Icon, type IconName } from './Icons'
 import { href, track } from './ui'
+import { formatGiftCode, isGiftCode } from '../../prototypes/sergio-admin/shared/gift-cards/code'
 import './BookingForm.css'
 
 // The same icons and guest ranges as the header's Experiences menu, so a private dinner and a small event read as
@@ -99,7 +100,13 @@ export function BookingForm() {
         if (when !== 'later') { const start = when === 'next' ? `${addMonths(todayET().slice(0, 7), 1)}-01` : todayET(); patch.dateFrom = start; patch.dateTo = new Date(Date.UTC(Number(start.slice(0, 4)), Number(start.slice(5, 7)), 0, 12)).toISOString().slice(0, 10) }
       }
       if (query.get('night')) patch.nightId = query.get('night')!.slice(0, 100)
-      if (query.get('gift')) { patch.gift = query.get('gift')!.slice(0, 100); setGiftOpen(true) }
+      // A gift code is the card itself: it arrives in the #fragment, which never reaches a server log. An older
+      // ?gift= link still works, but the code is taken out of the address so it isn't bookmarked or shared.
+      const giftCode = new URLSearchParams(window.location.hash.slice(1)).get('gift') ?? query.get('gift')
+      if (giftCode) {
+        patch.gift = (isGiftCode(giftCode) ? formatGiftCode(giftCode) : giftCode).slice(0, 100); setGiftOpen(true)
+        if (query.has('gift')) { const clean = new URL(window.location.href); clean.searchParams.delete('gift'); history.replaceState(history.state, '', clean.pathname + clean.search) }
+      }
       setState(previous => ({ ...previous, ...patch })); if (patch.kind) setStep(1); else if (saved && !query.toString()) setDraft(saved)
     }
     setHydrated(true)
@@ -253,7 +260,7 @@ export function BookingForm() {
           <Choices id="f-contactBy" label="How would you like Sergio to reach you?" value={s.contactBy} onChange={contactBy => set({ contactBy })} options={[{ value: 'email', label: 'Email' }, { value: 'call', label: 'Phone call' }, { value: 'text', label: 'Text message' }]}/>
           <Field id="f-phone" label={`Phone${s.contactBy === 'email' ? ' (optional)' : ''}`} error={errors.phone}><input id="f-phone" className={inputClass} type="tel" autoComplete="tel" maxLength={40} value={s.phone} onChange={event => set({ phone: event.target.value })} aria-invalid={!!errors.phone} aria-describedby={described('f-phone')}/></Field>
           {!table && <div className="booking-invitations"><Check id="f-physical" label="I’m interested in physical invitations for my guests" checked={s.physicalInvitations} onChange={physicalInvitations => set({ physicalInvitations })}/><p className="booking-field-hint">Your digital invitation is a link you can share, with guest RSVPs and dietary details. Physical invitations are optional and sent to you.{config?.postageAllowance != null ? ` The fixed postage allowance is ${money(config.postageAllowance)}, added to the final bill.` : ' Sergio will confirm the physical-invitation cost and postage before adding them to your final bill.'}</p></div>}
-          {giftOpen ? <Field id="f-gift" label="Gift card code" hint="Sergio checks and applies any credit separately."><input id="f-gift" className={inputClass} maxLength={100} value={s.gift} onChange={event => set({ gift: event.target.value.toUpperCase() })}/></Field> : <button type="button" className="link" onClick={() => setGiftOpen(true)}>Have a gift card?</button>}
+          {giftOpen ? <Field id="f-gift" label="Gift card code" hint="Sergio applies the card to your deposit, then the rest." error={s.gift.trim() && !isGiftCode(s.gift) ? 'That code isn’t complete. It has 16 characters; the letters I, L, O and U aren’t used.' : undefined}><input id="f-gift" className={inputClass} maxLength={100} autoComplete="off" spellCheck={false} value={s.gift} onChange={event => set({ gift: event.target.value.toUpperCase() })} onBlur={() => { if (isGiftCode(s.gift)) set({ gift: formatGiftCode(s.gift) }) }}/></Field> : <button type="button" className="link" onClick={() => setGiftOpen(true)}>Have a gift card?</button>}
           <section className="booking-payment-review" aria-label="Payment and next steps" data-money-line>
             <div className="booking-payment-total"><span>{table ? 'Listed seat total' : 'Your deposit'}</span><strong>{table ? seatTotal == null ? 'To be confirmed' : money(seatTotal) : band?.deposit == null ? 'To be confirmed' : money(band.deposit)}</strong></div>
             {table ? <><p>{canPay ? `Your seats are held for checkout${config?.checkoutMinutes ? ` for ${config.checkoutMinutes} minutes` : ''}. Complete payment to secure them.` : 'This sends a seat request. It does not hold seats, save a card, or take payment.'}</p>{night && <p>{night.state === 'confirmed' ? 'This evening is confirmed.' : `This evening is awaiting its minimum of ${night.minimum} guests. Sergio’s decision date is ${longDate(night.cutoff.slice(0, 10))}.`} When paid seats are cancelled by Sergio, the seat payment is refunded in full.</p>}</> : <><p>{canPay ? 'The whole deposit is credited toward your event bill. Your menu and final price follow the interview, within the spending ceiling you agree with Sergio.' : 'No money is collected here. Your deposit amount and planning fee still need to be confirmed before online checkout can open. Sergio can discuss your gathering from this request.'}</p><p>{s.dateMode === 'exact' ? canPay ? 'A date reservation and payment will each be stated on your receipt. Requests outside Sergio’s service criteria need his review.' : 'Your selected date is a preference until Sergio confirms it. Sending this request does not reserve it.' : 'Your event date is still to be agreed. No calendar date is reserved by a flexible-date planning deposit.'}</p>{config?.planningFee != null && <p><strong>Cancellation:</strong> Before Sergio sends your menu-interview invitation, cancellation receives a full deposit refund. An explicit cancellation afterward may retain a planning fee of {money(config.planningFee)}; Sergio may choose to refund fully. An unanswered invitation or a request for another interview time keeps the booking active.</p>}</>}

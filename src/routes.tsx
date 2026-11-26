@@ -3,7 +3,9 @@ import { faqJsonLd, FAQ } from './components/Faq'
 import { HOME_H1 } from './components/HomeHero'
 import { IS_PROTOTYPE, site } from './content/site'
 import { Home } from './pages/Home'
-import { Book, Catering, CookingClasses, Gift, PrivateDining, SergiosTable } from './pages/Services'
+import { Book, Catering, CookingClasses, PrivateDining, SergiosTable } from './pages/Services'
+import { GiftPage } from './gift/GiftPage'
+import { GiftCardPage, GiftThanks } from './gift/GiftCardPage'
 import { About } from './pages/About'
 import { about } from './content/about'
 import { ShotList } from './pages/ShotList'
@@ -171,10 +173,13 @@ const all: Route[] = [
   {
     path: '/gift/',
     title: 'Private chef gift cards in Orlando | Chef Sergio & Co.',
-    description: 'Give a private dinner or an in-home cooking class with Chef Sergio in Orlando. Gift cards in any amount, delivered by email.',
+    description: 'Give a private dinner, cooking class or gathering with Chef Sergio in Orlando. A gift card that never expires, delivered by email on the day you choose.',
     h1: 'Give a dinner, not a thing.',
-    Page: Gift,
+    Page: GiftPage,
   },
+  { path: '/gift/card/', title: 'Your gift card | Chef Sergio & Co.', description: 'See what is on your Chef Sergio & Co. gift card and book an evening with it.', h1: 'Your gift card.', Page: GiftCardPage, noindex: true, og: { card: 'home' } },
+  { path: '/gift/thanks/', title: 'Thank you for your gift | Chef Sergio & Co.', description: 'Your Chef Sergio & Co. gift card is on its way to them by email.', h1: 'Your gift is on its way.', Page: GiftThanks, noindex: true, og: { card: 'home' } },
+
   ...(site.features.sergiosTable
     ? [
         {

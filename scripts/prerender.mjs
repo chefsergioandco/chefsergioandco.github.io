@@ -53,6 +53,8 @@ const homePreloads = homeModulePreloads()
 // first paint on direct static account/newsletter routes, including without JS.
 function routeStyleLinks(route) {
   const key = route.startsWith('/invitation/') ? 'src/invitations/InvitationPage.tsx'
+    : route === '/gift/' ? 'src/gift/GiftPage.tsx'
+    : route.startsWith('/gift/') ? 'src/gift/GiftCardPage.tsx'
     : route.startsWith('/newsletter/') ? 'src/components/NewsletterTokenPage.tsx'
     : route === '/dashboard/' ? 'src/account/CustomerDashboard.tsx'
     : route === '/admin/' ? 'src/account/AdminPage.tsx'

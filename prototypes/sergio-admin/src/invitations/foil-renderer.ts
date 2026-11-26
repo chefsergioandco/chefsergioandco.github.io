@@ -13,6 +13,8 @@ uniform float uAngle;
 uniform float uPitch;
 uniform float uInspection;
 uniform float uFoil;
+uniform sampler2D uMask;
+uniform float uMasked;
 float luminance(vec3 c) { return dot(c,vec3(0.2126,0.7152,0.0722)); }
 vec3 linearColor(vec3 c) { return pow(max(c,vec3(0.0)),vec3(2.2)); }
 void main() {
@@ -61,13 +63,16 @@ void main() {
   float ndv=max(0.0,dot(glossNormal,view));
   float fresnel=0.055+0.945*pow(1.0-ndv,5.0);
   float gloss=clamp((softbox+broadFill)*fresnel*(17.5+uInspection),0.0,0.92);
-  /* Only printed material reflects the softbox. The cotton stays matte. */
-  base+=ink*gloss*uFoil*(vec3(1.0)-base);
+  /* Only printed material reflects the softbox. The cotton stays matte. A mask, when given, limits the
+     reflection to foil, so flat ink printed beside it stays as matte as the paper. */
+  float foilAmount=mix(ink,clamp(texture2D(uMask,vUV).a,0.0,1.0),uMasked);
+  base+=foilAmount*gloss*uFoil*(vec3(1.0)-base);
   gl_FragColor=vec4(pow(clamp(base,0.0,1.0),vec3(1.0/2.2)),1.0);
 }`
 
-/** The cotton is diffuse; only the separately masked foil reflects the studio source. */
-export function createFoilRenderer(target: HTMLCanvasElement, paper: HTMLCanvasElement, ink: HTMLCanvasElement, height: HTMLCanvasElement, foil: boolean): FoilRenderer | null {
+/** The cotton is diffuse; only the separately masked foil reflects the studio source. Without `foilMask`,
+ * every printed mark on a foil face reflects (the invitation); with it, only the mask's marks do (the gift card). */
+export function createFoilRenderer(target: HTMLCanvasElement, paper: HTMLCanvasElement, ink: HTMLCanvasElement, height: HTMLCanvasElement, foil: boolean, foilMask?: HTMLCanvasElement): FoilRenderer | null {
   let gl: WebGLRenderingContext | null
   try { gl = target.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, preserveDrawingBuffer: true, powerPreference: 'low-power' }) } catch { return null }
   if (!gl || paper.width > gl.getParameter(gl.MAX_TEXTURE_SIZE) || paper.height > gl.getParameter(gl.MAX_TEXTURE_SIZE)) return null
@@ -98,7 +103,9 @@ export function createFoilRenderer(target: HTMLCanvasElement, paper: HTMLCanvasE
     context.enableVertexAttribArray(position); context.vertexAttribPointer(position, 2, context.FLOAT, false, 16, 0)
     context.enableVertexAttribArray(uv); context.vertexAttribPointer(uv, 2, context.FLOAT, false, 16, 8)
     context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, true); context.pixelStorei(context.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false)
-    ;[paper, ink, height].forEach((canvas, index) => {
+    // Without a mask, unit 3 holds a 1×1 transparent texture and uMasked=0, so the result is unchanged.
+    const blank = document.createElement('canvas'); blank.width = 1; blank.height = 1
+    ;[paper, ink, height, foilMask ?? blank].forEach((canvas, index) => {
       const texture = context.createTexture()
       if (!texture) throw new Error('Material texture unavailable')
       textures.push(texture); context.activeTexture(context.TEXTURE0 + index); context.bindTexture(context.TEXTURE_2D, texture)
@@ -107,6 +114,7 @@ export function createFoilRenderer(target: HTMLCanvasElement, paper: HTMLCanvasE
       context.texImage2D(context.TEXTURE_2D, 0, context.RGBA, context.RGBA, context.UNSIGNED_BYTE, canvas)
     })
     context.uniform1i(context.getUniformLocation(program, 'uPaper'), 0); context.uniform1i(context.getUniformLocation(program, 'uInk'), 1); context.uniform1i(context.getUniformLocation(program, 'uHeight'), 2)
+    context.uniform1i(context.getUniformLocation(program, 'uMask'), 3); context.uniform1f(context.getUniformLocation(program, 'uMasked'), foilMask ? 1 : 0)
     context.uniform2f(context.getUniformLocation(program, 'uTexel'), 1 / paper.width, 1 / paper.height)
     context.uniform1f(context.getUniformLocation(program, 'uFoil'), foil ? 1 : 0)
     const angle = context.getUniformLocation(program, 'uAngle'), inspection = context.getUniformLocation(program, 'uInspection'), pitch = context.getUniformLocation(program, 'uPitch')

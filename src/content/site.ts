@@ -60,10 +60,21 @@ export const site = {
     hostingCheck: null as string | null, // confirmed with Florida DBPR (food service licensing) + home insurer before paid guests at home
   },
 
+  // ---- Gift cards (docs/GIFT-CARDS.md) ----
+  // Florida §501.95: a gift certificate sold in Florida may not expire or carry any post-sale fee, so these
+  // cards never do. They are denominated in dollars, never in "a dinner for four", because they must be
+  // honoured whenever they are used. The amounts are placeholders until Sergio confirms them; each printed
+  // amount is its own foil die if cards are ever made physically.
+  gift: {
+    amounts: [10000, 15000, 25000, 50000] as number[], // cents; TBD by Sergio
+    amountsConfirmed: false,
+    refunds: null as string | null, // can a buyer get money back for an unused card, and until when? Sergio's call
+  },
+
   // ---- Booking & payment hooks (paste URLs; empty = feature shows as "not connected") ----
   hooks: {
     formEndpoint: null as string | null, // Formspree: https://formspree.io/f/xxxxxxx
-    giftCardUrl: null as string | null, // Gift Up!: checkout link
+    giftCardUrl: null as string | null, // retired: gift cards are sold and redeemed by the site itself (src/gift/)
     classBookingUrl: null as string | null, // optional Cal.com event with Stripe deposit
     // Optional Airbnb Experiences listing for Sergio's table. Airbnb's host fee page (read 2026-11-22):
     // 20% on experience bookings, 15% on service bookings; direct via Stripe is 2.9% + 30¢.
