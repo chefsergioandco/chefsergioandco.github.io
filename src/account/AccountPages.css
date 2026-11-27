@@ -302,3 +302,11 @@
 .account-shell .evenings-account .ev-reward-milestones strong { font-weight: 500; }
 .account-shell .evenings-account .ev-reward-mark { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 1px solid var(--rule); border-radius: 50%; font-size: .875rem; color: var(--ev-muted, inherit); }
 .account-shell .evenings-account [data-reached=true] .ev-reward-mark { border-color: var(--rouge); background: var(--rouge); color: var(--ivory); }
+
+/* These pages set their own reading width; do not add the site's wrap gutters again. */
+.account-shell .wrap { padding-inline: 0; }
+.account-shell .wordmark { display: inline-flex; align-items: center; min-height: 44px; }
+.account-shell .auth-panel .auth-links a { min-width: 44px; min-height: 44px; text-decoration: underline; }
+.account-shell .footer p a { display: inline-flex; align-items: center; min-height: 44px; }
+/* A focused text input must remain readable without mobile Safari zooming in. */
+.account-shell .evenings-account .ev-reward-link input { font-size: 1rem; }

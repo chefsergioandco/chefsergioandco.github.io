@@ -47,6 +47,7 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   const [config, setConfig] = useState<PlanningConfig | null>(null), [configError, setConfigError] = useState(''), [configRetry, setConfigRetry] = useState(0)
   const [months, setMonths] = useState<(Availability | null)[]>([null, null]), [availabilityError, setAvailabilityError] = useState(''), [availabilityRetry, setAvailabilityRetry] = useState(0)
   const [otherDate, setOtherDate] = useState(false), [calMonth, setCalMonth] = useState(() => todayET().slice(0, 7)), [calAvail, setCalAvail] = useState<Availability | null>(null)
+  const [calError, setCalError] = useState(''), [calRetry, setCalRetry] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({}), [submissionError, setSubmissionError] = useState(''), [busy, setBusy] = useState(false)
   const [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false), [switched, setSwitched] = useState('')
   const inFlight = useRef(false)
@@ -94,10 +95,10 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   }, [kindForDates, availabilityRetry, today])
   useEffect(() => {
     if (!otherDate) return
-    let current = true; setCalAvail(null)
-    api.availability(kindForDates, calMonth).then(value => { if (current) setCalAvail(value) }, () => { if (current) setCalAvail({ month: calMonth, days: [], nextOpen: null, sample: false }) })
+    let current = true; setCalAvail(null); setCalError('')
+    api.availability(kindForDates, calMonth).then(value => { if (current) setCalAvail(value) }, failure => { if (current) setCalError(failure instanceof Error ? failure.message : 'This month could not be loaded. Please try again.') })
     return () => { current = false }
-  }, [otherDate, calMonth, kindForDates])
+  }, [otherDate, calMonth, kindForDates, calRetry])
   // A prefilled date gets its usual start time once the open times are known.
   useEffect(() => { if (s.date && !s.time && times.length) setState(previous => ({ ...previous, time: preferredTime(times) })) }, [s.date, s.time, times.join()])
 
@@ -113,10 +114,14 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     set({ partyBandId: id, format: next, where: next !== 'dinner' && s.where === 'his' ? 'home' : s.where })
   }
   function reveal(key: string) {
-    const element = document.getElementById(`f-${key}`) ?? document.getElementById(key)
-    if (!element) return
-    element.closest<HTMLElement>('.quick-group, .booking-field')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    element.focus({ preventScroll: true })
+    // Wait for the error description to render before focus announces the field.
+    requestAnimationFrame(() => {
+      const element = document.getElementById(`f-${key}`) ?? document.getElementById(key)
+      if (!element) return
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      element.closest<HTMLElement>('.quick-group, .booking-field')?.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
+      element.focus({ preventScroll: true })
+    })
   }
   const canPay = !!config?.paymentReady && band?.deposit != null && config.planningFee != null
   async function submit() {
@@ -171,7 +176,7 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     </Group>
     {availabilityError && <div className="booking-notice" role="alert"><p>{availabilityError}</p><button className="link" type="button" onClick={() => setAvailabilityRetry(value => value + 1)}>Reload open dates</button></div>}
     {otherDate && s.dateMode === 'exact' && <div className="booking-calendar-section quick-calendar">
-      <Calendar month={calMonth} days={calAvail?.days ?? []} loading={!calAvail} value={s.date} minMonth={today.slice(0, 7)} nextOpen={calAvail?.nextOpen ?? null} onMonth={setCalMonth} onSelect={date => { const open = calAvail?.days.find(day => day.date === date)?.times ?? []; set({ date, time: preferredTime(open) }) }}/>
+      <Calendar month={calMonth} days={calAvail?.days ?? []} loading={!calAvail && !calError} error={calError} onRetry={() => setCalRetry(value => value + 1)} value={s.date} minMonth={today.slice(0, 7)} nextOpen={calAvail?.nextOpen ?? null} onMonth={setCalMonth} onSelect={date => { const open = calAvail?.days.find(day => day.date === date)?.times ?? []; set({ date, time: preferredTime(open) }) }}/>
     </div>}
     {s.dateMode === 'exact' && s.date && times.length > 0 && <div className="booking-field quick-time" id="wrap-f-time">
       <label htmlFor="f-time">Start time on {longDate(s.date)}</label>

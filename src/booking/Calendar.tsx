@@ -12,6 +12,8 @@ export function Calendar({
   month,
   days,
   loading,
+  error,
+  onRetry,
   value,
   minMonth,
   nextOpen,
@@ -21,6 +23,8 @@ export function Calendar({
   month: string
   days: OpenDay[]
   loading: boolean
+  error?: string
+  onRetry?: () => void
   value?: string
   minMonth: string
   nextOpen: string | null
@@ -35,7 +39,7 @@ export function Calendar({
 
   return (
     <div data-calendar aria-busy={loading || undefined}>
-      <div className="flex items-center justify-between">
+      <div className="booking-calendar-heading">
         <button type="button" className="btn-quiet min-h-[44px] w-11 px-0" aria-label="Previous month" disabled={month <= minMonth} onClick={() => onMonth(addMonths(month, -1))}>
           <Icon name="chevron-left" size={20} />
         </button>
@@ -46,7 +50,7 @@ export function Calendar({
           <Icon name="chevron-right" size={20} />
         </button>
       </div>
-      <div className="mt-3 grid grid-cols-7 gap-1 text-center" role="group" aria-label={`Open dates in ${monthLabel(month)}`}>
+      {error ? <div className="booking-notice" role="alert"><p>{error}</p>{onRetry && <button type="button" className="link booking-calendar-retry" onClick={onRetry}>Reload this month</button>}</div> : <div className="mt-3 grid grid-cols-7 gap-1 text-center" role="group" aria-label={`Open dates in ${monthLabel(month)}`}>
         {WEEKDAYS.map((w) => (
           <span key={w} aria-hidden className="pb-1 text-xs text-ink-muted">
             {w}
@@ -73,8 +77,8 @@ export function Calendar({
             </span>
           ),
         )}
-      </div>
-      {!loading && days.length === 0 && (
+      </div>}
+      {!loading && !error && days.length === 0 && (
         <p className="mt-3 text-ink-muted">
           No open dates in {monthLabel(month).split(' ')[0]}.{' '}
           {nextOpen && (

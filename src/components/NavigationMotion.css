@@ -3,6 +3,7 @@
 @media (max-width: 1199px) { :root { --navigation-header-fallback: 98px; } }
 @media (max-width: 959px) { :root { --navigation-header-fallback: 151px; } }
 @media (max-width: 359px) { :root { --navigation-header-fallback: 149px; } }
+@media (max-width: 959px) and (max-height: 480px) { :root { --navigation-header-fallback: 82px; } }
 html { scroll-padding-top: calc(var(--site-header-height, var(--navigation-header-fallback)) + 24px); }
 #main, #main [id] { scroll-margin-top: 0; }
 /* The no-script header includes a wrapping fallback navigation of variable height. */

@@ -9,7 +9,7 @@
 .booking-progress li.reached {background:rgb(var(--c-ink));}
 .booking-step-content {display:grid;gap:1.8rem;margin-top:2rem;}
 .booking-intro {font-size:1rem;line-height:1.65;max-width:38rem;}
-.booking-field {display:grid;gap:.6rem;min-width:0;}
+.booking-field {display:grid;gap:.6rem;min-width:0;scroll-margin-block:calc(var(--site-header-height,6.5rem) + 1rem) 1rem;}
 .booking-field>label,.booking-field>legend {font-size:1rem;font-weight:500;line-height:1.45;}
 .booking-field>legend {margin-bottom:.65rem;}
 .booking-field-hint {font-size:.875rem;line-height:1.6;opacity:.8;}
@@ -33,12 +33,15 @@ textarea.booking-input {resize:vertical;}
 .booking-check label {font-size:.95rem;line-height:1.5;cursor:pointer;}
 .booking-checkbox {display:flex;align-items:center;justify-content:center;flex:none;width:1.4rem;height:1.4rem;border:1px solid rgb(var(--c-ink)/.5);border-radius:var(--r-btn);background:transparent;}
 .booking-checkbox[data-state=checked] {background:rgb(var(--c-ink));color:rgb(var(--c-canvas,252 250 245));}
-.booking-field-pair {display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.booking-field-pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;}
 .booking-stepper {display:flex;align-items:center;gap:.5rem;}
 .booking-stepper input {width:5rem;text-align:center;font-variant-numeric:tabular-nums;}
 .booking-stepper>button {height:3.1rem;width:3.1rem;border:1px solid rgb(var(--c-ink)/.35);border-radius:var(--r-btn);font-size:1.3rem;}
 .booking-stepper>button:disabled {opacity:.35;}
 .booking-calendar-section {display:grid;gap:1rem;outline:none;}
+.booking-calendar-heading {display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:.5rem;align-items:center;}
+.booking-calendar-heading>p {text-align:center;overflow-wrap:anywhere;}
+.booking-calendar-retry {display:inline-flex;align-items:center;min-height:44px;}
 .booking-inline-note {display:flex;align-items:flex-start;gap:.6rem;padding:.9rem 0;border-top:1px solid rgb(var(--c-ink)/.15);border-bottom:1px solid rgb(var(--c-ink)/.15);font-size:.875rem;line-height:1.6;}
 .booking-inline-note svg {flex:none;margin-top:.2rem;}
 .booking-dietary {display:grid;grid-template-columns:1fr 1fr;gap:.2rem 1rem;}
@@ -55,7 +58,7 @@ textarea.booking-input {resize:vertical;}
 .booking-payment-status {display:flex;align-items:center;gap:.55rem;font-size:.8rem;}
 .booking-payment-status svg {flex:none;}
 .booking-actions {display:flex;flex-wrap:wrap;gap:.75rem;margin-top:2.2rem;}
-.booking-actions button {min-height:3.2rem;}
+.booking-actions button {min-height:3.2rem;min-width:44px;}
 .booking-error-summary,.booking-notice {margin-top:1.4rem;padding:1rem;border-left:3px solid rgb(var(--c-ink));background:rgb(var(--c-ink)/.045);font-size:.9rem;line-height:1.65;}
 .booking-error-summary ul {margin-top:.4rem;list-style:disc;padding-left:1.1rem;}
 .booking-error-summary button {text-decoration:underline;text-underline-offset:3px;text-align:left;}
@@ -104,6 +107,7 @@ textarea.booking-input {resize:vertical;}
  .booking-payment-total {align-items:flex-start;flex-direction:column;gap:.4rem;}
 }
 @media(prefers-reduced-motion:reduce) {.booking-choice,.booking-progress li{transition:none;}}
+@media(max-width:28rem){.booking-field-pair{grid-template-columns:minmax(0,1fr);}}
 .booking-receipt-facts {display:grid;gap:0;margin-top:2rem;border-top:1px solid rgb(var(--c-ink)/.25);}
 .booking-receipt-facts>div {display:grid;grid-template-columns:8rem 1fr;gap:1rem;padding:1rem 0;border-bottom:1px solid rgb(var(--c-ink)/.2);font-size:.95rem;line-height:1.6;}
 .booking-receipt-facts dt {font-size:.78rem;text-transform:none;letter-spacing:normal;opacity:.7;}

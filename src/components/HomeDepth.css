@@ -20,11 +20,11 @@
   transform: translateX(-50%);
   z-index: -1;
   background: rgb(var(--c-canvas));
-  box-shadow: 0 -18px 35px -20px rgb(var(--c-ink) / var(--depth-edge, 0));
+  box-shadow: 0 -18px 35px -20px oklch(0% 0 0 / var(--depth-edge, 0));
   pointer-events: none;
 }
 [data-depth-plane][data-depth-pose='front'][data-depth-surface='opaque'] {
-  box-shadow: 0 -18px 35px -20px rgb(var(--c-ink) / var(--depth-edge, 0));
+  box-shadow: 0 -18px 35px -20px oklch(0% 0 0 / var(--depth-edge, 0));
 }
 @media (prefers-reduced-motion: reduce) {
   .home-depth, .home-depth > main { transform-style: flat !important; }

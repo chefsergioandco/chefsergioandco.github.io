@@ -48,7 +48,7 @@
   .plating-steps > li { padding: 0; }
   .plating-steps > li::before { display: none; }
   .plating-steps h3 { font-size: 1.875rem; }
-  .plating-steps h3 button { min-height: 36px; }
+  .plating-steps h3 button { min-height: 44px; }
   .plating-steps p { max-width: 34ch; margin-top: 10px; }
   .home-plating[data-enhanced='true'] .plating-mobile-stops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 80%; margin: 0 0 22px; }
   .plating-mobile-stops button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; background: transparent; border: 0; border-radius: 0; color: rgb(var(--c-ink)); font: 400 .875rem/1.4 var(--f-ui); padding: 12px 2px 7px; min-height: 58px; }

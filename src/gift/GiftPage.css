@@ -35,3 +35,6 @@
 .gift-how li:before{content:counter(step);display:block;font-size:.875rem;font-variant-numeric:tabular-nums;color:rgb(var(--c-ink-muted,var(--c-ink)))}
 .gift-how h3{margin-top:.25rem;font-family:var(--font-display,inherit);font-size:1.25rem}
 .gift-how p{margin-top:.5rem;font-size:.9375rem;color:rgb(var(--c-ink-muted,var(--c-ink)))}
+
+/* Standalone navigation actions need the same thumb room as the form controls. */
+.gift-page a[href^="tel:"],.gift-page .gift-intro .flex>.link{display:inline-flex;align-items:center;min-height:44px}

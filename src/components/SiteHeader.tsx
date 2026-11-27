@@ -10,6 +10,7 @@ import { useReducedMotion } from 'framer-motion'
 import { useDrawer } from './drawer-motion'
 import { GuestTag } from './GuestTag'
 import type { FormatKey } from '../content/site'
+import { accountHref } from '../content/account'
 
 const services = [
   { path: '/privatedining/', label: 'Private dinners', description: 'A menu for your table.', format: 'dinner', icon: 'utensils-crossed' },
@@ -171,13 +172,15 @@ export function SiteHeader({ route }: { route: string }) {
 
   useEffect(() => {
     const breakpoint = window.matchMedia('(max-width: 700px)')
+    const shortViewport = window.matchMedia('(max-width: 959px) and (max-height: 480px)')
     const change = () => {
       const active = document.activeElement
-      const needsFocus = !!(active && (panel.current?.contains(active) || (active === opener.current && !opener.current?.getClientRects().length)))
+      const needsFocus = !!(active && (panel.current?.contains(active) || (header.current?.contains(active) && !active.getClientRects().length)))
       close(needsFocus)
     }
     breakpoint.addEventListener('change', change)
-    return () => breakpoint.removeEventListener('change', change)
+    shortViewport.addEventListener('change', change)
+    return () => { breakpoint.removeEventListener('change', change); shortViewport.removeEventListener('change', change) }
   }, [])
 
   const focusLeftHeader = (event: FocusEvent<HTMLElement>) => {
@@ -252,6 +255,7 @@ export function SiteHeader({ route }: { route: string }) {
             <nav aria-label="More pages">
               <a href={href('/')} aria-current={route === '/' ? 'page' : undefined}><Icon name="home" size={17} />Home</a>
               {secondary.map(link => <a key={link.path} href={href(link.path)} aria-current={route === link.path ? 'page' : undefined}><Icon name={link.icon} size={17} />{link.label}</a>)}
+              <a className="sergio-header-overview-account" href={accountHref('bookings')} aria-current={route === '/dashboard/' ? 'page' : undefined}><Icon name="users" size={17} />My account</a>
             </nav>
             <HeaderIconAction kind="link" icon="phone" label={`Call Sergio at ${site.phone}`} href={site.phoneHref}
               onClick={() => track('cta_call', { where: 'header_overview' })} />

@@ -20,7 +20,7 @@
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) :where(.home-hero-copy,.home-photograph,[data-site-header],#ways){visibility:hidden;transform:var(--emergence-transform);transform-origin:0 0;will-change:transform;z-index:60}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [data-emergence-visible=true]{visibility:visible}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [data-site-header]{position:relative;z-index:64;box-shadow:var(--emergence-shadow);backface-visibility:hidden}
-:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-hero-copy{z-index:63;filter:drop-shadow(0 2px 2px rgb(var(--c-ink))10)}
+:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-hero-copy{z-index:63;filter:drop-shadow(0 2px 2px oklch(0% 0 0 / .06))}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-photograph{z-index:62;filter:drop-shadow(var(--emergence-shadow))}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) #ways{position:relative;z-index:61;box-shadow:var(--emergence-shadow)}
 /* No chrome while the invitation opens: the footer waits in normal flow, hidden, like the rest of the page. */
@@ -28,6 +28,11 @@
 /* Keep fixed-size text treatments readable when the browser enlarges text. */
 .home-arrival :is(.home-description,.home-card-overline,.home-card-close,.home-guest-range,.home-location){line-height:1.48}
 .home-arrival .home-hero h1>span,.home-arrival .home-card-title{white-space:normal}
+/* Touch visitors can enter immediately without discovering a keyboard-only skip. */
+@media(hover:none) and (pointer:coarse){
+ .home-arrival-skip{top:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;width:max-content;max-width:calc(100% - 32px);transform:translateX(-50%);font-size:14px;line-height:20px}
+ .home-arrival-skip:focus{transform:translateX(-50%)}
+}
 @media(prefers-reduced-motion:reduce){.home-arrival-opening{display:none}:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) :is([data-site-header],[data-home-hero],.home-hero-copy,.home-photograph,.site-footer){transform:none;clip-path:none;opacity:1;visibility:visible}.home-arrival-card{will-change:auto}.home-arrival-card>*{animation:none}}
 
 /* The server-rendered cover paints before hydration; a failed bundle reveals the full site. */

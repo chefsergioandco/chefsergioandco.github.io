@@ -2,7 +2,7 @@
 .plating-mobile-stops button{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap}
 [data-site-header] .sergio-header-desktop>a,[data-site-header] .sergio-header-overview-bottom a,[data-site-header] .sergio-header-fallback a{gap:9px}
 [data-site-header] a>svg{flex-shrink:0}
-.sergio-header-service-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
+.sergio-header-service-heading{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;width:100%}
 [data-site-header] .sergio-header-service-heading .sergio-header-service-title{display:flex;align-items:center;gap:11px;min-width:0;font-size:30px}
 .sergio-header-service-title>svg{flex-shrink:0;color:rgb(var(--c-cta))}
 .sergio-header-guest-tag{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:5px 8px;border:1px solid rgb(var(--c-cta)/.23);color:rgb(var(--c-cta));background:rgb(var(--c-cta)/.04);font:400 12px/18px var(--f-ui);white-space:nowrap;font-variant-numeric:tabular-nums}

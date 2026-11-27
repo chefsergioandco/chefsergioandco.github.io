@@ -148,7 +148,7 @@ export function HomeArrival({ children }: { children: ReactNode }) {
         node.dataset.emergenceRelease = String(release)
         node.style.setProperty('--emergence-transform', matrixForQuad(quad, { ...rect, top: rect.top - scrollY, left: rect.left - scrollX }))
         const shadow = Math.sin(Math.PI * release) * (1 - release)
-        node.style.setProperty('--emergence-shadow', `0 ${2 + 20 * shadow}px ${4 + 26 * shadow}px rgba(45,43,39,${.03 + .12 * shadow})`)
+        node.style.setProperty('--emergence-shadow', `0 ${2 + 20 * shadow}px ${4 + 26 * shadow}px oklch(0% 0 0 / ${.03 + .12 * shadow})`)
       }
     }
     repaint.current = paint

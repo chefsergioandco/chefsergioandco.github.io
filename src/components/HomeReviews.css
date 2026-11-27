@@ -26,6 +26,6 @@
 .home-reviews-empty .home-review-quote{max-width:40rem;color:rgb(var(--c-ink-soft))}
 .home-reviews-empty .home-review-quote::before,.home-reviews-empty .home-review-quote::after{content:none}
 .home-reviews-cta{margin:1.25rem 0 0;font:400 .9375rem/1.6 var(--f-ui,Archivo,sans-serif);color:rgb(var(--c-ink-soft))}
-.home-reviews-cta-quiet{color:rgb(var(--c-ink-soft)/.85)}
+.home-reviews-cta-quiet{color:rgb(var(--c-ink-soft))}
 @media(max-width:640px){.home-review-quote p::before{margin-left:0}.home-reviews-cta-quiet{display:block}}
 @media(prefers-reduced-motion:reduce){.home-review{animation:none}}
