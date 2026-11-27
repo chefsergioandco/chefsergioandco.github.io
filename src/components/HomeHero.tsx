@@ -29,14 +29,16 @@ export function HomeHero() {
         </div>
 
         <figure className="home-photograph" data-reference-figure="home-dish">
-          <div className="home-photo-mat">
-            <Photo slot="home-dish" alt={IS_PROTOTYPE ? 'Reference photograph of a plated vegetable pastry; not Sergio’s food' : 'A dish prepared by Chef Sergio'} sizes="(min-width: 1700px) 660px, (min-width: 1200px) 40vw, (min-width: 621px) 46vw, 90vw" priority className="home-dish" />
-          </div>
-          <div className="home-evening-card">
-            <p className="home-card-overline">Your evening, taken care of.</p>
-            <p className="home-card-title">Cooked.<br />Served.<br />Cleaned up.</p>
-            <span className="home-card-rule" aria-hidden="true" />
-            <p className="home-card-close">You stay at the table.</p>
+          <div className="home-photo-scene">
+            <div className="home-photo-mat">
+              <Photo slot="home-dish" alt={IS_PROTOTYPE ? 'Reference photograph of a plated vegetable pastry; not Sergio’s food' : 'A dish prepared by Chef Sergio'} sizes="(min-width: 1700px) 660px, (min-width: 1200px) 40vw, (min-width: 621px) 46vw, 90vw" priority className="home-dish" />
+            </div>
+            <div className="home-evening-card">
+              <p className="home-card-overline">Your evening, taken care of.</p>
+              <p className="home-card-title">Cooked.<br />Served.<br />Cleaned up.</p>
+              <span className="home-card-rule" aria-hidden="true" />
+              <p className="home-card-close">You stay at the table.</p>
+            </div>
           </div>
           <figcaption className="home-photo-caption" data-reference-caption="home-dish">
             <span className="home-photo-promise"><span>A personal menu.</span><span>Your own table.</span></span>
