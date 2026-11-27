@@ -248,6 +248,18 @@ try {
   check('missing live configuration fails closed without a mock or network write', () => assert.equal(calls.length, beforeUnconfigured))
 
   const planning = await actualModule('src/booking/planning.ts')
+  check('sensitive event data is transmitted only with an explicit own-person consent choice',()=>{
+    const state={...planning.EMPTY,kind:'dinner',dietary:['Vegetarian'],allergies:'Private allergy detail'}
+    const withheld=planning.planningRequest({...state,sensitiveConsent:false})
+    assert.deepEqual(withheld.dietary,[]);assert.equal(withheld.allergies,'');assert.equal(withheld.planning.allergies,'');assert.equal(withheld.sensitiveDataConsent.granted,false)
+    const supplied=planning.planningRequest({...state,sensitiveConsent:true})
+    assert.deepEqual(supplied.dietary,state.dietary);assert.equal(supplied.allergies,state.allergies);assert.equal(supplied.sensitiveDataConsent.granted,true);assert.equal(supplied.sensitiveDataConsent.scope,'self')
+  })
+  check('saved browser drafts exclude health, sensitive consent and unrestricted personal text without changing the unsent form',()=>{
+    const state={...planning.EMPTY,name:'Host',email:'host@example.test',dietary:['Private choice'],allergies:'Private health',sensitiveConsent:true,notes:'Private volunteered note',foodIdeas:'Private volunteered detail',occasion:'Private occasion',place:'Private address',kitchen:'Private access',gift:'Private code'}
+    const draft=planning.privateDraftState(state),encoded=JSON.stringify(draft)
+    assert(!encoded.includes('Private'));assert.equal(draft.sensitiveConsent,false);assert.equal(draft.email,state.email);assert.equal(state.allergies,'Private health');assert.equal(state.sensitiveConsent,true)
+  })
   const config = { partyBands: [{id:'small',label:'1–6 guests',min:1,max:6,deposit:null},{id:'family',label:'7–12 guests',min:7,max:12,deposit:null}], planningFee:null,checkoutMinutes:null,postageAllowance:null,kitchenRequirements:'',travelMiles:75,maxGuests:24,interviewScheduling:'undecided',paymentReady:false,interviewSlots:[],policyVersion:1 }
   const uncertain = { ...planning.EMPTY, kind:'dinner', dateMode:'undecided', partyBandId:'family', name:'Graduation host', email:'host@example.test', foodIdeas:'Cordon bleu ideas' }
   const validation = {openTimes:[],availabilityLoaded:false,seatsMax:6,today:'2026-11-23'}
