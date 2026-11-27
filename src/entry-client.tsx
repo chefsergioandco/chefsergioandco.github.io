@@ -10,6 +10,7 @@ installNextPage({ documents: false })
 
 // Route-level code splitting: each page hydrates with only its own code (the home page never downloads the booking form).
 const pages: Record<string, () => Promise<ComponentType>> = {
+  '/status/': () => import('./pages/ServiceStatus').then((m) => m.ServiceStatus),
   '/': () => import('./pages/Home').then((m) => m.Home),
   '/privatedining/': () => import('./pages/Services').then((m) => m.PrivateDining),
   '/cookingclasses/': () => import('./pages/Services').then((m) => m.CookingClasses),

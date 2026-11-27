@@ -25,6 +25,13 @@ for (const r of routes) {
   if (!/<meta name="description" content="[^"]{50,}"/.test(html)) failures.push(`${r.path}: description missing or under 50 chars`)
   const bookingHref = `${process.env.BASE_PATH || '/'}book/`
   if (r.bookingLinkRequired !== false && r.path !== '/book/' && r.path !== '/shot-list/' && !html.includes(`href="${bookingHref}`)) failures.push(`${r.path}: no booking link in static HTML`)
+  if (r.path === '/status/') {
+    const statusPage = 'https://chefsergioandco.betteruptime.com/'
+    if (!html.includes(`<iframe src="${statusPage}" title="Chef Sergio &amp; Co. service status and incident updates"`)) failures.push('/status/: the accessible Better Stack status embed is missing')
+    if (!html.includes(`href="${statusPage}"`)) failures.push('/status/: no direct status-page fallback link')
+    if (!html.includes(`href="${process.env.BASE_PATH || '/'}"`)) failures.push('/status/: no link back to the site')
+    if (html.includes('class="site-footer ') || html.includes('class="site-header ')) failures.push('/status/: the full site chrome crowds the status page')
+  }
   if (html.includes('data-menu-item')) {
     const missing = menu.filter((m) => !text.includes(m))
     if (missing.length) failures.push(`${r.path}: menu items missing from static HTML: ${missing.join(', ')}`)

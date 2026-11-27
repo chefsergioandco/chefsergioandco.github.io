@@ -1,0 +1,32 @@
+.service-status {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 20rem;
+  background: rgb(var(--c-canvas));
+}
+
+.service-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .25rem 1.5rem;
+  padding: .5rem clamp(1rem, 3vw, 2rem);
+  border-bottom: 1px solid rgb(var(--c-rule));
+  font-family: var(--f-ui);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.service-status-header a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  text-underline-offset: .2em;
+}
+
+.service-status-direct { text-decoration: underline; }
+.service-status-content { min-height: 0; }
+.service-status-content iframe { display: block; width: 100%; height: 100%; border: 0; }

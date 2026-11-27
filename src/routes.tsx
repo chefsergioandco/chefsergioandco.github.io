@@ -17,6 +17,7 @@ import { CustomerDashboard } from './account/CustomerDashboard'
 import { ReceiptPage } from './account/ReceiptPage'
 import { NewsletterConfirm, NewsletterUnsubscribe } from './components/NewsletterTokenPage'
 import { AdminPage } from './account/AdminPage'
+import { ServiceStatus } from './pages/ServiceStatus'
 
 export type Route = {
   path: string
@@ -103,6 +104,7 @@ const service = (name: string, path: string, description: string, from: number |
 })
 
 const all: Route[] = [
+  { path: '/status/', title: 'Service status | Chef Sergio & Co.', description: 'Current service status, incident updates and uptime history for Chef Sergio and Co., provided by Better Stack.', h1: 'Service status', Page: ServiceStatus, noindex: true, bookingLinkRequired: false, og: { card: 'home' } },
   { path: '/newsletter/confirm/', title: 'Confirm your subscription | Chef Sergio & Co.', description: 'Confirm your choice to receive the seasonal letter from Chef Sergio and Co.', h1: 'Confirm your subscription', Page: NewsletterConfirm, noindex: true, og: {card:'home'} },
   { path: '/newsletter/unsubscribe/', title: 'Unsubscribe from the letter | Chef Sergio & Co.', description: 'Manage your subscription to the seasonal letter from Chef Sergio and Co.', h1: 'Unsubscribe from the letter', Page: NewsletterUnsubscribe, noindex: true, og: {card:'home'} },
 
