@@ -1,5 +1,6 @@
 /** Local browser contracts only. Fictional SDK/API fixtures never contact Auth0 or customer systems. */
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs/promises'
 import { transform } from 'esbuild'
 import puppeteer from 'puppeteer-core'
@@ -20,6 +21,9 @@ const checks = [], errors = [], routeErrors = [], blockedExternal = []
 const pass = label => { checks.push(label); console.log('PASS ' + label) }
 let profile = { displayName: 'Alex', preferences: 'An unhurried evening.', email: 'alex@example.test', emailVerified: true }, saved = []
 let emailVerified = true, bookingsStatus = 200, menusStatus = 200, extraBookings = []
+let privacyRequests = [], corruptExport = false, wrongReleaseKind = false
+const availableData = {formatVersion:3,releaseKind:'interim',generatedAt:'2026-11-27T21:30:00Z',dataSubject:{subject:'auth0|fixture',email:'alex@example.test'},completion:{complete:false},pendingSources:['stripe','mailbox'],records:Array.from({length:205},(_,id)=>({id,text:'Élise 🍽 actual fixture record '+id}))}
+const availableJson = JSON.stringify(availableData), availableHash = createHash('sha256').update(availableJson).digest('hex')
 const edition = { text: 'An evening at your table\n\nGarden tomatoes\nRoasted seasonal vegetables\nCitrus and cream', finalizedAt: '2026-11-20T12:00:00Z', version: 'a'.repeat(64) }
 const booking = { id: 'CS-fixture', service: 'Private dinner', date: '2099-12-20', time: '18:00', status: 'confirmed', guests: 6, occasion: 'An evening together', location: 'At your table', actionUrl: base + '/book/done/?ref=CS-fixture#access=' + 'a'.repeat(43), planning: { menu: edition }, receipts: [{ id: 'rc_fixture', number: 'CS-2026-0001', type: 'payment', amountMinor: 90000, issuedAt: '2026-11-20T12:00:00Z' }], nextAction: { kind: 'view_menu', title: 'Your approved menu is ready.', detail: 'Open the current menu agreed with Sergio.' } }
 const clickText = (page, selector, text) => page.evaluate(({ selector, text }) => { const node = [...document.querySelectorAll(selector)].find(node => node.textContent.trim() === text); if (!node) throw Error('Missing control: ' + text); node.click() }, { selector, text })
@@ -87,7 +91,8 @@ try {
    else if (path === '/customer/bookings') { status = bookingsStatus; data = status === 200 ? { user: { name: profile.displayName, email: profile.email, emailVerified }, bookings: emailVerified ? [booking, ...extraBookings] : [] } : {error:{code:'access_denied',message:'Local fixture: booking access was revoked.'}} }
    else if (path === '/customer/profile') { if (body) profile = { ...profile, ...body }; data = { profile: {...profile,emailVerified} } }
    else if (path === '/customer/menus') { status = menusStatus; data = status === 200 ? { menus: saved } : {error:{code:'access_denied',message:'Local fixture: saved-menu access was revoked.'}} }
-   else if (path === '/customer/privacy') data = {requests:[]}
+   else if (path === '/customer/privacy') data = {requests:privacyRequests}
+   else if (path === '/customer/privacy/export') data = url.searchParams.has('part') ? {partIndex:0,content:availableJson+(corruptExport?'corrupt':'')} : {delivery:'parts',artifactId:'fixture-artifact',partCount:1,byteLength:Buffer.byteLength(availableJson),sha256:availableHash,releaseKind:wrongReleaseKind?'final':'interim',complete:false}
    else if (path === '/customer/newsletter-preference') data = {newsletter:{status:'not_subscribed',consentVersion:null,updatedAt:null}}
    else if (path === '/account/security') data = { email: profile.email, emailVerified, verificationResendEnabled: false, verificationCheckEnabled: true, passwordResetEnabled: true, passwordProvider: 'auth0', passwordResetEmail: profile.email, methodsVerified: true, methods: [{provider:'auth0',label:'Email and password',primary:true,passwordManagedBy:'auth0'}],googleDisconnect:{available:false,mode:'not_connected',reason:'not_connected'} }
    else if (path === '/customer/menus/save') { if(body.version !== edition.version) {status=409;data={error:{code:'menu_changed',message:'The approved menu changed. Open the current menu before saving it.'}}}else{saved = [{ ...edition, id: 'cm_' + edition.version.slice(0,32), bookingId: booking.id, service: booking.service, date: booking.date, occasion: booking.occasion, savedAt: '2026-11-23T12:00:00Z' }]; data = { menu: saved[0] }} }
@@ -235,6 +240,31 @@ try {
  await fixture.waitForFunction(() => window.__downloads?.length === 1)
  assert(await fixture.evaluate(() => window.__downloads[0].url.startsWith('blob:')))
  pass('receipt download uses bearer fetch then a temporary Blob, with no credential in its link')
+ privacyRequests=[{id:'pr_'+'b'.repeat(32),kind:'access_export',status:'in_review',revision:2,message:'Please provide my records.',responseNote:'Reviewed data is available; provider review continues.',retainedRecordsNote:'',createdAt:'2026-11-27T21:00:00Z',updatedAt:'2026-11-27T21:30:00Z',exportAvailable:true,exportKind:'interim',history:[]}]
+ await tab(fixture,'Settings & profile')
+ await fixture.waitForFunction(()=>document.body.textContent.includes('Available data · review ongoing.'))
+ await fixture.evaluate(()=>{window.__exportBlobs=[];const create=URL.createObjectURL;URL.createObjectURL=function(blob){window.__exportBlobs.push(blob);return create.call(this,blob)}})
+ await clickText(fixture,'button','Download available personal data')
+ await fixture.waitForFunction(()=>window.__downloads.length===2)
+ assert.equal(await fixture.evaluate(()=>window.__downloads.at(-1).name),'chef-sergio-personal-data-available.json')
+ assert.deepEqual(JSON.parse(await fixture.evaluate(()=>window.__exportBlobs.at(-1).text())),availableData)
+ assert((await fixture.$eval('main',node=>node.textContent)).includes('Your request is still in review.'))
+ await clickText(fixture,'button','Download readable copy')
+ await fixture.waitForFunction(()=>window.__downloads.length===3)
+ const availableHtml=await fixture.evaluate(()=>window.__exportBlobs.at(-1).text())
+ assert(availableHtml.includes('not the completed response'));assert(availableHtml.includes('actual fixture record 204'))
+ pass('reviewed interim JSON and readable downloads preserve205records, label pending coverage and keep request open')
+ corruptExport=true
+ await clickText(fixture,'button','Download available personal data')
+ await fixture.waitForFunction(()=>document.body.textContent.includes('did not pass its integrity check'))
+ assert.equal(await fixture.evaluate(()=>window.__downloads.length),3)
+ corruptExport=false;wrongReleaseKind=true
+ await clickText(fixture,'button','Download available personal data')
+ await fixture.waitForFunction(()=>document.body.textContent.includes('delivery status changed'))
+ assert.equal(await fixture.evaluate(()=>window.__downloads.length),3)
+ wrongReleaseKind=false
+ pass('corrupt bytes and changed interim/final status save no file and permit a safe retry')
+ await tab(fixture,'Your evenings')
  await fixture.setViewport({ width: 390, height: 844 })
  assert(await fixture.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
  await fixture.screenshot({ path: directory + '/fixture-evenings-mobile.png', fullPage: true })

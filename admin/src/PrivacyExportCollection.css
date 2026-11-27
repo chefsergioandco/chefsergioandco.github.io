@@ -31,3 +31,7 @@
 .privacy-export :is(button,input,textarea,select,summary):focus-visible{outline:2px solid #8f3b32;outline-offset:3px}
 .privacy-export :disabled{cursor:default}
 @media(max-width:600px){.privacy-export-sources{grid-template-columns:minmax(0,1fr)}.privacy-export fieldset{padding:.8rem}}
+
+.privacy-export-interim{display:grid;gap:1rem;min-width:0;padding:1rem;border:1px solid var(--rule,#e4e4e1);background:var(--ivory,#fefefd)}
+.privacy-export-interim h5{font-size:1rem;margin:0}
+.privacy-export-interim pre{max-height:32rem;overflow:auto;border:1px solid var(--rule,#e4e4e1);padding:1rem}

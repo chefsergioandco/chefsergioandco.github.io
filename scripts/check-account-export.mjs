@@ -20,4 +20,10 @@ try {
   assert(!html.includes('<script>'));assert(!html.includes('<img src='));assert(html.includes("default-src 'none'"));assert(html.includes("form-action 'none'"))
   assert(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'))
   console.log('PASS source text and guide cannot inject executable markup or load remote resources')
+  const interim = renderPersonalDataCopy({...response,releaseKind:'interim',completion:{complete:false},pendingSources:['stripe']})
+  assert(interim.includes('Available data · review ongoing.'))
+  assert(interim.includes('not the completed response'))
+  assert(interim.includes('Available collected data and outstanding coverage'))
+  assert(!interim.includes('<h2>Complete response</h2>'))
+  console.log('PASS interim readable copies preserve pending coverage and cannot imply a completed response')
 } finally { await rm(temporary,{recursive:true,force:true}) }

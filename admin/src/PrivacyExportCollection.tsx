@@ -165,6 +165,7 @@ export default function PrivacyExportCollection({ request, onUpdated }: { reques
   return <section className="privacy-export" aria-labelledby={'export-collection-' + request.id}>
     <header><h4 id={'export-collection-' + request.id}>Collect the personal-data response</h4><p>The local collector covers application records. Review every external source, correspondence and processing information before the request can be fulfilled.</p></header>
     <p className="privacy-export-note">Keep each source tied to this person: <strong>{request.email}</strong><br/><span className="privacy-export-id">{request.subject}</span>. Missing access, an API failure or an unanswered provider request is outstanding work, not evidence of no data.</p>
+    {request.kind==='access_export'&&inventory&&<InterimDeliveryReview request={{...request,revision:inventory.revision}} onUpdated={()=>{void load().then(()=>onUpdated())}}/>}
     <div className="privacy-export-actions"><button type="button" className="button secondary" disabled={busy || loading} onClick={() => void refresh()}>{loading && !checkingCoverage ? 'Reading sources…' : 'Refresh source coverage'}</button><button type="button" className="button secondary" disabled={busy || loading} onClick={() => void inspectCoverage()}>{checkingCoverage ? 'Inspecting local and provider coverage…' : 'Inspect full collection coverage'}</button></div>
     {inventory && <p className="privacy-export-id">Current reviewed request revision: {inventory.revision}</p>}
     {error && <p role="alert" className="privacy-export-error">{error} Your loaded file and notes remain available. A changed request may require refresh and reconciliation before a new action.</p>}
@@ -188,5 +189,71 @@ export default function PrivacyExportCollection({ request, onUpdated }: { reques
         {attempts.current[selected] && <div className="privacy-export-reconcile"><p>Retry keeps the same action and upload identifiers to recover an unknown response. If another operator changed this request, refresh and compare saved coverage first. Start a new action only after reconciling whether the earlier one was recorded.</p><button className="button secondary" type="button" onClick={() => { delete attempts.current[selected]; update({ confirmed: false }); setNotice('Your file and notes are preserved. Review the current saved coverage and confirm again before a new action uses the displayed request revision.') }}>Prepare a new action after reconciliation</button></div>}
       </fieldset>
     </form>
+  </section>
+}
+
+type InterimPreparation={kind:string;requestId:string;subject:string;email:string;requestRevision:number;reviewExpiresAt:string;artifact:{artifactId:string;sha256:string;partCount:number;byteLength:number};proof:string}
+/** Releasing available records is separate from attesting that the full rights request is fulfilled. */
+function InterimDeliveryReview({request,onUpdated}:{request:ExportRequest;onUpdated:()=>void}) {
+  const [identityConfirmed,setIdentityConfirmed]=useState(false),[sourceText,setSourceText]=useState(''),[sourceConfirmed,setSourceConfirmed]=useState(false)
+  const [prepared,setPrepared]=useState<InterimPreparation|null>(null),[content,setContent]=useState(''),[reviewed,setReviewed]=useState(false),[evidence,setEvidence]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
+  const flight=useRef(false),attempts=useRef<{prepare?:{fingerprint:string;key:string};release?:{fingerprint:string;key:string}}>({}),generation=useRef(0)
+  useEffect(()=>{++generation.current;setPrepared(null);setContent('');setReviewed(false);setEvidence('');attempts.current={};setIdentityConfirmed(false);setSourceConfirmed(false);setSourceText('');setError('');setNotice('');return()=>{++generation.current}},[request.id,request.subject,request.email])
+  const changed=!!prepared&&prepared.requestRevision!==request.revision
+  async function readSource(file?:File) {
+    if(!file)return
+    try{if(file.size>1024*1024)throw new Error('The additional inline source file exceeds 1 MiB; arrange a suitable larger-file workflow.');setSourceText(await file.text());setSourceConfirmed(false);setPrepared(null);setContent('');setReviewed(false)}catch(cause){setError(cause instanceof Error?cause.message:String(cause))}
+  }
+  async function prepare() {
+    if(flight.current||!identityConfirmed)return
+    const run=generation.current,owner=request
+    flight.current=true;setBusy(true);setError('');setNotice('');setReviewed(false)
+    try {
+      const reviewedSourceFiles=sourceText.trim()?JSON.parse(sourceText):[],files=Array.isArray(reviewedSourceFiles)?reviewedSourceFiles:[reviewedSourceFiles]
+      if(files.length&&!sourceConfirmed)throw new Error('Review the additional source file and confirm its exact-person, third-party and credential checks first.')
+      if(new TextEncoder().encode(JSON.stringify(files)).byteLength>1024*1024)throw new Error('The additional inline sources exceed 1 MiB. Arrange a suitable larger-file workflow; records will not be truncated.')
+      const body={id:owner.id,expectedRevision:owner.revision,operation:'prepare_interim',identityReviewConfirmed:true,reviewedSourceFiles:files,sourceContentReviewConfirmed:sourceConfirmed},fingerprint=JSON.stringify(body)
+      if(attempts.current.prepare?.fingerprint!==fingerprint)attempts.current.prepare={fingerprint,key:crypto.randomUUID()}
+      const result=await api('/api/customer-privacy/export',{...body,requestId:attempts.current.prepare.key}),value=result.preparation as InterimPreparation
+      if(run!==generation.current)return
+      if(value?.kind!=='privacy-interim-preparation-v1'||value.requestId!==owner.id||value.subject!==owner.subject||value.email!==owner.email.toLowerCase()||value.requestRevision!==owner.revision||!value.artifact||!/^[a-f0-9]{64}$/.test(value.artifact.sha256)||!Number.isSafeInteger(value.artifact.partCount)||value.artifact.partCount<1)throw new Error('The private review-copy binding could not be verified.')
+      setPrepared(value)
+      const chunks:string[]=[]
+      for(let part=0;part<value.artifact.partCount;part++){
+        const received=await api('/api/customer-privacy/export',{id:owner.id,expectedRevision:owner.revision,requestId:crypto.randomUUID(),operation:'read_interim',preparation:value,part})
+        if(run!==generation.current)return
+        if(received.export?.partIndex!==part||typeof received.export.content!=='string')throw new Error('A private review-copy part was missing. Retry preparation to recover the same immutable copy.')
+        chunks.push(received.export.content)
+      }
+      const full=chunks.join(''),bytes=new TextEncoder().encode(full),sha256=await digest(bytes),parsed=JSON.parse(full)
+      if(bytes.byteLength!==value.artifact.byteLength||sha256!==value.artifact.sha256||parsed.releaseKind!=='interim'||parsed.completion?.complete!==false||parsed.dataSubject?.subject!==owner.subject||parsed.requestId!==owner.id)throw new Error('The private copy failed its complete-file integrity or identity check. It cannot be released.')
+      setContent(full);setNotice('The complete immutable private copy passed its byte-length and checksum checks. Download and inspect its actual records before releasing those exact bytes. The full rights request remains open.')
+    }catch(cause){if(run===generation.current)setError(cause instanceof Error?cause.message:String(cause))}
+    finally{flight.current=false;if(run===generation.current)setBusy(false)}
+  }
+  function downloadReview() {
+    if(!prepared||!content||changed)return
+    const url=URL.createObjectURL(new Blob([content],{type:'application/json'})),link=document.createElement('a');link.href=url;link.download='chef-sergio-private-review-'+request.id+'.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)
+  }
+  async function release() {
+    if(flight.current||!prepared||!content||!reviewed||changed)return
+    const run=generation.current,owner=request
+    flight.current=true;setBusy(true);setError('');setNotice('')
+    try {
+      const body={id:owner.id,expectedRevision:owner.revision,operation:'release_interim',preparation:prepared,contentReviewConfirmed:true,reviewedSha256:prepared.artifact.sha256,evidence:evidence.trim()},fingerprint=JSON.stringify(body)
+      if(attempts.current.release?.fingerprint!==fingerprint)attempts.current.release={fingerprint,key:crypto.randomUUID()}
+      const result=await api('/api/customer-privacy/export',{...body,requestId:attempts.current.release.key})
+      if(run!==generation.current)return
+      if(result.request?.id!==owner.id||result.request.revision!==owner.revision+1||result.request.exportKind!=='interim'||!result.request.exportAvailable||!['pending','in_review','needs_information'].includes(result.request.status))throw new Error('The interim release could not be confirmed. Retry the same action, then refresh before making another release.')
+      setNotice('The reviewed available-data copy is released to this customer. The full access request is still open and its deadline is unchanged.');setPrepared(null);setContent('');setReviewed(false);attempts.current={};onUpdated()
+    }catch(cause){if(run===generation.current)setError(cause instanceof Error?cause.message:String(cause))}
+    finally{flight.current=false;if(run===generation.current)setBusy(false)}
+  }
+  return <section className="privacy-export-interim" aria-label="Reviewed available-data delivery"><h5>Available collected data, review ongoing</h5><p>Provide actual reviewed records while outstanding collection continues. This does not fulfill the access request, change its status, or extend its deadline. A prepared private copy is not visible to the customer until explicitly released.</p>
+    <label className="privacy-export-confirm"><input type="checkbox" checked={identityConfirmed} disabled={busy} onChange={event=>setIdentityConfirmed(event.target.checked)}/><span>I verified this exact person, account, email and access request before preparing a private review copy.</span></label>
+    <details><summary>Include additional actual partial provider records</summary><p>Optional: load an Auth0, Stripe or Resend source file with complete:false and truthful category counts and pending coverage. This never marks a source collected or clears a gap.</p><label>Load actual partial source JSON<input type="file" accept=".json,application/json" disabled={busy} onChange={event=>void readSource(event.target.files?.[0])}/></label><label>Actual partial source JSON<textarea className="privacy-export-json" rows={5} value={sourceText} disabled={busy} onChange={event=>{setSourceText(event.target.value);setSourceConfirmed(false);setPrepared(null);setContent('');setReviewed(false)}}/></label>{sourceText&&<label className="privacy-export-confirm"><input type="checkbox" checked={sourceConfirmed} disabled={busy} onChange={event=>setSourceConfirmed(event.target.checked)}/><span>I inspected the actual additional records and verified exact-person attribution, category counts, pending scope, third-party details, attachments and credential redactions.</span></label>}</details>
+    <button type="button" className="button secondary" disabled={busy||!identityConfirmed||!!sourceText.trim()&&!sourceConfirmed} onClick={()=>void prepare()}>{busy?'Preparing or reading private copy…':prepared?'Retry the same private preparation':'Prepare private copy for review'}</button>
+    {error&&<p role="alert" className="privacy-export-error">{error} No completion is recorded. Preserve this review and retry the same action after reconciliation.</p>}{notice&&<p role="status">{notice}</p>}
+    {prepared&&<><p className="privacy-export-id">Prepared request revision {prepared.requestRevision}. SHA-256 {prepared.artifact.sha256}. Private review expires {new Date(prepared.reviewExpiresAt).toLocaleString()}.</p>{changed&&<p role="alert">The request changed. Prepare and inspect a new copy before release.</p>}{content&&<><button type="button" className="button secondary" disabled={busy||changed} onClick={downloadReview}>Download private review JSON</button><details><summary>Inspect complete immutable private JSON</summary><pre className="privacy-export-json">{content}</pre></details><label>Actual review evidence <span>(customer-visible)</span><textarea rows={4} minLength={40} maxLength={3000} disabled={busy||changed} value={evidence} onChange={event=>{setEvidence(event.target.value);setReviewed(false)}}/></label><label className="privacy-export-confirm"><input type="checkbox" checked={reviewed} disabled={busy||changed} onChange={event=>setReviewed(event.target.checked)}/><span>I inspected this complete exact copy, including actual free text, record ownership, third-party information, private links and credentials, and its explicit outstanding coverage. I am releasing the checksum shown above as an interim copy; I am not attesting full fulfillment.</span></label><button type="button" className="button" disabled={busy||changed||!reviewed||evidence.trim().length<40} onClick={()=>void release()}>{busy?'Releasing reviewed copy…':'Release reviewed available-data copy'}</button></>}<button type="button" className="button secondary" disabled={busy} onClick={()=>{setPrepared(null);setContent('');setReviewed(false);attempts.current={};setNotice('The private review was discarded in this view. Prepare and inspect a new copy before release.')}}>Discard private review and prepare again</button></>}
   </section>
 }
