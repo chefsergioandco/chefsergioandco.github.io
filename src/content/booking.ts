@@ -33,8 +33,9 @@ export const booking = {
   },
 
   table: {
-    /** Largest booking through the seat flow; bigger groups are sent to "book the whole table" (a private dinner at his home). */
-    maxSeatsPerBooking: 6,
+    /** Largest booking through the seat flow. Sergio's table seats 8 for now (2026-11-27), so one party can take
+     * the whole table; the Worker caps table nights and seat requests at the same 8. */
+    maxSeatsPerBooking: 8,
     /** Title Sergio gives a night in his Google Calendar so the backend publishes it. Seats, minimum, price and cutoff go in its description. */
     calendarTitle: "Sergio's table",
   },
