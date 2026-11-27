@@ -3,13 +3,13 @@ import { buildGiftCardArtwork, formatAmount, type GiftCardDocument, type GiftFac
 import { CtaButton, CtaLink } from '../components/CallToAction'
 import { href, TBD, track } from '../components/ui'
 import { site } from '../content/site'
+import { todayET } from '../booking/planning'
 import { GiftCard } from './GiftCard'
 import { giftConfig, GiftError, startGiftCheckout, type GiftConfig } from './api'
 import './GiftPage.css'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NOTE_MAX = 220
-const todayLocal = () => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10) }
 const yearAhead = (iso: string) => { const [y, m, d] = iso.split('-').map(Number); return `${y + 1}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}` }
 
 type Draft = { amountCents: number; recipientName: string; recipientEmail: string; senderName: string; senderEmail: string; note: string; sendOn: string }
@@ -26,7 +26,8 @@ export function GiftPage() {
   const [honeypot, setHoneypot] = useState('')
   const [errors, setErrors] = useState<Partial<Record<keyof Draft | 'form', string>>>({})
   const [busy, setBusy] = useState(false)
-  const today = useMemo(() => typeof window === 'undefined' ? '' : todayLocal(), [])
+  // Orlando's date, as the gift service checks it: a late order from another time zone still counts as today there.
+  const today = useMemo(() => typeof window === 'undefined' ? '' : todayET(), [])
 
   useEffect(() => { void giftConfig(site.gift.amounts).then(setConfig) }, [])
   useEffect(() => { if (today) setDraft(current => current.sendOn ? current : { ...current, sendOn: today }) }, [today])
@@ -118,7 +119,7 @@ export function GiftPage() {
         </fieldset>
         <fieldset className="gift-fieldset" onFocus={front}>
           <label className="gift-field"><span>Send it on</span><input {...field('sendOn')} className="gift-input gift-date" type="date" min={today || undefined} max={today ? yearAhead(today) : undefined} value={draft.sendOn} onChange={event => set({ sendOn: event.target.value })} />
-            <span className="gift-hint">It reaches them by email that morning, with a copy to you.</span>{message('sendOn')}</label>
+            <span className="gift-hint">It reaches them by email that morning, Orlando time, with a copy to you.</span>{message('sendOn')}</label>
         </fieldset>
         <label className="gift-trap" aria-hidden="true">Website<input tabIndex={-1} autoComplete="off" value={honeypot} onChange={event => setHoneypot(event.target.value)} /></label>
         <ul className="gift-terms">

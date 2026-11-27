@@ -193,7 +193,12 @@ export function GiftCard({ document, face = 'front', className = '', maxWidth = 
   const device = useDeviceTilt(!reduced)
   const turn = useTurn(face === 'back' ? 180 : 0, reduced)
   const key = JSON.stringify(document)
-  const artwork = useMemo(() => buildGiftCardArtwork(document), [key])
+  const artwork = useMemo(() => {
+    // The page refuses copy the card can't hold, but a stored card is shown whatever it contains: without the
+    // fields that don't fit rather than not at all.
+    try { return buildGiftCardArtwork(document) }
+    catch { return buildGiftCardArtwork({ amountCents: document.amountCents, code: document.code, redeemUrl: document.redeemUrl, phone: document.phone }) }
+  }, [key])
   useEffect(() => {
     if (!stage.current) return
     const observer = new ResizeObserver(entries => { const next = entries[0].contentRect.width; setWidth(previous => previous === next ? previous : next) })

@@ -11,7 +11,7 @@ import { isGiftCode, normalizeGiftCode } from '../../prototypes/sergio-admin/sha
 export type GiftConfig = { ready: boolean; amounts: number[] }
 export type GiftPurchase = { amountCents: number; recipientName: string; recipientEmail: string; senderName: string; senderEmail: string; note: string; sendOn: string }
 export type GiftCardStatus = { amountCents: number; balanceCents: number; status: 'active' | 'pending' | 'frozen' | 'void'; recipient: string; sender: string; note: string; last4: string }
-export class GiftError extends Error { constructor(public code: 'invalid' | 'not-found' | 'unavailable' | 'network', message: string) { super(message) } }
+export class GiftError extends Error { constructor(public code: 'invalid' | 'not-found' | 'unavailable' | 'rate_limited' | 'network', message: string) { super(message) } }
 
 const base = () => booking.apiBase?.replace(/\/$/, '') || null
 
@@ -26,7 +26,7 @@ async function call<T>(path: string, body?: unknown): Promise<T> {
   const data = await response.json().catch(() => null).finally(() => clearTimeout(timeout))
   if (!response.ok) {
     const error = data?.error ?? data
-    const code = ['invalid', 'not-found', 'unavailable'].includes(error?.code) ? error.code : response.status === 404 ? 'unavailable' : 'network'
+    const code = ['invalid', 'not-found', 'unavailable', 'rate_limited'].includes(error?.code) ? error.code : response.status === 429 ? 'rate_limited' : response.status === 404 ? 'unavailable' : 'network'
     throw new GiftError(code, typeof error?.message === 'string' ? error.message : 'The gift service did not answer. Nothing was charged.')
   }
   return data as T

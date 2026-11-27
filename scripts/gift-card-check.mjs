@@ -92,6 +92,7 @@ try {
   if (!process.env.CHECK_BASE_URL) server = await serve(port)
   browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
   const page = await browser.newPage(), errors = [], outside = []
+  let cardAnswer = null
   page.on('pageerror', error => errors.push(error.message))
   await page.setRequestInterception(true)
   page.on('request', request => {
@@ -99,6 +100,8 @@ try {
     if (url.origin === new URL(origin).origin || url.protocol === 'data:' || url.protocol === 'blob:') return void request.continue()
     outside.push(url.origin + url.pathname)
     if (url.pathname === '/api/gift/config') return void request.respond({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ ready: false, amounts: [10000, 15000, 25000, 50000] }) })
+    if (request.method() === 'OPTIONS') return void request.respond({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST' } })
+    if (url.pathname === '/api/gift/card' && cardAnswer) return void request.respond({ status: cardAnswer.status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(cardAnswer.body) })
     return void request.abort()
   })
   await page.setViewport({ width: 1440, height: 1000 })
@@ -191,10 +194,26 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-gift-card]')?.dataset.giftShown === 'back', { timeout: 5000 })
     assert.equal(await page.$('.gift-form button[type=submit]'), null, 'No checkout while the gift service reports not ready')
     assert(await page.$eval('.gift-closed', element => element.textContent.includes('open soon')))
-    assert(outside.every(url => url.endsWith('/api/gift/config')), `Unexpected outside requests: ${outside.join(', ')}`)
+    assert(outside.every(url => /\/api\/gift\/(config|card)$/.test(url)), `Unexpected outside requests: ${outside.join(', ')}`)
     assert.deepEqual(errors, [])
     await fs.mkdir('output/gift-card', { recursive: true })
     await page.screenshot({ path: 'output/gift-card/phone.png' })
+  })
+  await check('a recipient’s card: a stored card the printed artwork can’t hold still shows, and a rate-limited lookup says so', async () => {
+    const code = gift.generateGiftCode(bytes => randomBytes(bytes.length))
+    // Text a direct API call could store but the card's typeface lacks (Œ) and longer than the printed note allows.
+    cardAnswer = { status: 200, body: { amountCents: 25000, balanceCents: 10000, status: 'active', recipient: 'Œdipe Rivera', sender: 'Sam', note: 'x'.repeat(400), last4: code.slice(-4) } }
+    await page.setViewport({ width: 1280, height: 900 })
+    await page.goto(`${origin}/gift/card/#code=${code}`, { waitUntil: 'networkidle0' })
+    await page.waitForFunction(() => document.querySelectorAll('canvas[data-gift-material][data-renderer=webgl]').length === 2, { timeout: 30000 })
+    assert.match(await page.$eval('[role=status]', element => element.textContent), /\$100 left of \$250/)
+    assert(await page.$eval('a[href*="#gift="]', link => new URL(link.href).hash === '#gift=' + link.href.split('#gift=')[1] && !new URL(link.href).search.includes('gift')), 'The code travels in the fragment only')
+    cardAnswer = { status: 429, body: { error: { code: 'rate_limited', message: 'Too many attempts.' } } }
+    await page.goto(`${origin}/gift/card/`, { waitUntil: 'networkidle0' })
+    await page.type('#gift-code', code); await page.click('.gift-form button[type=submit]')
+    await page.waitForSelector('#gift-code-error', { timeout: 5000 })
+    assert.match(await page.$eval('#gift-code-error', element => element.textContent), /Too many tries/)
+    assert.deepEqual(errors, [])
   })
   console.log(`${passed} gift card checks passed.`)
 } catch (error) {

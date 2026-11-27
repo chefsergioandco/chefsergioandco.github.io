@@ -26,7 +26,7 @@ export function GiftCardPage() {
     try { setView({ kind: 'found', code: normalizeGiftCode(raw), card: await giftCardStatus(raw) }) }
     catch (error) {
       const code = error instanceof GiftError ? error.code : 'network'
-      setView({ kind: 'error', message: code === 'not-found' ? 'We couldn’t find a card with that code. Check it against your email, or call Sergio.' : code === 'unavailable' ? 'Gift cards aren’t open online yet. Sergio can check your card by phone.' : 'The card service didn’t answer. Please try again in a moment.' })
+      setView({ kind: 'error', message: code === 'not-found' ? 'We couldn’t find a card with that code. Check it against your email, or call Sergio.' : code === 'unavailable' ? 'Gift cards aren’t open online yet. Sergio can check your card by phone.' : code === 'rate_limited' ? 'Too many tries for now. Please wait a little, or call Sergio.' : 'The card service didn’t answer. Please try again in a moment.' })
     }
   }
   useEffect(() => { const code = codeFromFragment(); if (code) { setEntry(formatGiftCode(code)); void open(code) } }, [])
