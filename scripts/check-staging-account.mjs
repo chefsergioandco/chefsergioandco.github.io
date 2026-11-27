@@ -249,6 +249,7 @@ try {
  assert.equal(await fixture.evaluate(()=>window.__downloads.at(-1).name),'chef-sergio-personal-data-available.json')
  assert.deepEqual(JSON.parse(await fixture.evaluate(()=>window.__exportBlobs.at(-1).text())),availableData)
  assert((await fixture.$eval('main',node=>node.textContent)).includes('Your request is still in review.'))
+ assert((await fixture.$eval('main',node=>node.textContent)).includes('Your browser was asked to save it; allow or save the download if prompted.'))
  await clickText(fixture,'button','Download readable copy')
  await fixture.waitForFunction(()=>window.__downloads.length===3)
  const availableHtml=await fixture.evaluate(()=>window.__exportBlobs.at(-1).text())

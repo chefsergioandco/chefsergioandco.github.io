@@ -157,7 +157,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
       if (!current()) return
       const url = URL.createObjectURL(blob), link = document.createElement('a')
       link.href = url; link.download = 'chef-sergio-personal-data' + (interim ? '-available' : '') + '.' + format; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setNotice(interim ? { title: 'Available data downloaded', detail: 'The reviewed collected-data file passed its integrity check.', note: 'Your request is still in review. The file lists outstanding sources and does not represent a completed response.' } : { title: 'Download verified', detail: 'Your personal-data export passed its integrity check and was downloaded.', note: 'The file includes source coverage and any redaction explanations.' })
+      setNotice(interim ? { title: 'Available file verified', detail: 'The reviewed collected-data file passed its integrity check. Your browser was asked to save it; allow or save the download if prompted.', note: 'Your request is still in review. The file lists outstanding sources and does not represent a completed response.' } : { title: 'Export file verified', detail: 'Your personal-data export passed its integrity check. Your browser was asked to save it; allow or save the download if prompted.', note: 'The file includes source coverage and any redaction explanations.' })
     })
   }
   const s = security.data, methodsReady = !!s?.methodsVerified && Array.isArray(s.methods)
