@@ -83,7 +83,7 @@ export function GiftPage() {
         <GiftCard document={preview} face={face} label={`${formatAmount(draft.amountCents)} gift card`} />
         <div className="gift-object-actions">
           <button type="button" className="link text-sm" onClick={() => setFace(face === 'front' ? 'back' : 'front')} aria-pressed={face === 'back'}>Turn it over</button>
-          <p className="text-sm text-ink-muted">Gloss black and rouge foil on cotton. Drag it, or scroll, to catch the light.</p>
+          <p className="text-sm text-ink-muted">Gloss black and rouge foil on plastic. Drag it, or scroll, to catch the light.</p>
         </div>
       </div>
       <form className="gift-form" onSubmit={submit} noValidate>
@@ -124,7 +124,7 @@ export function GiftPage() {
         <ul className="gift-terms">
           <li>Never expires, and there are no fees.</li>
           <li>Toward any dinner, class or gathering with Chef Sergio &amp; Co. Not exchangeable for cash, except where the law requires.</li>
-          <li>{site.gift.refunds ?? <TBD k="gift.refunds">Refunds of an unused card: Sergio to decide</TBD>}</li>
+          <li>{site.gift.refundsConfirmed ? site.gift.refunds : <TBD k="gift.refunds">{site.gift.refunds}</TBD>}</li>
         </ul>
         {errors.form ? <p className="gift-error" role="alert">{errors.form}</p> : null}
         {config.ready
@@ -142,7 +142,7 @@ export function GiftPage() {
       <h2 id="gift-how-heading" className="text-3xl">How the gift works</h2>
       <ol>
         <li><h3>Write the card</h3><p>Choose the amount and write it to them. The card above is the card they receive.</p></li>
-        <li><h3>It arrives on the day</h3><p>By email that morning, to keep on their phone or print at actual size, five by three and a half inches.</p></li>
+        <li><h3>It arrives on the day</h3><p>By email that morning, with a copy to you. The card lives on their phone, ready to show or forward.</p></li>
         <li><h3>They book with it</h3><p>They <a className="link" href={href('/book/')}>book like anyone else</a> and enter the code. It pays the deposit first, then the rest of the evening.</p></li>
       </ol>
     </section>

@@ -9,7 +9,7 @@ export type InvitationResponseProps = {
   invitationVersion: number
 }
 type Answers = { name: string; email: string; attending: 'yes' | 'no'; dietary: string; allergies: string }
-type OwnResponse = Answers & { revision: number }
+type OwnResponse = Answers & { revision: number; thankYou?: boolean }
 type InvitationRead = { id: string; version: number; ownResponse?: OwnResponse }
 type ResponseAccess = { token: string; version: number }
 class InvitationResponseError extends Error {
@@ -50,6 +50,8 @@ function PrivateResponse({ invitationId, accessToken, invitationVersion }: Invit
   const id = useId(), nameInput = useRef<HTMLInputElement>(null), emailInput = useRef<HTMLInputElement>(null)
   const feedback = useRef<HTMLParagraphElement>(null), failure = useRef<HTMLParagraphElement>(null)
   const [answers, setAnswers] = useState<Answers>(emptyAnswers)
+  // Explicit consent for one thank-you email; never assumed from an email address alone.
+  const [thankYou, setThankYou] = useState(false)
   const [loading, setLoading] = useState(true), [ready, setReady] = useState(false), [retry, setRetry] = useState(0)
   const [sending, setSending] = useState(false), [saved, setSaved] = useState(false), [hasResponse, setHasResponse] = useState(false)
   const [error, setError] = useState(''), [errorField, setErrorField] = useState<'name' | 'email' | null>(null), [conflict, setConflict] = useState(false), [failures, setFailures] = useState(0)
@@ -92,6 +94,7 @@ function PrivateResponse({ invitationId, accessToken, invitationVersion }: Invit
         const own = value.ownResponse
         if (!keep) {
           setAnswers({ name: own.name, email: own.email, attending: own.attending, dietary: own.dietary, allergies: own.allergies })
+          setThankYou(own.thankYou === true)
           access.current = { token: access.current.token, version: own.revision }
           try { sessionStorage.setItem(storageKey, JSON.stringify(access.current)) } catch { /* Keep only the same-page capability in memory. */ }
         }
@@ -118,7 +121,7 @@ function PrivateResponse({ invitationId, accessToken, invitationVersion }: Invit
     if (sending || !ready) return
     if (answers.name.trim().length < 2) { validation('Enter your name so Sergio knows who is responding.', 'name'); return }
     if (answers.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answers.email.trim())) { validation('Enter a valid email address, or leave this optional field blank.', 'email'); return }
-    const payload = { id: invitationId, accessToken, name: answers.name.trim(), email: answers.email.trim(), attending: answers.attending, dietary: answers.dietary.trim(), allergies: answers.allergies.trim(), ...(access.current ? { responseToken: access.current.token, version: access.current.version } : {}) }
+    const payload = { id: invitationId, accessToken, name: answers.name.trim(), email: answers.email.trim(), attending: answers.attending, dietary: answers.dietary.trim(), allergies: answers.allergies.trim(), ...(booking.guestThankYou ? { thankYou: thankYou && !!answers.email.trim() && answers.attending === 'yes' } : {}), ...(access.current ? { responseToken: access.current.token, version: access.current.version } : {}) }
     const body = JSON.stringify(payload)
     if (attempt.current?.body !== body) attempt.current = { body, id: crypto.randomUUID() }
     const controller = new AbortController(); submission.current = controller
@@ -145,6 +148,7 @@ function PrivateResponse({ invitationId, accessToken, invitationVersion }: Invit
       <fieldset disabled={sending}><legend>Your RSVP</legend><label className="invitation-response-choice"><input type="radio" name={id + '-attendance'} value="yes" checked={answers.attending === 'yes'} onChange={() => change('attending', 'yes')}/>I’ll be there</label><label className="invitation-response-choice"><input type="radio" name={id + '-attendance'} value="no" checked={answers.attending === 'no'} onChange={() => change('attending', 'no')}/>I can’t make it</label></fieldset>
       <label className="invitation-response-field" htmlFor={id + '-name'}>Your name<input ref={nameInput} id={id + '-name'} value={answers.name} onChange={event => change('name', event.target.value)} autoComplete="name" maxLength={150} required minLength={2} disabled={sending} aria-invalid={errorField === 'name' || undefined} aria-describedby={errorField === 'name' ? id + '-error' : undefined}/></label>
       <label className="invitation-response-field" htmlFor={id + '-email'}>Email <span>(optional)</span><input ref={emailInput} id={id + '-email'} type="email" value={answers.email} onChange={event => change('email', event.target.value)} autoComplete="email" maxLength={254} disabled={sending} aria-invalid={errorField === 'email' || undefined} aria-describedby={errorField === 'email' ? id + '-error' : undefined}/></label>
+      {booking.guestThankYou && answers.email.trim() && answers.attending === 'yes' && <label className="invitation-response-consent"><input type="checkbox" checked={thankYou} disabled={sending} onChange={event => { edited.current = true; setThankYou(event.target.checked); setSaved(false) }}/><span><span className="invitation-response-consent-title">Send me Sergio’s thank-you after the evening</span><span className="invitation-response-note">One email, the day after, with the menu you ate. Your address isn’t added to any list.</span></span></label>}
       {answers.attending === 'yes' && <><label className="invitation-response-field" htmlFor={id + '-dietary'}>Dietary needs <span>(optional)</span><textarea id={id + '-dietary'} value={answers.dietary} onChange={event => change('dietary', event.target.value)} rows={3} maxLength={2000} disabled={sending}/></label><label className="invitation-response-field" htmlFor={id + '-allergies'}>Allergies <span>(optional)</span><textarea id={id + '-allergies'} value={answers.allergies} onChange={event => change('allergies', event.target.value)} rows={3} maxLength={2000} disabled={sending} aria-describedby={id + '-accommodation'}/></label><p className="invitation-response-note" id={id + '-accommodation'}>Sergio will review accommodation with you. Submitting a requirement does not confirm it can be accommodated.</p></>}
       {error && <p ref={failure} id={id + '-error'} tabIndex={-1} role="alert" className="invitation-response-error">{error}</p>}
       {conflict && <div className="invitation-response-conflict"><p>Reloading replaces your unsaved answers with your latest saved response. Review it before updating.</p><button type="button" disabled={sending} onClick={() => setRetry(value => value + 1)}>Reload my saved response</button></div>}

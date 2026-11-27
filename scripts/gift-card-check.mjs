@@ -74,6 +74,9 @@ try {
     for (const face of ['front', 'back']) {
       const composite = gift.renderGiftCardSvg(card, face, { logoSvg })
       assert.match(composite, /width="5in" height="3.5in"/)
+      assert.match(composite, /<rect width="1000" height="700" rx="25" ry="25"/, 'The composite shows the rounded card')
+      assert.match(gift.renderGiftCardPlateSvg(card, face, 'dieline', { logoSvg }), /rx="25" ry="25" fill="none"/, 'The cutting line has 1/8 in corners')
+      assert.match(gift.renderGiftCardPlateSvg(card, face, 'flood', { logoSvg }), /width="5.25in" height="3.75in"[\s\S]*x="-25" y="-25" width="1050" height="750"/, 'The ivory runs 1/8 in past the trim')
       let total = 0
       for (const plate of ['foil-black', 'foil-rouge', 'ink-black', 'ink-rouge']) {
         const svg = gift.renderGiftCardPlateSvg(card, face, plate, { logoSvg })
@@ -128,7 +131,7 @@ try {
     }
   })
 
-  await check('the glint stays on the foil: turning the card changes no pixel outside the foil, and the light travels with the turn', async () => {
+  await check('plastic under light: the foil glints far more than ink or bare plastic, the sheen on bare plastic is smooth, and the light travels with the turn', async () => {
     const card = await page.$('.gift-card-body'), box = await card.boundingBox()
     const front = gift.buildGiftCardArtwork(doc({ amountCents: await page.$eval('.gift-amount[data-checked=true] input', input => Number(input.value)), note: '', recipient: '', sender: '' })).front
     const pose = async dx => {
@@ -136,44 +139,46 @@ try {
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 150)))))
       return page.$eval('.gift-card-body', element => Number(element.dataset.giftYaw))
     }
-    const yaws = [await pose(-60), await pose(60), await pose(60)]
     await page.evaluate(() => { window.__giftShots = [] })
-    // Re-run the three poses, capturing the front canvas at each.
-    await pose(-120)
     const capture = () => page.evaluate(() => new Promise(resolve => { const image = new Image(); image.onload = () => { const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height; const context = canvas.getContext('2d'); context.drawImage(image, 0, 0); window.__giftShots.push(context.getImageData(0, 0, canvas.width, canvas.height).data); resolve(canvas.width) }; image.src = document.querySelector('canvas[data-gift-material=front]').toDataURL() }))
-    await capture(); await pose(60); await capture(); await pose(60); await capture()
+    const yaws = [await pose(-60)]; await capture(); yaws.push(await pose(60)); await capture(); yaws.push(await pose(60)); await capture()
     const result = await page.evaluate(async (commands, fonts, logoPath) => {
       const width = 1600, height = 1120, scale = 1.6
-      const mask = document.createElement('canvas'); mask.width = width; mask.height = height
-      const context = mask.getContext('2d'); context.scale(scale, scale)
       const logo = new Image(); await new Promise(resolve => { logo.onload = resolve; logo.onerror = resolve; logo.src = logoPath })
-      for (const command of commands) {
-        if (!command.finish.startsWith('foil')) continue
-        if (command.kind === 'logo') context.drawImage(logo, command.x, command.y, command.width, command.height)
-        else if (command.kind === 'rule') { context.lineWidth = command.stroke; if (command.height) context.strokeRect(command.x, command.y, command.width, command.height); else { context.beginPath(); context.moveTo(command.x, command.y); context.lineTo(command.x + command.width, command.y); context.stroke() } }
-        else { context.font = `${command.font === 'italic' ? 'italic ' : ''}${command.weight} ${command.size}px "${fonts[command.font]}"`; context.textAlign = command.align === 'center' ? 'center' : command.align === 'right' ? 'right' : 'left'; context.fillText(command.text, command.x, command.y) }
+      const maskOf = select => {
+        const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height
+        const context = canvas.getContext('2d'); context.scale(scale, scale)
+        for (const command of commands) {
+          if (!select(command)) continue
+          if (command.kind === 'logo') context.drawImage(logo, command.x, command.y, command.width, command.height)
+          else if (command.kind === 'rule') { context.lineWidth = command.stroke; if (command.height) context.strokeRect(command.x, command.y, command.width, command.height); else { context.beginPath(); context.moveTo(command.x, command.y); context.lineTo(command.x + command.width, command.y); context.stroke() } }
+          else { context.font = `${command.font === 'italic' ? 'italic ' : ''}${command.weight} ${command.size}px "${fonts[command.font]}"`; context.textAlign = command.align === 'center' ? 'center' : command.align === 'right' ? 'right' : 'left'; context.fillText(command.text, command.x, command.y) }
+        }
+        const alpha = context.getImageData(0, 0, width, height).data, near = new Uint8Array(width * height), solid = new Uint8Array(width * height)
+        for (let index = 0; index < width * height; index++) if (alpha[index * 4 + 3]) { solid[index] = alpha[index * 4 + 3] > 200 ? 1 : 0; const x = index % width, y = (index / width) | 0; for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && xx < width && yy >= 0 && yy < height) near[yy * width + xx] = 1 } }
+        return { near, solid }
       }
-      const alpha = context.getImageData(0, 0, width, height).data, near = new Uint8Array(width * height)
-      // Two pixels of tolerance for texture filtering at the foil's edges.
-      for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (alpha[(y * width + x) * 4 + 3]) for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const yy = y + dy, xx = x + dx; if (yy >= 0 && yy < height && xx >= 0 && xx < width) near[yy * width + xx] = 1 }
-      const [a, b, c] = window.__giftShots
-      let outsideChanged = 0, insideChanged = 0, foilPixels = 0
+      const foil = maskOf(command => command.finish.startsWith('foil')), ink = maskOf(command => !command.finish.startsWith('foil'))
+      const [a, b, c] = window.__giftShots, lum = (shot, offset) => shot[offset] * .2126 + shot[offset + 1] * .7152 + shot[offset + 2] * .0722
+      const change = new Float32Array(width * height), groups = { foil: [], ink: [], plastic: [] }
       const centroid = [0, 0, 0], weight = [0, 0, 0]
-      for (let index = 0; index < width * height; index++) {
-        const offset = index * 4, lum = shot => shot[offset] * .2126 + shot[offset + 1] * .7152 + shot[offset + 2] * .0722
-        const values = [lum(a), lum(b), lum(c)], low = Math.min(...values), changed = Math.max(...values) - low > 1
-        // WebGL rows are bottom-up in the texture but toDataURL is top-down; the mask is drawn top-down too.
-        if (!near[index]) { if (changed) outsideChanged++; continue }
-        if (alpha[offset + 3]) foilPixels++
-        if (changed) insideChanged++
-        const x = index % width
-        values.forEach((value, pose) => { centroid[pose] += x * (value - low); weight[pose] += value - low })
+      // Stay clear of the rounded corners and the edge pixels, which the card shape itself trims.
+      for (let y = 40; y < height - 40; y++) for (let x = 40; x < width - 40; x++) {
+        const index = y * width + x, offset = index * 4, values = [lum(a, offset), lum(b, offset), lum(c, offset)], low = Math.min(...values)
+        change[index] = Math.max(...values) - low
+        if (foil.solid[index]) { groups.foil.push(change[index]); values.forEach((value, pose) => { centroid[pose] += x * (value - low); weight[pose] += value - low }) }
+        else if (ink.solid[index] && !foil.near[index]) groups.ink.push(change[index])
+        else if (!foil.near[index] && !ink.near[index]) groups.plastic.push(change[index])
       }
-      return { outsideChanged, insideChanged, foilPixels, centroids: centroid.map((sum, pose) => weight[pose] ? sum / weight[pose] / width : null) }
+      const p90 = list => { const sorted = [...list].sort((x, y) => x - y); return sorted[Math.floor(sorted.length * .9)] ?? 0 }
+      // Smoothness on bare plastic: neighbouring pixels 3 apart change by almost the same amount.
+      let roughest = 0
+      for (let y = 40; y < height - 40; y += 2) for (let x = 40; x < width - 43; x += 2) { const i = y * width + x, j = i + 3; if (!foil.near[i] && !ink.near[i] && !foil.near[j] && !ink.near[j]) roughest = Math.max(roughest, Math.abs(change[i] - change[j])) }
+      return { foil: p90(groups.foil), ink: p90(groups.ink), plastic: p90(groups.plastic), roughest, centroids: centroid.map((sum, pose) => weight[pose] ? sum / weight[pose] / width : null) }
     }, front.commands, gift.GIFT_CARD_FONTS, '/invitations/logo-primary-ink.svg')
-    console.log(`  yaw ${yaws.map(value => value.toFixed(1)).join(' → ')}°; ${result.insideChanged} foil pixels changed, ${result.outsideChanged} outside; highlight x ${result.centroids.map(value => value?.toFixed(3)).join(' → ')}`)
-    assert.equal(result.outsideChanged, 0, 'Light moved on paper or flat ink')
-    assert(result.insideChanged > result.foilPixels * .2, 'The foil barely changes: no visible glint')
+    console.log(`  yaw ${yaws.map(value => value.toFixed(1)).join(' → ')}°; 90th-percentile change: foil ${result.foil.toFixed(0)}, ink ${result.ink.toFixed(0)}, bare plastic ${result.plastic.toFixed(0)}; roughest step on bare plastic ${result.roughest.toFixed(1)}; highlight x ${result.centroids.map(value => value?.toFixed(3)).join(' → ')}`)
+    assert(result.foil >= 2 * Math.max(result.ink, result.plastic, 1), 'The foil does not glint clearly more than the ink and the plastic')
+    assert(result.roughest <= 6, 'The sheen on bare plastic has texture: something other than a smooth laminate is reflecting')
     const [left, middle, right] = result.centroids
     assert(left !== null && middle !== null && right !== null && (left - middle) * (middle - right) > 0, 'The highlight does not travel steadily with the turn')
   })

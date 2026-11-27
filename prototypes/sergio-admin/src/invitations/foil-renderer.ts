@@ -15,6 +15,7 @@ uniform float uInspection;
 uniform float uFoil;
 uniform sampler2D uMask;
 uniform float uMasked;
+uniform float uLaminate;
 float luminance(vec3 c) { return dot(c,vec3(0.2126,0.7152,0.0722)); }
 vec3 linearColor(vec3 c) { return pow(max(c,vec3(0.0)),vec3(2.2)); }
 void main() {
@@ -67,12 +68,19 @@ void main() {
      reflection to foil, so flat ink printed beside it stays as matte as the paper. */
   float foilAmount=mix(ink,clamp(texture2D(uMask,vUV).a,0.0,1.0),uMasked);
   base+=foilAmount*gloss*uFoil*(vec3(1.0)-base);
+  /* A satin overlaminate (a plastic card) is smooth and covers everything printed beneath it: one faint,
+     sharper reflection of the same studio source across the whole surface, ink and paper alike. */
+  vec3 laminateReflection=reflect(-view,vec3(0.0,0.0,1.0));
+  vec2 laminateEnvironment=laminateReflection.xy/max(0.35,laminateReflection.z);
+  float laminateBox=exp(-pow(abs((laminateEnvironment.x+0.14)/0.06),4.0))*exp(-pow((laminateEnvironment.y-0.16)/0.55,2.0));
+  float laminateFresnel=0.04+0.96*pow(1.0-max(0.0,view.z),5.0);
+  base+=uLaminate*laminateBox*laminateFresnel*3.0*(vec3(1.0)-base);
   gl_FragColor=vec4(pow(clamp(base,0.0,1.0),vec3(1.0/2.2)),1.0);
 }`
 
 /** The cotton is diffuse; only the separately masked foil reflects the studio source. Without `foilMask`,
  * every printed mark on a foil face reflects (the invitation); with it, only the mask's marks do (the gift card). */
-export function createFoilRenderer(target: HTMLCanvasElement, paper: HTMLCanvasElement, ink: HTMLCanvasElement, height: HTMLCanvasElement, foil: boolean, foilMask?: HTMLCanvasElement): FoilRenderer | null {
+export function createFoilRenderer(target: HTMLCanvasElement, paper: HTMLCanvasElement, ink: HTMLCanvasElement, height: HTMLCanvasElement, foil: boolean, foilMask?: HTMLCanvasElement, laminate = 0): FoilRenderer | null {
   let gl: WebGLRenderingContext | null
   try { gl = target.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false, preserveDrawingBuffer: true, powerPreference: 'low-power' }) } catch { return null }
   if (!gl || paper.width > gl.getParameter(gl.MAX_TEXTURE_SIZE) || paper.height > gl.getParameter(gl.MAX_TEXTURE_SIZE)) return null
@@ -114,7 +122,7 @@ export function createFoilRenderer(target: HTMLCanvasElement, paper: HTMLCanvasE
       context.texImage2D(context.TEXTURE_2D, 0, context.RGBA, context.RGBA, context.UNSIGNED_BYTE, canvas)
     })
     context.uniform1i(context.getUniformLocation(program, 'uPaper'), 0); context.uniform1i(context.getUniformLocation(program, 'uInk'), 1); context.uniform1i(context.getUniformLocation(program, 'uHeight'), 2)
-    context.uniform1i(context.getUniformLocation(program, 'uMask'), 3); context.uniform1f(context.getUniformLocation(program, 'uMasked'), foilMask ? 1 : 0)
+    context.uniform1i(context.getUniformLocation(program, 'uMask'), 3); context.uniform1f(context.getUniformLocation(program, 'uMasked'), foilMask ? 1 : 0); context.uniform1f(context.getUniformLocation(program, 'uLaminate'), laminate)
     context.uniform2f(context.getUniformLocation(program, 'uTexel'), 1 / paper.width, 1 / paper.height)
     context.uniform1f(context.getUniformLocation(program, 'uFoil'), foil ? 1 : 0)
     const angle = context.getUniformLocation(program, 'uAngle'), inspection = context.getUniformLocation(program, 'uInspection'), pitch = context.getUniformLocation(program, 'uPitch')

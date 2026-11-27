@@ -5,14 +5,15 @@ import { formatGiftCode } from './code'
  * One gift card, drawn once. The same commands drive the lit card on the site, the email image and the
  * vector print master, so a printed card can only ever look like the digital one.
  *
- * Physical card: 5 × 3.5 in flat, two plies of cotton duplexed (about 1.2 mm), edges painted rouge.
- * The units are 200 per inch: 1000 × 700.
+ * Physical card: 5 × 3.5 in PVC, 30 mil (0.76 mm), with a rouge colour core so the edges show rouge, a satin
+ * overlaminate, and 1/8 in rounded corners. The ivory is printed edge to edge (1/8 in bleed); the corners are
+ * die-cut. The units are 200 per inch: 1000 × 700.
  *
  * Production rule this file enforces: foil needs a metal die made before the run, so only fixed artwork
  * may be foil. Fixed means the logo, the frame, the rule and the printed amounts (one die each). Anything
  * that changes per card (names, note, code) is flat ink, the same on paper and on screen.
  */
-export const GIFT_CARD_FORMAT = Object.freeze({ width: 1000, height: 700, widthIn: 5, heightIn: 3.5, unitsPerInch: 200, thicknessMm: 1.2, edge: 'rouge paint' as const })
+export const GIFT_CARD_FORMAT = Object.freeze({ width: 1000, height: 700, widthIn: 5, heightIn: 3.5, unitsPerInch: 200, thicknessMm: .76, cornerRadius: 25, bleed: 25, material: 'PVC, rouge colour core, satin overlaminate' as const })
 export const GIFT_CARD_COLORS = Object.freeze({ paper: '#fcfaf5', ink: '#2d2b27', rouge: '#8e352f' })
 export const GIFT_CARD_FONTS = Object.freeze({ serif: 'Invitation Garamond', italic: 'Invitation Garamond Italic', sans: 'Invitation Archivo' })
 
@@ -183,14 +184,22 @@ function commandSvg(command: GiftCommand, options: GiftSvgOptions, fill?: string
 
 /** The composite face: what the card looks like flat, with no simulated light. */
 export function renderGiftCardSvg(document: GiftCardDocument, face: GiftFace, options: GiftSvgOptions = {}): string {
-  const artwork = buildGiftCardArtwork(document)[face]
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="5in" height="3.5in" role="img" aria-label="${xml(artwork.copy.join(' '))}"><style>${(options.fontCss ?? giftFontCss(options.assetsBase)).replace(/<\/style/gi, '<\\/style')}</style>${artwork.commands.map(command => commandSvg(command, options)).join('')}</svg>`
+  const artwork = buildGiftCardArtwork(document)[face], r = GIFT_CARD_FORMAT.cornerRadius
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="5in" height="3.5in" role="img" aria-label="${xml(artwork.copy.join(' '))}"><style>${(options.fontCss ?? giftFontCss(options.assetsBase)).replace(/<\/style/gi, '<\\/style')}</style><rect width="1000" height="700" rx="${r}" ry="${r}" fill="${GIFT_CARD_COLORS.paper}"/>${artwork.commands.map(command => commandSvg(command, options)).join('')}</svg>`
 }
 
-/** One finishing pass as 100% black vector artwork: what the die-maker or press receives. */
-export function renderGiftCardPlateSvg(document: GiftCardDocument, face: GiftFace, plate: ReturnType<typeof plateOf>, options: GiftSvgOptions = {}): string {
-  const artwork = buildGiftCardArtwork(document)[face]
+export type GiftPlate = ReturnType<typeof plateOf> | 'flood' | 'dieline'
+/**
+ * One production pass as vector artwork, on the bleed canvas (5.25 × 3.75 in, trim 1/8 in inside):
+ * flood is the ivory background printed past the trim; dieline is the rounded cutting path (never printed);
+ * the others are 100% black separations for each foil and ink.
+ */
+export function renderGiftCardPlateSvg(document: GiftCardDocument, face: GiftFace, plate: GiftPlate, options: GiftSvgOptions = {}): string {
+  const artwork = buildGiftCardArtwork(document)[face], b = GIFT_CARD_FORMAT.bleed, r = GIFT_CARD_FORMAT.cornerRadius
+  const open = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-b} ${-b} ${1000 + b * 2} ${700 + b * 2}" width="${(1000 + b * 2) / 200}in" height="${(700 + b * 2) / 200}in" data-plate="${plate}">`
+  if (plate === 'flood') return `${open}<rect x="${-b}" y="${-b}" width="${1000 + b * 2}" height="${700 + b * 2}" fill="#000000"/></svg>`
+  if (plate === 'dieline') return `${open}<rect x="0" y="0" width="1000" height="700" rx="${r}" ry="${r}" fill="none" stroke="#000000" stroke-width="1"/></svg>`
   const selected = artwork.commands.filter(command => plateOf(command.finish) === plate)
   if (selected.some(command => command.kind === 'logo') && !options.logoSvg) throw new Error('The outlined brand SVG is required for a portable foil plate.')
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="5in" height="3.5in" data-plate="${plate}"><style>${(options.fontCss ?? giftFontCss(options.assetsBase)).replace(/<\/style/gi, '<\\/style')}</style>${selected.map(command => commandSvg(command, options, '#000000')).join('')}</svg>`
+  return `${open}<style>${(options.fontCss ?? giftFontCss(options.assetsBase)).replace(/<\/style/gi, '<\\/style')}</style>${selected.map(command => commandSvg(command, options, '#000000')).join('')}</svg>`
 }

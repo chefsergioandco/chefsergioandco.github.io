@@ -68,7 +68,9 @@ export const site = {
   gift: {
     amounts: [10000, 15000, 25000, 50000] as number[], // cents; TBD by Sergio
     amountsConfirmed: false,
-    refunds: null as string | null, // can a buyer get money back for an unused card, and until when? Sergio's call
+    // Suggested 2026-11-26 and shown on the page; marked for Sergio until he confirms (build:prod fails until then).
+    refunds: 'A card none of which has been used can be refunded within 14 days of purchase, to the card that paid for it.',
+    refundsConfirmed: false,
   },
 
   // ---- Booking & payment hooks (paste URLs; empty = feature shows as "not connected") ----

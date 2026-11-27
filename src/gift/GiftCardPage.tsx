@@ -48,7 +48,7 @@ export function GiftCardPage() {
             <CtaLink emphasis="primary" href={`${href('/book/')}#gift=${encodeURIComponent(code)}`}>Book an evening with it</CtaLink>
             <a className="link text-sm" href={site.phoneHref}>Or call Sergio, {site.phone}</a>
           </div> : <a className="link" href={site.phoneHref}>Call Sergio, {site.phone}</a>}
-          <p className="gift-hint">Keep this page private: the code is what makes the card yours. It’s printed on the back, ready to print at actual size.</p>
+          <p className="gift-hint">Keep this page private: the code on the back of the card is what makes it yours.</p>
         </div>
       </div>
     </div>

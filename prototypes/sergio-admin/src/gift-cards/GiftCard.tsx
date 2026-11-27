@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { buildGiftCardArtwork, GIFT_CARD_COLORS, GIFT_CARD_FONTS, GIFT_CARD_FORMAT, type GiftCardDocument, type GiftCommand, type GiftFace, type GiftFaceArtwork } from '../../shared/gift-cards/artwork'
-import { cottonPaper, createFoilRenderer, type FoilRenderer } from '../invitations/foil-renderer'
+import { createFoilRenderer, type FoilRenderer } from '../invitations/foil-renderer'
 import { usePaperRotation } from '../invitations/usePaperRotation'
 import '../invitations/InvitationCard.css' // the shared @font-face rules
 import './GiftCard.css'
@@ -56,6 +56,22 @@ function draw(context: CanvasRenderingContext2D, commands: GiftCommand[], logo: 
 }
 const isFoil = (command: GiftCommand) => command.finish === 'foil-black' || command.finish === 'foil-rouge'
 
+/** Printed ivory on smooth PVC: no fibres, only enough noise to keep the gradient of the sheen from banding. */
+let sheet: HTMLCanvasElement | null = null
+function plasticSheet(): HTMLCanvasElement {
+  if (sheet) return sheet
+  sheet = document.createElement('canvas'); sheet.width = PIXEL_W; sheet.height = PIXEL_H
+  const context = sheet.getContext('2d')!, image = context.createImageData(PIXEL_W, PIXEL_H), pixels = image.data
+  let seed = 90127
+  for (let offset = 0; offset < pixels.length; offset += 4) {
+    seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5
+    const noise = ((seed >>> 0) / 4294967296 - .5) * .9
+    pixels[offset] = 252 + noise; pixels[offset + 1] = 250 + noise; pixels[offset + 2] = 245 + noise; pixels[offset + 3] = 255
+  }
+  context.putImageData(image, 0, 0)
+  return sheet
+}
+
 const CardFace = memo(function CardFace({ artwork, yaw, pitch, visible }: { artwork: GiftFaceArtwork; yaw: number; pitch: number; visible: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null), renderer = useRef<FoilRenderer | null>(null), angles = useRef({ yaw, pitch })
   const [ready, setReady] = useState(false)
@@ -75,10 +91,10 @@ const CardFace = memo(function CardFace({ artwork, yaw, pitch, visible }: { artw
       const color = canvas(), mask = canvas(), height = canvas()
       draw(color.getContext('2d')!, artwork.commands, logo)
       draw(mask.getContext('2d')!, artwork.commands, logo, isFoil)
-      // Only foil is pressed into the cotton; flat ink sits on the surface and casts no impression.
-      const heightContext = height.getContext('2d')!; heightContext.filter = 'blur(.8px)'; heightContext.drawImage(mask, 0, 0)
+      // Hot-stamped foil and printed ink both sit flat on smooth plastic under the laminate: no impression,
+      // so the height map stays empty. Only the foil mirrors the light; the laminate sheens over everything.
       renderer.current?.dispose()
-      const material = createFoilRenderer(target, cottonPaper(PIXEL_W, PIXEL_H), color, height, true, mask)
+      const material = createFoilRenderer(target, plasticSheet(), color, height, true, mask, 1)
       if (cancelled) { material?.dispose(); return }
       renderer.current = material
       if (material) { material.draw(angles.current.yaw, false, angles.current.pitch); setReady(true) } else setReady(false)
@@ -167,7 +183,7 @@ function useTurn(target: number, reduced: boolean) {
   return angle
 }
 
-/** The gift card as an object: cotton, gloss black and rouge foil, painted edges. Light moves; the artwork never does. */
+/** The gift card as an object: plastic, gloss black and rouge foil, rouge core edges, rounded corners. Light moves; the artwork never does. */
 export function GiftCard({ document, face = 'front', className = '', maxWidth = 460, scrollTilt = true, label = 'Gift card' }: GiftCardProps) {
   const descriptionId = useId(), stage = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(maxWidth)
@@ -193,7 +209,7 @@ export function GiftCard({ document, face = 'front', className = '', maxWidth = 
     const local = yaw - (name === 'back' ? 180 : 0)
     return { yaw: wrapAngle(local), pitch: radians(pitch), visible: Math.cos(radians(local)) * Math.cos(radians(pitch)) > -.02 }
   }
-  const styles = { '--gift-w': `${cardWidth}px`, '--gift-h': `${cardHeight}px`, '--gift-t': `${Math.max(2, thickness)}px` } as React.CSSProperties
+  const styles = { '--gift-w': `${cardWidth}px`, '--gift-h': `${cardHeight}px`, '--gift-t': `${Math.max(1.5, thickness)}px`, '--gift-r': `${cardWidth * GIFT_CARD_FORMAT.cornerRadius / GIFT_CARD_FORMAT.width}px` } as React.CSSProperties
   const shown = Math.cos(radians(yaw)) >= 0 ? 'front' : 'back'
   return <figure className={`gift-card ${className}`.trim()} style={styles} data-gift-card="" data-gift-shown={shown}>
     <div ref={stage} className="gift-card-stage">

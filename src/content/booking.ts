@@ -21,6 +21,11 @@ export const booking = {
   /** The Cloudflare Worker's URL once it's deployed (GO-LIVE.md step 6). null = the in-browser mock. */
   apiBase: accountConfig.apiOrigin as string | null,
 
+  // An unticked RSVP box: "Send me Sergio's thank-you after the evening". Off until the Worker accepts and stores the
+  // consent (thankYou on /api/invitation/rsvp); the live Worker rejects unknown RSVP fields. Sending needs the verified
+  // hello@ sender, which comes with the domain switch (docs/HANDOFF.md §6).
+  guestThankYou: false,
+
   formats: {
     dinner: { windows: null, perDay: null, leadDays: null, durationHours: null, bufferHours: null, deposit: null as number | null } satisfies FormatRules & { deposit: number | null },
     class: { windows: null, perDay: null, leadDays: null, durationHours: null, bufferHours: null, deposit: null as number | null } satisfies FormatRules & { deposit: number | null },
