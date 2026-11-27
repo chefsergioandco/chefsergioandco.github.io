@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { BookingForm } from '../components/BookingForm'
+import { QuickBooking } from '../components/QuickBooking'
 import { Faq, FAQ } from '../components/Faq'
 import { DinnerMenuCard } from '../invitations/DinnerMenuCard'
 import { SAMPLE_DINNER_MENU } from '../invitations/menu-sample'
@@ -11,7 +12,8 @@ import { booking } from '../content/booking'
 import { site } from '../content/site'
 import { TableNightsLive } from '../booking/StatusPages'
 
-function PageHero({ title, lead, slot, alt, cta, ctaHref, price }: { title: string; lead: ReactNode; slot: string; alt: string; cta: string; ctaHref: string; price?: ReactNode }) {
+/** With `booking`, the page is the booking form: it sits where the buttons were, so a guest can book on arrival. */
+function PageHero({ title, lead, slot, alt, cta, ctaHref, price, booking }: { title: string; lead: ReactNode; slot: string; alt: string; cta: string; ctaHref: string; price?: ReactNode; booking?: ReactNode }) {
   return (
     <section>
       <div className="apron" />
@@ -24,14 +26,20 @@ function PageHero({ title, lead, slot, alt, cta, ctaHref, price }: { title: stri
               {price}
             </p>
           )}
-          <div className="cta-pair mt-8">
-            <CtaLink emphasis="primary" data-hero-cta href={/^https?:/.test(ctaHref) ? ctaHref : href(ctaHref)} onClick={() => track('cta_check_date', { where: 'page_hero' })}>
-              {cta}
-            </CtaLink>
-            <CtaLink emphasis="secondary" href={site.phoneHref}>
-              Call {site.phone}
-            </CtaLink>
-          </div>
+          {booking ? (
+            <div id="book" className="mt-8 scroll-mt-24" data-hero-booking>
+              {booking}
+            </div>
+          ) : (
+            <div className="cta-pair mt-8">
+              <CtaLink emphasis="primary" data-hero-cta href={/^https?:/.test(ctaHref) ? ctaHref : href(ctaHref)} onClick={() => track('cta_check_date', { where: 'page_hero' })}>
+                {cta}
+              </CtaLink>
+              <CtaLink emphasis="secondary" href={site.phoneHref}>
+                Call {site.phone}
+              </CtaLink>
+            </div>
+          )}
         </div>
         <Photo slot={slot} alt={alt} priority sizes="(min-width: 768px) 45vw, 100vw" className="aspect-[3/2] w-full rounded-card" />
       </div>
@@ -68,6 +76,7 @@ export function PrivateDining() {
         alt="Reference: guests at a dinner table mid-meal"
         cta="Plan a dinner"
         ctaHref="/book/?type=dinner"
+        booking={<QuickBooking format="dinner" />}
         price={<FromPrice k="dinnerFromPerGuest" />}
       />
       <Included
@@ -108,19 +117,34 @@ export function CookingClasses() {
   return (
     <>
       <PageHero
-        title="Cook with Sergio in your own kitchen."
-        lead={<>Hands-on lessons from a chef with forty years of restaurant experience. Learn techniques you'll keep using, then sit down together and eat what you made. {whereLine}</>}
+        title="Cook with Sergio."
+        lead={<>Hands-on lessons from a chef with forty years of restaurant experience. Join a class Sergio has scheduled, learn techniques you'll keep using, then sit down together and eat what you made.</>}
         slot="class-hands"
         alt="Reference: hands learning a technique at a kitchen counter"
-        cta="Plan a class"
-        ctaHref={site.hooks.classBookingUrl ?? '/book/?type=class'}
+        cta="See class dates"
+        ctaHref={site.hooks.classBookingUrl ?? '/cookingclasses/#class-dates'}
         price={<FromPrice k="classFromPerGuest" />}
       />
+      <section id="class-dates" aria-labelledby="class-dates-h" className="wrap scroll-mt-24 py-14 md:py-20">
+        <h2 id="class-dates-h" className="text-3xl">
+          Upcoming classes
+        </h2>
+        <div className="mt-8">
+          <TableNightsLive kind="class" />
+        </div>
+        <p className="mt-8 max-w-prose">
+          Want a private class for your own group?{' '}
+          <a className="link" href={site.phoneHref}>
+            Ask Sergio at {site.phone}
+          </a>
+          .
+        </p>
+      </section>
       <Included
         title="How a class works"
         items={[
           <>Format: <Policy k="classFormat" need="length, group size, and what a typical class covers" /></>,
-          'You choose what to learn, from his dishes or something you have always wanted to master',
+          'Each class has its dishes and place, set by Sergio. For your own group and menu, ask him about a private class',
           'Everyone cooks: knives, pans and plating, not just watching',
           'You eat what you made together at the end',
         ]}
@@ -161,6 +185,7 @@ export function Catering() {
         alt="Reference: a table set with linens, glassware and a centerpiece"
         cta="Request a proposal"
         ctaHref="/book/?type=event"
+        booking={<QuickBooking format="event" />}
         price={<FromPrice k="eventFromPerGuest" />}
       />
       <Included
@@ -224,7 +249,7 @@ export function SergiosTable() {
         title="How it works"
         items={[
           'Each night has one menu, written by Sergio, served at a shared table in his home',
-          `Book 1 to ${booking.table.maxSeatsPerBooking} seats. For a bigger group, book the whole table as a private dinner`,
+          `The table seats ${booking.table.maxSeatsPerBooking}. Book 1 to ${booking.table.maxSeatsPerBooking} seats, or the whole table as a private dinner`,
           'Request seats without entering a card. Sergio reviews your request before reserving your places',
           'If plans change or the minimum is at risk, Sergio reviews the evening and contacts the guests',
           <>Before the first paid guest: <Policy k="hostingCheck" need="confirm Florida food-service licensing (DBPR) and home insurance cover paying guests" /></>,
@@ -253,6 +278,16 @@ export function SergiosTable() {
   )
 }
 
+/** Seat requests for a published night (and saved step-by-step drafts) keep their own flow; everything else is one screen. */
+function BookChooser() {
+  const [steps, setSteps] = useState(false)
+  useEffect(() => {
+    const query = new URLSearchParams(location.search)
+    setSteps(query.get('type') === 'table' || query.has('night') || query.has('resume'))
+  }, [])
+  return steps ? <BookingForm /> : <QuickBooking />
+}
+
 export function Book() {
   return (
     <section className="wrap py-10 md:py-16">
@@ -266,7 +301,7 @@ export function Book() {
         .
       </p>
       <div className="mt-10">
-        <BookingForm />
+        <BookChooser />
       </div>
     </section>
   )

@@ -16,7 +16,7 @@ export function SeatMeter({ n, paymentReady = false }: { n: Night; paymentReady?
 }
 const price = (night:Night) => night.pricePerSeat ? `${money(night.pricePerSeat)} per seat` : 'Price to be agreed'
 function NightInfo({n}:{n:Night}) {
-  return <><p className="font-display text-xl">{longDate(n.date)}</p><p className="text-ink-muted">{clock(n.start)}, {n.title}, {price(n)}</p></>
+  return <><p className="font-display text-xl">{longDate(n.date)}</p><p className="text-ink-muted">{clock(n.start)}, {n.title}, {price(n)}</p>{n.kind === 'class' && n.location && <p className="text-ink-muted" data-night-location>{n.location}</p>}</>
 }
 function Waitlist({n,embedded=false}:{n:Night;embedded?:boolean}) {
   const [email,setEmail] = useState(''),[done,setDone] = useState(false),[busy,setBusy] = useState(false),[error,setError] = useState(''),[honeypot,setHoneypot] = useState('')
@@ -33,8 +33,8 @@ function Waitlist({n,embedded=false}:{n:Night;embedded?:boolean}) {
   const fields=<><label className="sr-only" htmlFor={`wl-${n.id}`}>Email for the waitlist</label><input ref={input} id={`wl-${n.id}`} type="email" autoComplete="email" placeholder="Your email" maxLength={254} value={email} disabled={busy} onChange={event=>setEmail(event.target.value)} onKeyDown={embedded?event=>{if(event.key==='Enter'){event.preventDefault();event.stopPropagation();void join()}}:undefined} className="min-h-[44px] min-w-0 flex-1 rounded-btn border border-ink/30 bg-paper px-3"/><div aria-hidden="true" style={{position:'absolute',left:'-10000px',width:1,height:1,overflow:'hidden'}}><label>Website<input name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={event=>setHoneypot(event.target.value)}/></label></div><CtaButton type={embedded?'button':'submit'} emphasis="secondary" disabled={busy} onClick={embedded?()=>void join():undefined}>{busy?'Sending':'Join the waitlist'}</CtaButton>{error&&<p role="alert" className="w-full text-sm text-alert">{error}</p>}</>
   return embedded ? <div role="group" aria-label={`Waitlist for ${longDate(n.date)}`} className="flex flex-wrap gap-2">{fields}</div> : <form className="flex flex-wrap gap-2" onSubmit={event=>{event.preventDefault();event.stopPropagation();void join()}}>{fields}</form>
 }
-export function NightList({nights,paymentReady=false}:{nights:Night[];paymentReady?:boolean}) {
-  if(!nights.length)return <p className="text-ink-muted">No evenings are open for requests right now. New evenings appear when Sergio schedules them.</p>
+export function NightList({nights,paymentReady=false,empty}:{nights:Night[];paymentReady?:boolean;empty?:string}) {
+  if(!nights.length)return <p className="text-ink-muted">{empty ?? 'No evenings are open for requests right now. New evenings appear when Sergio schedules them.'}</p>
   return <ul className="divide-y divide-rule border-y border-rule">{nights.map(n=><li key={n.id} data-night={n.id} className="grid grid-cols-1 gap-4 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-center"><div className="min-w-0"><NightInfo n={n}/></div><SeatMeter n={n} paymentReady={paymentReady}/><div className="min-w-0 lg:justify-self-end">{n.state==='full'?<Waitlist n={n}/>:canRequestNight(n)?<CtaLink emphasis="primary" href={href(`/book/?type=table&night=${encodeURIComponent(n.id)}`)}>{paymentReady?'Book seats':'Request seats'}</CtaLink>:<p className="text-sm text-ink-muted">Requests are closed for this evening.</p>}</div></li>)}</ul>
 }
 export function NightPicker({nights,value,onChange,error,paymentReady=false}:{nights:Night[];value?:string;onChange:(id:string)=>void;error?:ReactNode;paymentReady?:boolean}) {

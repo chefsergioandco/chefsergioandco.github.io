@@ -4,9 +4,12 @@ export type BookingStatus = 'requested' | 'held' | 'confirmed' | 'cancelled'
 export type Booking = {
   id: string; guest: string; email: string; phone: string; type: 'Private dinner' | 'Cooking class' | 'Small event' | "Sergio’s Table";
   date: string; time: string; guests: number; status: BookingStatus; deposit: number; paid: number; total: number;
+  /** Milliseconds from page load to submit, measured by the guest's browser (no analytics tracker). */
+  clientElapsedMs?: number;
   location: string; occasion: string; dietary: string; notes: string; created: string; source?: 'public'; nightId?: string; planning?: BookingPlanning
 }
-export type Night = { id: string; title: string; date: string; time: string; seats: number; booked: number; minimum: number; price: number; cutoff: number; menu: string; status: 'draft' | 'published' | 'cancelled' }
+/** A published date guests join by the seat: dinner at Sergio's table (his home) or a cooking class (location set per date). */
+export type Night = { id: string; title: string; date: string; time: string; seats: number; booked: number; minimum: number; price: number; cutoff: number; menu: string; status: 'draft' | 'published' | 'cancelled'; kind?: 'table' | 'class'; location?: string }
 export type Block = {id: string; date: string; reason: string}
 export type WebsiteContent = {headline: string; introduction: string; dinnerPrice: number; classPrice: number; tablePrice: number; dinnerMenu: string; replyTime: string; cancellation: string; photo: string}
 export type Revision = { id: string; date: string; content: WebsiteContent; label: string }

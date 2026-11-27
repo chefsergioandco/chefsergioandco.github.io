@@ -140,11 +140,11 @@ const all: Route[] = [
   },
   {
     path: '/cookingclasses/',
-    title: 'In-home cooking classes in Orlando | Chef Sergio & Co.',
-    description: 'Hands-on private cooking classes with Chef Sergio in your own Orlando kitchen. Learn techniques by doing them, then sit down and eat what you made.',
-    h1: 'Cook with Sergio in your own kitchen.',
+    title: 'Cooking classes in Orlando | Chef Sergio & Co.',
+    description: 'Hands-on cooking classes with Chef Sergio on scheduled dates around Orlando. Learn techniques by doing them, then sit down and eat what you made.',
+    h1: 'Cook with Sergio.',
     Page: CookingClasses,
-    jsonld: [service('Private cooking class', '/cookingclasses/', 'Hands-on in-home cooking classes.', site.pricing.classFromPerGuest)],
+    jsonld: [service('Cooking class', '/cookingclasses/', 'Hands-on cooking classes on scheduled dates.', site.pricing.classFromPerGuest)],
   },
   {
     path: '/catering/',

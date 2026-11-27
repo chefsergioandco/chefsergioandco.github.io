@@ -20,7 +20,7 @@ export function calendarClosedReason(day: string): string | null {
 
 /** Pending public inquiries reserve nothing; a scheduled event occupies its entire date. */
 export function occupiesDate(booking: Booking): boolean {
-  return !!booking.date && booking.status !== 'cancelled' && booking.type !== 'Sergio’s Table' && (booking.planning ? booking.planning.dateReserved || booking.status === 'held' : !(booking.source === 'public' && booking.status === 'requested'))
+  return !!booking.date && booking.status !== 'cancelled' && booking.type !== 'Sergio’s Table' && !booking.nightId && (booking.planning ? booking.planning.dateReserved || booking.status === 'held' : !(booking.source === 'public' && booking.status === 'requested'))
 }
 
 export function scheduleConflictReason(state: Pick<AdminState, 'bookings' | 'nights' | 'blocks'>, day: string, except: { bookingId?: string; nightId?: string } = {}): string | null {

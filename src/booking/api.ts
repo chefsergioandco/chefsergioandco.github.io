@@ -66,11 +66,30 @@ export const api: PublicBookingApi = {
   },
   availability: (kind, month) => call(`/api/availability?type=${encodeURIComponent(kind)}&month=${encodeURIComponent(month)}`),
   nights: () => call('/api/nights'),
-  async hold(request, honeypot = '') {
+  async hold(request, honeypot = '', options = {}) {
     const attempt = await requestId('request', request)
-    const result = await call<PublicHoldResult>(request.kind === 'event' ? '/api/request' : '/api/hold', { request, requestId: attempt.value, honeypot })
+    // The checkout ID is derived from the same saved request, so a retried hold reopens the same Stripe session.
+    const checkoutAttempt = options.checkout && request.kind !== 'event' ? await requestId('request-checkout', request) : null
+    const elapsed = Number.isSafeInteger(options.elapsedMs) && options.elapsedMs! >= 0 && options.elapsedMs! <= 3_600_000 ? options.elapsedMs : undefined
+    const result = await call<PublicHoldResult>(request.kind === 'event' ? '/api/request' : '/api/hold', { request, requestId: attempt.value, honeypot, ...(checkoutAttempt ? { checkoutRequestId: checkoutAttempt.value } : {}), ...(elapsed !== undefined ? { elapsedMs: elapsed } : {}) })
     if (typeof result.ref !== 'string' || !result.ref || typeof result.accessToken !== 'string' || !result.accessToken || result.next !== 'done' || typeof result.url !== 'string' || !result.url) throw new BookingError('network', 'The request receipt was incomplete. Retry to recover the same request, or call Sergio.')
     rememberAccess(result.ref, result.accessToken)
+    completeAttempt(attempt)
+    if (checkoutAttempt) completeAttempt(checkoutAttempt)
+    // Only a payment-provider page may follow; anything else is treated as a checkout that did not open.
+    if (result.checkout) {
+      let url: URL | null = null
+      try { url = new URL(result.checkout.url) } catch { /* handled below */ }
+      if (!url || url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com' || url.username || url.password) return { ...result, checkout: undefined, checkoutError: { code: 'invalid_checkout', message: 'The payment link could not be verified. Your request is saved; pay from your booking page.' } }
+    }
+    return result
+  },
+  async details(ref, details) {
+    const accessToken = receiptAccess(ref)
+    if (!ref || !accessToken) throw new BookingError('invalid', 'Open your complete private booking link first.')
+    const payload = { ref, accessToken, details }, attempt = await requestId('details', payload)
+    const result = await call<BookingReceipt | null>('/api/booking/details', { ...payload, requestId: attempt.value })
+    if (!result || result.ref !== ref) throw new BookingError('network', 'Your details were not confirmed. Retry to save them.')
     completeAttempt(attempt)
     return result
   },

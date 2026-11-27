@@ -21,7 +21,7 @@
     "og": "node scripts/og-cards.mjs --force",
     "schema:vocab": "node scripts/schema-vocab.mjs",
     "preview": "node scripts/serve.mjs",
-    "check:booking": "node scripts/check-booking-client.mjs && node scripts/check-invitation-menu.mjs",
+    "check:booking": "node scripts/check-booking-client.mjs && node scripts/check-quick-booking.mjs && node scripts/check-invitation-menu.mjs",
     "check:account": "node scripts/check-staging-account.mjs",
     "check:types": "tsc --noEmit"
   },

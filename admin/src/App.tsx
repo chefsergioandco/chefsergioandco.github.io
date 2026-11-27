@@ -15,14 +15,14 @@ import Newsletter from './Newsletter'
 import { getAdminNavigation } from './api-client'
 
 type WindowName = 'requests' | 'bookings' | 'calendar' | 'table' | 'payments' | 'communications' | 'reviews' | 'rewards' | 'newsletter' | 'website' | 'activity'
-const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Sergio’s Table',payments:'Billing & records',communications:'Communications',reviews:'Client reviews',rewards:'Referrals & credits',newsletter:'Newsletter',website:'Your website',activity:'Recent activity'}
+const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Table & classes',payments:'Billing & records',communications:'Communications',reviews:'Client reviews',rewards:'Referrals & credits',newsletter:'Newsletter',website:'Your website',activity:'Recent activity'}
 function fromHash():WindowName|null {
  const hash=location.hash.slice(1)
  if(hash==='overview'||!hash)return null
  if(hash==='nights')return 'table'
  return Object.hasOwn(windowTitles,hash)?hash as WindowName:null
 }
-const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Sergio’s Table',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'reviews',label:'Reviews',icon:'people'},{id:'rewards',label:'Referrals',icon:'card'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'}]
+const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Table & classes',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'reviews',label:'Reviews',icon:'people'},{id:'rewards',label:'Referrals',icon:'card'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'}]
 const twoDigits=(value:number)=>String(Math.round(value)).padStart(2,'0')
 export default function App(){
  const accountNavigation=getAdminNavigation()

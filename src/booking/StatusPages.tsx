@@ -10,6 +10,8 @@ import { clock, ics, longDate, money } from './format'
 import { NightList } from './TableNights'
 import type { BookingReceipt, Night, PlanningConfig } from './types'
 import '../components/BookingForm.css'
+import '../components/QuickBooking.css'
+import { PrepareDetails } from './PrepareDetails'
 
 const ref = () => new URLSearchParams(window.location.search).get('ref') ?? ''
 export function cardFor(b: BookingReceipt) {
@@ -94,13 +96,15 @@ export function BookDone() {
         <div><dt>Event date</dt><dd>{receipt.date ? `${longDate(receipt.date)}${receipt.time ? `, ${clock(receipt.time)}` : ''}` : 'To agree with Sergio'}{p && <span>{p.dateReserved ? 'Reserved' : 'Not reserved'}</span>}</dd></div>
         <div><dt>{receipt.kind === 'table' ? 'Seats' : 'Party size'}</dt><dd>{receipt.guests != null && receipt.guests > 0 ? `${receipt.guests} ${receipt.kind === 'table' && receipt.guests === 1 ? 'seat' : receipt.kind === 'table' ? 'seats' : 'guests'}` : p?.partyBandLabel || 'To agree'}</dd></div>
         {receipt.kind !== 'table' && <div><dt>Menu interview</dt><dd>{interviewLabel(p?.interviewStatus)}{interviewAt && <span>{new Date(interviewAt).toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'long', timeStyle: 'short' })} Eastern time</span>}{meetUrl && <a className="link" href={meetUrl} target="_blank" rel="noopener noreferrer">Join your Google Meet interview</a>}</dd></div>}
-        {receipt.kind === 'table' && <div><dt>The evening</dt><dd>{receipt.nightMinimumState === 'awaiting_minimum' ? 'Awaiting minimum attendance' : receipt.nightMinimumState === 'confirmed' ? 'Confirmed to run' : 'Sergio is reviewing your request'}{receipt.decisionDate && <span>Decision by {longDate(receipt.decisionDate.slice(0, 10))}</span>}</dd></div>}
+        {receipt.location && <div><dt>Where</dt><dd>{receipt.location}</dd></div>}
+        {receipt.kind === 'table' && <div><dt>{receipt.nightKind === 'class' ? 'The class' : 'The evening'}</dt><dd>{receipt.nightMinimumState === 'awaiting_minimum' ? 'Awaiting minimum attendance' : receipt.nightMinimumState === 'confirmed' ? 'Confirmed to run' : 'Sergio is reviewing your request'}{receipt.decisionDate && <span>Decision by {longDate(receipt.decisionDate.slice(0, 10))}</span>}</dd></div>}
         {p?.spendingCeiling != null && <div><dt>Agreed ceiling</dt><dd>{money(p.spendingCeiling)}</dd></div>}
       </dl>
       {notice && <p className="booking-notice" role="status">{notice}</p>}
       {receipt.status !== 'cancelled' && config?.paymentReady && p?.depositStatus === 'unpaid' && (receipt.kind === 'table' || p.depositAmount != null && p.depositAmount > 0) && <div className="mt-7"><CtaButton type="button" emphasis="primary" disabled={busy} onClick={() => void pay()}>{busy ? 'Opening secure checkout…' : receipt.kind === 'table' ? 'Pay for your seats' : 'Pay your deposit'}</CtaButton><p className="booking-small mt-3">The amount and availability are checked before checkout opens.</p></div>}
       {payError && <p role="alert" className="booking-notice booking-notice--error mt-4">{payError}</p>}
       {receipt.status !== 'cancelled' && receipt.kind !== 'table' && config?.interviewScheduling === 'self_schedule' && config.interviewSlots.length > 0 && paid && <section className="booking-receipt-section"><h2 className="text-2xl">Choose your menu interview</h2><p className="booking-small mt-2">Pick a time for your conversation with Sergio. Times below are Eastern time.</p><label className="sr-only" htmlFor="interview-slot">Interview time</label><select id="interview-slot" className="booking-input mt-4" value={slotId} onChange={event => setSlotId(event.target.value)}><option value="">Choose an interview time</option>{config.interviewSlots.map(slot => <option key={slot.id} value={slot.id}>{slot.label || new Date(slot.at).toLocaleString('en-US', { timeZone: 'America/New_York', dateStyle: 'full', timeStyle: 'short' })}</option>)}</select><CtaButton type="button" emphasis="secondary" className="mt-4" disabled={busy || !slotId} onClick={() => void schedule()}>{busy ? 'Saving…' : 'Save interview time'}</CtaButton></section>}
+      {receipt.kind !== 'table' && receipt.status !== 'cancelled' && p && !p.menu && <PrepareDetails bookingRef={receipt.ref}/>}
       <h2 className="mt-10 text-2xl">What happens next</h2><ol className="booking-next-steps">{nextSteps(receipt, config).map((step, index) => <li key={step}><span aria-hidden>{index + 1}</span><p>{step}</p></li>)}</ol>
       {p?.menu && <section className="booking-receipt-section"><p className="booking-eyebrow">Your finished menu</p><p className="booking-receipt-menu">{p.menu}</p></section>}
       {receipt.kind !== 'table' && receipt.status !== 'cancelled' && <p className="booking-small mt-6">You don’t need to accept a calendar invitation to keep your booking active. If an interview time doesn’t work, contact Sergio to rearrange it.</p>}
@@ -119,7 +123,8 @@ export function MockCheckout() {
   return <section className="wrap py-10 md:py-16"><h1 className="text-4xl sm:text-5xl">Online checkout is unavailable</h1><p className="mt-4 max-w-prose">This website accepts requests only. No card is saved and no payment is collected here.</p><CtaLink emphasis="primary" className="mt-6" href={href('/book/')}>Send a request</CtaLink></section>
 }
 
-export function TableNightsLive() {
+/** Published dates of one kind: Sergio's table (the default) or cooking classes. */
+export function TableNightsLive({ kind = 'table' }: { kind?: 'table' | 'class' } = {}) {
   const [nights, setNights] = useState<Night[] | null>(null)
   const [paymentReady, setPaymentReady] = useState(false)
   const [error, setError] = useState('')
@@ -132,5 +137,5 @@ export function TableNightsLive() {
   useEffect(() => { void load() }, [])
   if (error) return <div><p role="alert" className="text-ink-muted">{error}</p><CtaButton type="button" emphasis="secondary" className="mt-3" onClick={() => void load()}>Try again</CtaButton></div>
   if (!nights) return <p className="text-ink-muted" role="status">Loading upcoming nights. <noscript><a className="link" href={site.phoneHref}>Call {site.phone} to ask about a night.</a></noscript></p>
-  return <NightList nights={nights} paymentReady={paymentReady}/>
+  return <NightList nights={nights.filter(night => (night.kind ?? 'table') === kind)} paymentReady={paymentReady} empty={kind === 'class' ? 'No class dates are open right now. New classes appear here when Sergio schedules them.' : undefined}/>
 }

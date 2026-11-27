@@ -15,3 +15,8 @@
 .cal-create-card p{font-size:16px}
 @media(max-width:1200px){.cal-heading-actions .button{font-size:14px}.cal-event{font-size:11px}}
 @media(max-width:640px){.cal-heading-actions .button{font-size:14px}.cal-day-number{font-size:14px}.cal-event{font-size:0}.cal-weekdays span,.cal-legend{font-size:12px}.cal-days-field button{font-size:13px}.cal-seat-row{font-size:14px;align-items:flex-start}.cal-seat-row>span:last-child{text-align:right}.cal-live-note{font-size:13px}.cal-form-footer .button{font-size:14px}}
+
+/* Table night or cooking class: one editor for both kinds of published date. */
+.cal-kind {display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;border:0;padding:0;margin:0;}
+.cal-kind legend {margin-bottom:.4rem;}
+.cal-kind-option {display:inline-flex;align-items:center;gap:.45rem;min-height:44px;}

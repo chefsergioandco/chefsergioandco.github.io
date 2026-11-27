@@ -22,6 +22,9 @@ export type Night = {
   cutoff: string // decision date for Sergio's minimum-attendance review; no automatic cancellation is implied
   state: NightState
   sample: boolean
+  /** A dinner at Sergio's table, or a cooking class with its own location. Older services send no kind: a table night. */
+  kind?: 'table' | 'class'
+  location?: string
 }
 
 export type BookingRequest = {
@@ -87,6 +90,8 @@ export type BookingReceipt = {
   guests: number | null
   nightId?: string
   nightTitle?: string
+  nightKind?: 'table' | 'class'
+  location?: string
   amount: null
   amountWhen: 'after-quote'
   createdAt: string
@@ -94,11 +99,16 @@ export type BookingReceipt = {
   nightMinimumState?: 'awaiting_minimum' | 'confirmed'
   decisionDate?: string
 }
-export type PublicHoldResult = HoldResult & { next: 'done'; accessToken: string }
+export type PublicHoldResult = HoldResult & { next: 'done'; accessToken: string; checkout?: { url: string; expiresAt?: string }; checkoutError?: { code: string; message: string } }
+/** Options for a hold: open the deposit checkout in the same round trip, and report the guest's page-load-to-submit time. */
+export type HoldOptions = { checkout?: boolean; elapsedMs?: number }
+/** Menu-conversation answers a guest can add after the deposit. Sergio's agreed topics are never overwritten. */
+export type GuestDetails = { occasion?: string; kitchen?: string; foodIdeas?: string; dietary?: string[]; allergies?: string; notes?: string; budgetMode?: 'range' | 'guidance'; budgetMin?: number; budgetMax?: number; budgetUnit?: 'total' | 'per_person'; physicalInvitations?: boolean }
 export interface PublicBookingApi extends Omit<BookingApi, 'booking' | 'hold' | 'waitlist'> {
   config(): Promise<PlanningConfig>
-  hold(req: BookingRequest, honeypot?: string): Promise<PublicHoldResult>
+  hold(req: BookingRequest, honeypot?: string, options?: HoldOptions): Promise<PublicHoldResult>
   booking(ref: string): Promise<BookingReceipt | null>
+  details(ref: string, details: GuestDetails): Promise<BookingReceipt | null>
   cancel(ref: string, reason: string): Promise<BookingReceipt | null>
   scheduleInterview(ref: string, slotId: string): Promise<BookingReceipt | null>
   checkout(ref: string): Promise<{url: string; expiresAt?: string}>

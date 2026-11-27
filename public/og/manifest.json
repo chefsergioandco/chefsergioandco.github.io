@@ -20,10 +20,10 @@
   "/cookingclasses/": {
     "file": "cookingclasses.png",
     "size": 96,
-    "bytes": 16282,
-    "sha256": "a1e94557579af351a37ae59bfe5f12768a1f4dd405d81becdb92367b4e24aeb9",
-    "hash": "6438a9b7966c",
-    "text": "Cook with Sergio in your own kitchen.",
+    "bytes": 12114,
+    "sha256": "9cbe975a021242ab2b68ee47aef27d05a78410be273246ceaef20fe75c7c1b24",
+    "hash": "33dc2008670f",
+    "text": "Cook with Sergio.",
     "photo": null
   },
   "/catering/": {
