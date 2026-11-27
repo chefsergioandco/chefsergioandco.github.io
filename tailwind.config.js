@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 // Approved identity tokens live in styles.css; body prose and functional UI use separate families.
-const v = (name) => `rgb(var(--c-${name}) / <alpha-value>)`
+const v = (name) => `${/^(cta|sage|alert)(-|$)/.test(name) && name !== 'cta-ink' ? 'oklch' : 'rgb'}(var(--c-${name}) / <alpha-value>)`
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],

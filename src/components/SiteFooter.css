@@ -1,7 +1,7 @@
 /* A warm closing invitation. Identity values come from the site's shared type and colour tokens. */
 .site-footer {
   --footer-ink: var(--c-brand-deep, 35 32 22);
-  --footer-paper: var(--c-on-brand, 255 254 249);
+  --footer-paper: var(--c-on-brand, 254 254 253);
   background: rgb(var(--footer-ink));
   color: rgb(var(--footer-paper));
   font-family: var(--f-body, 'Bricolage Grotesque Variable', system-ui, sans-serif);

@@ -42,7 +42,7 @@ function cardHtml(r) {
 @font-face{font-family:'EB Garamond';src:${font(FONTS.garamond)};font-weight:400 800}
 @font-face{font-family:'Archivo';src:${font(FONTS.archivo)};font-weight:100 900}
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:${CARD.width}px;height:${CARD.height}px;overflow:hidden;background:#FCFAF5;color:#2D2B27}
+html,body{width:${CARD.width}px;height:${CARD.height}px;overflow:hidden;background:#fefefd;color:#2D2B27}
 .logo{position:absolute;left:72px;top:64px;width:320px}
 .logo svg{display:block;width:100%;height:auto}
 .copy{position:absolute;left:72px;top:156px;bottom:128px;width:628px;display:flex;align-items:center}

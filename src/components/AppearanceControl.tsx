@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 type Theme = 'light' | 'dark'
 const KEY = 'site-theme'
-const BAR = { light: '#FCFAF5', dark: '#191714' } as const
+const BAR = { light: '#fefefd', dark: '#191714' } as const
 const themes: { value: Theme; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },

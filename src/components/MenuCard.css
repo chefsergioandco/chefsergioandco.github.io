@@ -7,7 +7,7 @@
  * stays a printed object in every theme.
  */
 .menu-card.menu-card--printed {
-  --menu-paper: #fcfaf5;
+  --menu-paper: #fefefd;
   --menu-ink: #2d2b27;
   --menu-rouge: #8e352f;
   container-type: inline-size;

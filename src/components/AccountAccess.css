@@ -1,9 +1,9 @@
 .account-access{position:relative;font-family:var(--f-ui);font-size:14px;line-height:1.45;flex-shrink:0}
 .sergio-header .account-access .account-access-trigger{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 0;border:0;background:transparent;cursor:pointer;color:rgb(var(--c-ink));white-space:nowrap}
-.sergio-header .account-access .account-access-trigger:hover{color:rgb(var(--c-cta))}
+.sergio-header .account-access .account-access-trigger:hover{color:oklch(var(--c-cta))}
 .account-access-icon{position:relative;display:inline-flex;align-items:center}
-.account-signed-in-dot{position:absolute;right:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:rgb(var(--c-cta));box-shadow:0 0 0 2px rgb(var(--c-canvas))}
-.account-access :focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:4px}
+.account-signed-in-dot{position:absolute;right:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:oklch(var(--c-cta-fill));box-shadow:0 0 0 2px rgb(var(--c-canvas))}
+.account-access :focus-visible{outline:2px solid oklch(var(--c-cta));outline-offset:4px}
 html:not(.js) .sergio-header .account-access .account-access-trigger{display:none}
 .footer-account{display:flex;align-items:center;justify-content:space-between;gap:26px;padding:26px 0 28px;border-top:1px solid rgb(var(--footer-paper)/.24);font-family:var(--f-ui);color:rgb(var(--footer-paper))}
 .footer-account-copy{display:flex;align-items:center;gap:15px}
@@ -15,11 +15,11 @@ html:not(.js) .sergio-header .account-access .account-access-trigger{display:non
 .footer-account nav>a>svg:last-child:not(:first-child){display:none}
 .footer-account nav>a:hover>span{text-decoration:underline;text-underline-offset:5px}
 .booking-account-access{display:flex;align-items:flex-start;gap:15px;padding:22px 24px;border:1px solid rgb(var(--c-rule));background:rgb(var(--c-paper));margin:30px 0 0}
-.booking-account-access>svg{flex-shrink:0;margin-top:2px;color:rgb(var(--c-cta))}
+.booking-account-access>svg{flex-shrink:0;margin-top:2px;color:oklch(var(--c-cta))}
 .booking-account-access h2{font:500 25px/1.2 var(--f-display);letter-spacing:-.01em;margin:0 0 9px}
 .booking-account-access p{font:400 14px/1.7 var(--f-body);margin:0 0 10px;color:rgb(var(--c-ink-muted))}
-.booking-account-access a{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:rgb(var(--c-cta));font:400 13px/1.5 var(--f-ui);text-underline-offset:4px}
-.booking-account-access :focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:4px}
+.booking-account-access a{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:oklch(var(--c-cta));font:400 13px/1.5 var(--f-ui);text-underline-offset:4px}
+.booking-account-access :focus-visible{outline:2px solid oklch(var(--c-cta));outline-offset:4px}
 @media(min-width:960px) and (max-width:1199px){.sergio-header-main{gap:14px}.sergio-header-desktop{gap:12px}.sergio-header-desktop>a,.sergio-header .account-access .account-access-trigger{font-size:13px}.sergio-header .account-access .account-access-trigger{gap:6px}}
 @media(min-width:960px) and (max-width:1099px){.sergio-header-main{flex-wrap:wrap}.sergio-header-brand{margin-right:auto}.sergio-header-desktop{order:3;flex:1 0 100%;justify-content:space-between;padding-top:8px;border-top:1px solid rgb(var(--c-rule))}}
 @media(max-width:700px){.account-access{min-width:0;align-self:stretch}.sergio-header .account-access .account-access-trigger{width:100%;min-width:0;min-height:54px;flex-direction:column;gap:5px;padding:0 2px;font-size:14px;line-height:18px;white-space:normal;text-align:center}.footer-account{align-items:flex-start;flex-direction:column;gap:17px;padding:25px 0 24px}.footer-account nav{gap:5px 23px;align-items:flex-start}.footer-account nav>a{font-size:13px}.footer-account-copy h3{font-size:26px}.booking-account-access{padding:20px 17px;gap:12px}.booking-account-access h2{font-size:24px}.booking-account-access p{font-size:14px}}

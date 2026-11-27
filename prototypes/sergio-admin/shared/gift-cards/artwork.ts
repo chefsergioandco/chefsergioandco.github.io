@@ -6,7 +6,7 @@ import { formatGiftCode } from './code'
  * vector print master, so a printed card can only ever look like the digital one.
  *
  * Physical card: 5 × 3.5 in PVC, 30 mil (0.76 mm), with a rouge colour core so the edges show rouge, a satin
- * overlaminate, and 1/8 in rounded corners. The ivory is printed edge to edge (1/8 in bleed); the corners are
+ * overlaminate, and 1/8 in rounded corners. The near-white is printed edge to edge (1/8 in bleed); the corners are
  * die-cut. The units are 200 per inch: 1000 × 700.
  *
  * Production rule this file enforces: foil needs a metal die made before the run, so only fixed artwork
@@ -14,7 +14,7 @@ import { formatGiftCode } from './code'
  * that changes per card (names, note, code) is flat ink, the same on paper and on screen.
  */
 export const GIFT_CARD_FORMAT = Object.freeze({ width: 1000, height: 700, widthIn: 5, heightIn: 3.5, unitsPerInch: 200, thicknessMm: .76, cornerRadius: 25, bleed: 25, material: 'PVC, rouge colour core, satin overlaminate' as const })
-export const GIFT_CARD_COLORS = Object.freeze({ paper: '#fcfaf5', ink: '#2d2b27', rouge: '#8e352f' })
+export const GIFT_CARD_COLORS = Object.freeze({ paper: '#fefefd', ink: '#2d2b27', rouge: '#8e352f' })
 export const GIFT_CARD_FONTS = Object.freeze({ serif: 'Invitation Garamond', italic: 'Invitation Garamond Italic', sans: 'Invitation Archivo' })
 
 /** foil-black: gloss black foil. foil-rouge: rouge foil. ink / ink-rouge: flat printed ink, no reflection. */

@@ -1,12 +1,12 @@
 .billing-detail,.billing-records,.billing-record-workspace,.billing-compact{
-  --billing-ink:#2d2b27;--billing-paper:#fcfaf5;--billing-rouge:#8e352f;--billing-rule:#e6e1d8;--billing-muted:#656059;
+  --billing-ink:#2d2b27;--billing-paper:var(--canvas);--billing-rouge:#8e352f;--billing-rule:#e4e4e1;--billing-muted:#656059;
   color:var(--billing-ink);font-family:Archivo,Arial,sans-serif;font-size:1rem;line-height:1.6;
 }
 .billing-detail{padding:2rem;background:var(--billing-paper);min-width:0}
 .billing-detail [hidden]{display:none!important}
 .billing-detail .button,.billing-records .button,.billing-record-workspace .button,.billing-compact>.button{min-height:44px;font-size:.875rem;white-space:normal}
 .billing-detail .button.secondary,.billing-records .button.secondary,.billing-record-workspace .button.secondary,.billing-compact>.button.secondary{background:var(--billing-paper);border-color:var(--billing-rule);color:var(--billing-ink)}
-.billing-detail .button.secondary:hover,.billing-records .button.secondary:hover,.billing-record-workspace .button.secondary:hover,.billing-compact>.button.secondary:hover{background:#f1ede6;border-color:#b9b0a5}
+.billing-detail .button.secondary:hover,.billing-records .button.secondary:hover,.billing-record-workspace .button.secondary:hover,.billing-compact>.button.secondary:hover{background:var(--paper);border-color:#b9b0a5}
 .billing-detail-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:2rem;margin-bottom:1.5rem}
 .billing-detail-heading>div:first-child{min-width:0;flex:1}
 .billing-detail-heading h3{font:500 2.25rem/1.12 Garamond,Georgia,serif;letter-spacing:-.02em;margin:.5rem 0 .45rem;overflow-wrap:anywhere}
@@ -53,7 +53,7 @@
 .billing-document-view{margin:-.5rem;min-width:0}.billing-document-toolbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.25rem}
 .billing-view-title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .billing-record-workspace:has(.billing-document-view)>.billing-workspace-heading{display:none}
-.billing-document-canvas{padding:1.5rem;background:#eeeae3;border-radius:4px}
+.billing-document-canvas{padding:1.5rem;background:var(--paper);border-radius:4px}
 .billing-document-controls{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
 .billing-document-switch{display:inline-flex;gap:.25rem;flex-wrap:wrap}.billing-document-switch button{background:transparent;color:var(--billing-ink);font-size:.875rem;min-height:44px;padding:.65rem 1rem;border-radius:4px;border:1px solid transparent}
 .billing-document-switch button[aria-pressed=true]{background:var(--billing-ink);color:var(--billing-paper)}.billing-document-switch button:not([aria-pressed=true]):hover{border-color:var(--billing-rule)}
@@ -73,7 +73,7 @@
 .billing-search{display:flex;align-items:center;gap:.6rem;border:1px solid var(--billing-rule);background:var(--billing-paper);border-radius:4px;padding:.65rem .85rem;flex:1;min-width:0;color:var(--billing-muted)}.billing-search input{background:transparent;color:var(--billing-ink);border:0;font-size:1rem;line-height:1.5;width:100%;min-width:0;outline-offset:5px}
 .billing-filter-label{display:flex;align-items:center;gap:.65rem;font-size:.875rem;color:var(--billing-muted)}
 .billing-record-list{border-top:1px solid var(--billing-rule)}
-.billing-record-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(110px,150px) 18px;align-items:center;gap:1.4rem;width:100%;padding:1.3rem .75rem;text-align:left;background:transparent;border-bottom:1px solid var(--billing-rule);color:var(--billing-ink)}.billing-record-row:hover{background:#f1ede6}
+.billing-record-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(110px,150px) 18px;align-items:center;gap:1.4rem;width:100%;padding:1.3rem .75rem;text-align:left;background:transparent;border-bottom:1px solid var(--billing-rule);color:var(--billing-ink)}.billing-record-row:hover{background:var(--paper)}
 .billing-record-row>div:first-child{min-width:0;display:flex;flex-direction:column;gap:.3rem}.billing-record-row>div:first-child>strong{font:500 1.4rem/1.2 Garamond,Georgia,serif;overflow-wrap:anywhere}
 .billing-record-row span:not(.billing-status){font-size:.8125rem;color:var(--billing-muted);line-height:1.5;overflow-wrap:anywhere}.billing-record-row small{font-size:.8125rem;color:var(--billing-muted)}
 .billing-record-balance{text-align:right;display:flex;flex-direction:column;gap:.35rem;min-width:0}.billing-record-balance strong{font-size:1.1rem;font-weight:400;font-variant-numeric:tabular-nums;letter-spacing:-.02em}.billing-record-row>svg{color:var(--billing-muted)}

@@ -10,7 +10,7 @@
     },
     {
       "file": "brand/logo-compact-reverse.svg",
-      "sha256": "f90ccb084153c6e9ffbbcf974880390d2e7e9812828fb7dd719a51a5648b623c",
+      "sha256": "bcbe72e8bbaa96c8b2256181b9af17455b2290427fe5ab9dd1b81e7f162edc62",
       "kind": "original-vector-logo"
     },
     {
@@ -20,7 +20,7 @@
     },
     {
       "file": "brand/logo-micro-reverse.svg",
-      "sha256": "e78573f99883a90cc3276b219f8b8fb4e72357a115e856f1af35ae323195fe70",
+      "sha256": "3f3bb85e9efaecd4ca0e125b794cbef588a3bb7eb98dc5c93c428195ee89020b",
       "kind": "original-vector-logo"
     },
     {
@@ -30,7 +30,7 @@
     },
     {
       "file": "brand/logo-primary-reverse.svg",
-      "sha256": "3dec5f48af7995450c86bf5fa476431ebfea1897712dc6ef36de1430a9e2c158",
+      "sha256": "5875e4d19df4c3022d55080215bcc0d0bcf335ea29db743d1c9ee0a151bc8c7a",
       "kind": "original-vector-logo"
     },
     {
@@ -40,7 +40,7 @@
     },
     {
       "file": "brand/logo-symbol-reverse.svg",
-      "sha256": "4ea76cdcd645b462d3141d077c639de2b96088dbc04bd15b2f3ef3fe8bb732dc",
+      "sha256": "3bbbb3337575f24cdb68b9d71ff2fcf8d2d3b07c652cbbf3ae236e94526d1d08",
       "kind": "original-vector-logo"
     },
     {
@@ -65,7 +65,7 @@
     },
     {
       "file": "apple-touch-icon.png",
-      "sha256": "8b1f3f69bd3e8d994a1f7e810095f27872ff218aa94d479e9add4700e0318394",
+      "sha256": "2f604874d7e4c92017ade4d41c23d50a6bc606f7d3d6e85909a3303e45e23646",
       "kind": "derived-brand-icon"
     },
     {

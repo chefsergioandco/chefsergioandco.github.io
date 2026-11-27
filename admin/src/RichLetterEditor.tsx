@@ -39,7 +39,7 @@ async function prepareImage(file: File, convertPng = false): Promise<PreparedIma
     function draw() {
       const scale = Math.min(1, longest / Math.max(bitmap.width, bitmap.height))
       canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale))
-      if (contentType === 'image/jpeg') { context!.fillStyle = '#fcfaf5'; context!.fillRect(0, 0, canvas.width, canvas.height) }
+      if (contentType === 'image/jpeg') { context!.fillStyle = '#fefefd'; context!.fillRect(0, 0, canvas.width, canvas.height) }
       context!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     }
     draw()

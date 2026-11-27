@@ -14,15 +14,15 @@
 .booking-settings-section>p{font-size:14px;line-height:1.7;color:#78806c;margin:0}
 .booking-settings .field{display:flex;flex-direction:column;gap:7px;font-size:14px;line-height:1.5;min-width:0}
 .booking-settings .field>span{font-weight:500}.booking-settings small{font-size:13px;line-height:1.65;color:#7b8270}
-.booking-settings input,.booking-settings textarea,.booking-settings select{font:inherit;font-size:16px;line-height:1.5;width:100%;box-sizing:border-box;min-height:45px;border:1px solid #d8d9ce;border-radius:4px;background:#fffefa;color:#35412d;padding:10px 12px}
+.booking-settings input,.booking-settings textarea,.booking-settings select{font:inherit;font-size:16px;line-height:1.5;width:100%;box-sizing:border-box;min-height:45px;border:1px solid #d8d9ce;border-radius:4px;background:var(--canvas);color:#35412d;padding:10px 12px}
 .booking-settings textarea{resize:vertical}
 .booking-settings input:focus-visible,.booking-settings textarea:focus-visible,.booking-settings select:focus-visible{outline:2px solid #79865c;outline-offset:3px}
-.booking-settings input:disabled,.booking-settings textarea:disabled,.booking-settings select:disabled{background:#f1efe8;color:#8d9184}
+.booking-settings input:disabled,.booking-settings textarea:disabled,.booking-settings select:disabled{background:var(--paper);color:#8d9184}
 .booking-settings input::placeholder,.booking-settings textarea::placeholder{color:#949787;font-size:14px}
 .booking-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .booking-settings-grid .full{grid-column:1/-1}
 .booking-band-list{display:grid;gap:12px}
-.booking-band{display:grid;grid-template-columns:minmax(120px,1.5fr) 80px 80px minmax(110px,1fr);gap:12px;padding:16px;background:#f7f6f0;border:1px solid #e6e2d6;border-radius:5px}
+.booking-band{display:grid;grid-template-columns:minmax(120px,1.5fr) 80px 80px minmax(110px,1fr);gap:12px;padding:16px;background:var(--paper);border:1px solid #e6e2d6;border-radius:5px}
 .booking-band .field>span{font-size:13px;font-weight:400}
 .booking-slot-add{display:flex;gap:12px;align-items:flex-end}.booking-slot-add .field{flex:1}.booking-slot-add .button{min-height:45px;font-size:14px;white-space:nowrap}
 .booking-slot-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}

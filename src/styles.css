@@ -59,7 +59,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* One approved identity. The look attributes remain for existing content routing. */
+/* Paper must read as white: #FEFEFD canvas, #FAFAF9 secondary surfaces.
+   Depth comes from type, rules and lighting, rather than cream or beige fills.
+   The look attributes remain for existing content routing. */
 @layer base {
   :root,
   [data-look='a'],
@@ -67,19 +69,21 @@
   [data-look='c'] {
     --c-brand: 45 43 39;
     --c-brand-deep: 45 43 39;
-    --c-on-brand: 252 250 245;
-    --c-canvas: 252 250 245;
-    --c-paper: 230 225 216;
+    --c-on-brand: 254 254 253;
+    --c-canvas: 254 254 253;
+    --c-paper: 250 250 249;
     --c-ink: 45 43 39;
     --c-ink-muted: 45 43 39;
     --c-ink-soft: 101 95 85;
-    --c-cta: 142 53 47;
-    --c-cta-deep: 116 41 34;
-    --c-cta-ink: 252 250 245;
-    --c-focus-on-brand: 252 250 245;
-    --c-sage: 142 53 47;
-    --c-rule: 230 225 216;
-    --c-alert: 142 53 47;
+    --c-cta: .454055 .122346 26.8898;
+    --c-cta-deep: .39 .122346 26.8898;
+    --c-cta-fill: .454055 .122346 26.8898;
+    --c-cta-fill-deep: .39 .122346 26.8898;
+    --c-cta-ink: 254 254 253;
+    --c-focus-on-brand: 254 254 253;
+    --c-sage: .454055 .122346 26.8898;
+    --c-rule: 228 228 225;
+    --c-alert: .454055 .122346 26.8898;
     --f-display: 'EB Garamond', Garamond, Georgia, serif;
     --f-body: 'EB Garamond', Garamond, Georgia, serif;
     --f-ui: 'Archivo', Arial, sans-serif;
@@ -93,20 +97,18 @@
   /* Appearance: follows the system unless a visitor chooses Light or Dark
      (theme-init.js sets html[data-theme] before first paint). The admin
      workspace has its own fixed palette and always stays light.
-     Dark keeps Sergio's warm paper identity: warm near-black canvas, paper-white
-     ink, a lifted rouge for accents (dark text on rouge buttons keeps AA
-     contrast), and brand-deep as the recessed band for footer-like surfaces.
-     Contrast (WCAG): ink/canvas 14.5, cta/canvas 6.3, cta-ink/cta 6.3,
-     on-brand/brand 4.6, brand/canvas 3.2 (selection marks). */
+     Rouge uses one OKLCH hue and chroma in both appearances. Filled controls
+     keep the original deep red and near-white lettering; text accents only
+     increase lightness on dark surfaces to meet readable contrast. */
   :root { color-scheme: light; --logo-ink-display: block; --logo-reverse-display: none; }
   @media screen and (prefers-color-scheme: dark) {
     :root:not([data-theme='light']):not([data-admin-route]) {
       color-scheme: dark;
       --c-canvas: 25 23 20; --c-paper: 36 33 29; --c-rule: 62 57 50;
-      --c-ink: 237 231 220; --c-ink-muted: 237 231 220; --c-ink-soft: 176 168 156;
-      --c-cta: 222 127 114; --c-cta-deep: 234 155 144; --c-cta-ink: 25 23 20;
-      --c-sage: 222 127 114; --c-alert: 222 127 114;
-      --c-brand: 112 102 89; --c-brand-deep: 16 15 13; --c-on-brand: 237 231 220; --c-focus-on-brand: 237 231 220;
+      --c-ink: 244 244 242; --c-ink-muted: 244 244 242; --c-ink-soft: 176 176 171;
+      --c-cta: .65 .122346 26.8898; --c-cta-deep: .67 .122346 26.8898;
+      --c-sage: .65 .122346 26.8898; --c-alert: .65 .122346 26.8898;
+      --c-brand: 112 102 89; --c-brand-deep: 16 15 13; --c-on-brand: 244 244 242; --c-focus-on-brand: 244 244 242;
       --logo-ink-display: none; --logo-reverse-display: block;
     }
   }
@@ -115,20 +117,20 @@
     :root[data-theme='dark']:not([data-admin-route]) {
       color-scheme: dark;
       --c-canvas: 25 23 20; --c-paper: 36 33 29; --c-rule: 62 57 50;
-      --c-ink: 237 231 220; --c-ink-muted: 237 231 220; --c-ink-soft: 176 168 156;
-      --c-cta: 222 127 114; --c-cta-deep: 234 155 144; --c-cta-ink: 25 23 20;
-      --c-sage: 222 127 114; --c-alert: 222 127 114;
-      --c-brand: 112 102 89; --c-brand-deep: 16 15 13; --c-on-brand: 237 231 220; --c-focus-on-brand: 237 231 220;
+      --c-ink: 244 244 242; --c-ink-muted: 244 244 242; --c-ink-soft: 176 176 171;
+      --c-cta: .65 .122346 26.8898; --c-cta-deep: .67 .122346 26.8898;
+      --c-sage: .65 .122346 26.8898; --c-alert: .65 .122346 26.8898;
+      --c-brand: 112 102 89; --c-brand-deep: 16 15 13; --c-on-brand: 244 244 242; --c-focus-on-brand: 244 244 242;
       --logo-ink-display: none; --logo-reverse-display: block;
     }
   }
   /* Printed objects stay paper in either theme, like a card on a dark table. */
   .menu-card, .theme-paper {
     color-scheme: light;
-    --c-brand: 45 43 39; --c-brand-deep: 45 43 39; --c-on-brand: 252 250 245;
-    --c-canvas: 252 250 245; --c-paper: 230 225 216; --c-ink: 45 43 39; --c-ink-muted: 45 43 39; --c-ink-soft: 101 95 85;
-    --c-cta: 142 53 47; --c-cta-deep: 116 41 34; --c-cta-ink: 252 250 245; --c-focus-on-brand: 252 250 245;
-    --c-sage: 142 53 47; --c-rule: 230 225 216; --c-alert: 142 53 47;
+    --c-brand: 45 43 39; --c-brand-deep: 45 43 39; --c-on-brand: 254 254 253;
+    --c-canvas: 254 254 253; --c-paper: 250 250 249; --c-ink: 45 43 39; --c-ink-muted: 45 43 39; --c-ink-soft: 101 95 85;
+    --c-cta: .454055 .122346 26.8898; --c-cta-deep: .39 .122346 26.8898; --c-cta-ink: 254 254 253; --c-focus-on-brand: 254 254 253;
+    --c-sage: .454055 .122346 26.8898; --c-rule: 228 228 225; --c-alert: .454055 .122346 26.8898;
     --logo-ink-display: block; --logo-reverse-display: none;
   }
 
@@ -177,7 +179,7 @@
   }
   input, select, textarea { font-size: 1rem; }
   :focus-visible {
-    outline: 2px solid rgb(var(--c-cta));
+    outline: 2px solid oklch(var(--c-cta));
     outline-offset: 3px;
   }
   .on-brand :focus-visible {
@@ -296,12 +298,12 @@
     border-top: 1px solid rgb(var(--c-rule));
     padding-top: 1.25rem;
   }
-  .home-process ol > li > span { color: rgb(var(--c-cta)); }
+  .home-process ol > li > span { color: oklch(var(--c-cta)); }
   .home-dishes h2 { font-size: clamp(2.25rem, 4vw, 3.375rem); }
   .home-dishes [data-menu-item] { font-size: 1.5rem; line-height: 1.2; }
   .home-meet { border-top: 1px solid rgb(var(--c-rule)); }
   .home-gift {
-    border-top: 2px solid rgb(var(--c-cta));
+    border-top: 2px solid oklch(var(--c-cta));
     background: rgb(var(--c-paper));
   }
   .home-gift h2 { font-size: clamp(2rem, 3vw, 2.75rem); }
@@ -343,4 +345,4 @@
   }
 }
 
-.newsletter-route-footer{max-width:64rem;margin:auto;padding:1.5rem;text-align:center;border-top:1px solid rgb(var(--c-rule));font:400 14px/1.6 var(--f-ui)}.newsletter-route-footer a{display:inline-flex;align-items:center;min-height:44px;color:rgb(var(--c-cta));text-underline-offset:4px}
+.newsletter-route-footer{max-width:64rem;margin:auto;padding:1.5rem;text-align:center;border-top:1px solid rgb(var(--c-rule));font:400 14px/1.6 var(--f-ui)}.newsletter-route-footer a{display:inline-flex;align-items:center;min-height:44px;color:oklch(var(--c-cta));text-underline-offset:4px}

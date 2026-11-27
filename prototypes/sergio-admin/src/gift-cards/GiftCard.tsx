@@ -56,7 +56,7 @@ function draw(context: CanvasRenderingContext2D, commands: GiftCommand[], logo: 
 }
 const isFoil = (command: GiftCommand) => command.finish === 'foil-black' || command.finish === 'foil-rouge'
 
-/** Printed ivory on smooth PVC: no fibres, only enough noise to keep the gradient of the sheen from banding. */
+/** Printed near-white on smooth PVC: no fibres, only enough noise to keep the gradient of the sheen from banding. */
 let sheet: HTMLCanvasElement | null = null
 function plasticSheet(): HTMLCanvasElement {
   if (sheet) return sheet
@@ -66,7 +66,7 @@ function plasticSheet(): HTMLCanvasElement {
   for (let offset = 0; offset < pixels.length; offset += 4) {
     seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5
     const noise = ((seed >>> 0) / 4294967296 - .5) * .9
-    pixels[offset] = 252 + noise; pixels[offset + 1] = 250 + noise; pixels[offset + 2] = 245 + noise; pixels[offset + 3] = 255
+    pixels[offset] = 254 + noise; pixels[offset + 1] = 254 + noise; pixels[offset + 2] = 253 + noise; pixels[offset + 3] = 255
   }
   context.putImageData(image, 0, 0)
   return sheet

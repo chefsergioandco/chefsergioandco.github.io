@@ -1,5 +1,5 @@
-/* The card is always the physical object: printed ivory plastic in light and dark mode alike. */
-.gift-card{--gift-paper:#fcfaf5;--gift-ink:#2d2b27;--gift-rouge:#8e352f;--gift-edge:#86322c;width:100%;min-width:0;margin:0;color:var(--gift-ink);color-scheme:light}
+/* The card is always the physical object: printed near-white plastic in light and dark mode alike. */
+.gift-card{--gift-paper:#fefefd;--gift-ink:#2d2b27;--gift-rouge:#8e352f;--gift-edge:#86322c;width:100%;min-width:0;margin:0;color:var(--gift-ink);color-scheme:light}
 .gift-card *{box-sizing:border-box}
 .gift-card .gift-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .gift-card-stage{position:relative;isolation:isolate;width:100%;height:calc(var(--gift-h) + 96px);perspective:1500px;perspective-origin:50% 42%;touch-action:pan-y pinch-zoom}

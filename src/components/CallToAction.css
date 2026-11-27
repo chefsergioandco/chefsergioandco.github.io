@@ -10,9 +10,9 @@
   --cta-focus-offset: 4px;
   --cta-state-duration: 140ms;
   --cta-ink: rgb(var(--c-ink));
-  --cta-ivory: rgb(var(--c-canvas));
-  --cta-rouge: rgb(var(--c-cta));
-  --cta-rouge-hover: rgb(var(--c-cta-deep));
+  --cta-ivory: rgb(var(--c-cta-ink));
+  --cta-rouge: oklch(var(--c-cta-fill));
+  --cta-rouge-hover: oklch(var(--c-cta-fill-deep));
   --cta-primary-border: var(--cta-rouge);
   --cta-primary-hover-border: var(--cta-rouge-hover);
   --cta-primary-pressed-border: var(--cta-ink);
@@ -76,7 +76,7 @@
   outline-offset: var(--cta-focus-offset);
 }
 .cta-link--primary:active {
-  color: var(--cta-ivory);
+  color: rgb(var(--c-canvas));
   background-color: var(--cta-ink);
   border-color: var(--cta-primary-pressed-border);
   transition-duration: 0ms;
