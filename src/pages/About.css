@@ -1,6 +1,6 @@
 /* About's editorial layout uses the shared salon fonts and colors. */
 .about-shell, .about-theme {
-  --c-paper: 242 238 231;
+  --c-paper: 250 250 249;
   --c-ink-muted: 102 94 83;
   color: rgb(var(--c-ink));
   background: rgb(var(--c-canvas));

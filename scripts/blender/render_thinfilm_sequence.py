@@ -290,6 +290,19 @@ def main():
         station = frame in STATIONS
         width, height, samples = (1920, 600, args.station_samples) if station or args.preview_frame else (1280, 400, args.motion_samples)
         configure_render(scene, width, height, samples)
+        # The page is composited later. Do not bake the cream shadow catcher
+        # into the transmitted liquid; retain its shadows and silver reflections.
+        surface = bpy.data.objects['PorcelainSurface']
+        surface.visible_transmission = False
+        scene.cycles.film_transparent_glass = True
+        scene.cycles.film_transparent_roughness = .2
+        optical_compositing = {
+            'film_transparent_glass': bool(scene.cycles.film_transparent_glass),
+            'film_transparent_roughness': float(scene.cycles.film_transparent_roughness),
+            'shadow_catcher_visible_transmission': bool(surface.visible_transmission),
+            'shadow_catcher_is_shadow_catcher': bool(surface.is_shadow_catcher),
+            'method': 'Native transparent-glass photography; shadow catcher excluded from transmission rays only',
+        }
         bpy.context.view_layer.update()
         spoon_world = _affine(local_spoon, np.asarray(visual.matrix_world, dtype=np.float64))
         spoon_uv = project_uv(spoon_world, photography)
@@ -337,6 +350,7 @@ def main():
         'material_overrides': material,
         'liquid_reflection_silk': {'location_m': [0, .9, .23], 'power_w': 1.5, 'size_m': [.80, .16]},
         'photography': photography,
+        'optical_compositing': optical_compositing,
         'display_transport': display_transport,
         'motion_rendering': '1280x400/64 samples between detents; native 1920x600/128 samples at the four detents',
         'frames': records,

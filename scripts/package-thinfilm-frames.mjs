@@ -323,6 +323,9 @@ function validateRenders(proof, frames, physics, metadata, planHash, sourceState
   for (const key of ['roughness', 'roughness_variation', 'transmission']) if (number(material?.[key], `material ${key}`) > 1) fail(`Material ${key} exceeds its physical range`)
   number(material.absorption_multiplier, 'material absorption', Number.MIN_VALUE)
   number(material.emulsion_scatter_per_m, 'material scatter')
+  const optics = proof.optical_compositing
+  if (optics?.film_transparent_glass !== true || optics?.shadow_catcher_visible_transmission !== false || optics?.shadow_catcher_is_shadow_catcher !== true) fail('Native transparent-glass photography must preserve the shadow catcher while excluding its transmission rays')
+  near(number(optics.film_transparent_roughness, 'transparent-glass roughness threshold'), .2, 'Transparent-glass roughness threshold', 1e-7)
   const anchored = displayTransport?.mode === ANCHORED_MODE
   const layout = renderLayout(displayTransport)
   return proof.frames.map(record => {
@@ -433,6 +436,7 @@ try {
       absorptionMultiplier: proof.value.material_overrides.absorption_multiplier,
       emulsionScatterPerM: proof.value.material_overrides.emulsion_scatter_per_m,
       transmission: proof.value.material_overrides.transmission },
+      opticalCompositing: proof.value.optical_compositing,
       lastPhotographedFrame: 168, desktopEncoding: layout.desktop, mobileEncoding: layout.mobile, sourceTiers: 'Native 1920 detents; native 1280 motion explicitly upscaled for desktop', frames: records },
     sources, sourceStages: { studio: STUDIO, physicalSolver: PHYSICAL, photography: RENDER },
     proofHashes: { ...bindings, renderProvenance: proof.sha256, renderFrames: render.sha256 },

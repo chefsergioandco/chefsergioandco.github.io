@@ -11554,6 +11554,13 @@
       "emulsionScatterPerM": 4,
       "transmission": 0.995
     },
+    "opticalCompositing": {
+      "film_transparent_glass": true,
+      "film_transparent_roughness": 0.20000000298023224,
+      "shadow_catcher_visible_transmission": false,
+      "shadow_catcher_is_shadow_catcher": true,
+      "method": "Native transparent-glass photography; shadow catcher excluded from transmission rays only"
+    },
     "lastPhotographedFrame": 168,
     "desktopEncoding": [
       1920,
@@ -11645,7 +11652,7 @@
           0.3510918617248535
         ],
         "sourceResolutionTier": "native-1920-detent",
-        "pngSha256": "44728cdda57f1f060cd8da60b36df7849aae4ce955d867d48588716ca9ad634e",
+        "pngSha256": "040acc48fe1fd5148c06e70e0c31dad05cd8033f98352d301f86058b2412e3b8",
         "vertices": 1664,
         "faces": 3324,
         "nonmanifoldEdges": 0,
@@ -11739,7 +11746,7 @@
           0.34875941276550293
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "2c2d2d4defe4e10c10d3a351b3ef6db90b69c8d67fee24e35bb6a4d87674a5ff",
+        "pngSha256": "da24e043934baa29facd5ed19feefb72cd4c4c150d2a9d365ae84e7ac62bfc7a",
         "vertices": 1946,
         "faces": 3888,
         "nonmanifoldEdges": 0,
@@ -11833,7 +11840,7 @@
           0.3461172580718994
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "fc7bfb539540098eb0c2428737d17930ed8744a141be98c8fcb63f84b4631a5e",
+        "pngSha256": "0a026d50e7f8824e1b3f35bc145e95fe170ee8a9eb6c12d6f17c102feb92c35e",
         "vertices": 2206,
         "faces": 4408,
         "nonmanifoldEdges": 0,
@@ -11927,7 +11934,7 @@
           0.3476661145687103
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "0852b81174f99b67e0e981fbbfdab93f78f401bb9f154dc040e6db9611c7154b",
+        "pngSha256": "1fcf191570ffdcba06f2e94531e57064be998df2cebb5d5bb05fa3c3a470aad2",
         "vertices": 2428,
         "faces": 4852,
         "nonmanifoldEdges": 0,
@@ -12021,7 +12028,7 @@
           0.37857842445373535
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "9a1d741d163f89b1f7ab7888a3467b2f7c5dd0e4ea806a21cee4c26967cc058c",
+        "pngSha256": "0c81e723cae90e134d538d5ef75232e63292d33dec224a018dc62c8fde449246",
         "vertices": 2616,
         "faces": 5228,
         "nonmanifoldEdges": 0,
@@ -12115,7 +12122,7 @@
           0.43781954050064087
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "e94b47d9301a2893d1fcea1ad1469b326edad146a476e068c2bf33f5e08f1635",
+        "pngSha256": "72e920e29da30e20d6d10488cfd179accc551455b0f4946d1f588c4ae3e7f1fa",
         "vertices": 2796,
         "faces": 5588,
         "nonmanifoldEdges": 0,
@@ -12209,7 +12216,7 @@
           0.5197929739952087
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "9963b21bd42984ae964243fe02f36f8ea21588c3df1911de6ab72988dd7f283e",
+        "pngSha256": "dadaa5d5d5ab5a8f24f674bc85975ca116e7f30c79afd60ebbbb2e8344b514a5",
         "vertices": 3116,
         "faces": 6228,
         "nonmanifoldEdges": 0,
@@ -12303,7 +12310,7 @@
           0.6192795634269714
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "2c92c8b0c6f9b023cb5069ac3ee2addb397c38755d79e0898708dc56b7eafd0a",
+        "pngSha256": "71aa1c57f89c7c2260dc1e981cfaea353b688624b84b0efe21786c397947b0b6",
         "vertices": 3576,
         "faces": 7148,
         "nonmanifoldEdges": 0,
@@ -12397,7 +12404,7 @@
           0.7310442328453064
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "245622c5f2d346ee03de099efc547fb4f0ecd32c3dd5248966769c0697131b56",
+        "pngSha256": "111fd3497b3aa4dc9a82268c6acceb7bee613105f389f3adc9f230a9f33cb57c",
         "vertices": 4104,
         "faces": 8204,
         "nonmanifoldEdges": 0,
@@ -12491,7 +12498,7 @@
           0.8489735722541809
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "2c6e25fb7cb468837ab37127ddae682fd697ab8fd1c9ddcd36206bfc6dcf9852",
+        "pngSha256": "8524aacbf1ed83df8a6df0e1d87bd813499528ae7b4aee5b1a85a8760122c729",
         "vertices": 4660,
         "faces": 9316,
         "nonmanifoldEdges": 0,
@@ -12585,7 +12592,7 @@
           0.9661633968353271
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "1554c313a2085008c7e7c9e3d17670e1fe9023892bf231aa929e3b2334d97e0d",
+        "pngSha256": "67c5574a57e9267bf13f62b505f0e6e7dc4d17a16e67b06cf780258a77429dce",
         "vertices": 5214,
         "faces": 10424,
         "nonmanifoldEdges": 0,
@@ -12679,7 +12686,7 @@
           1.076410174369812
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "47a6f461b0385ce7eb5541a2808243f9b913b77e4c338a7b92b4f2ea2fce4299",
+        "pngSha256": "3c816e7e3d26cc99cf45853885f43a16c570724cb653f1550168795f136c2eec",
         "vertices": 5742,
         "faces": 11480,
         "nonmanifoldEdges": 0,
@@ -12773,7 +12780,7 @@
           1.175756812095642
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "ac5aa502dea7b7743b5351311aa25383ea098122af538a8fbf62abdc50143f76",
+        "pngSha256": "9c930a52653a35bda30683b7cc34bf19aa474babd50ee5d030a26034698a34bf",
         "vertices": 6240,
         "faces": 12476,
         "nonmanifoldEdges": 0,
@@ -12867,7 +12874,7 @@
           1.2625423669815063
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "dc1d08c84c7214756b51332b294b1e81e3345609f0085eb7e3a7790c28c96f91",
+        "pngSha256": "c9c49c74e797dd5ea6a2e4771307c1fac4ba9b5c2a9b895c5918d19604cf9971",
         "vertices": 6714,
         "faces": 13424,
         "nonmanifoldEdges": 0,
@@ -12961,7 +12968,7 @@
           1.3361175060272217
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "7f72652c3abdce2e4c332a258046ba61eccf4c4c5e67daa67f3ab64810886a6e",
+        "pngSha256": "63739fc91ed176ec91192b87a68a93d67288fd946354d84d80413e909b83fe44",
         "vertices": 7178,
         "faces": 14352,
         "nonmanifoldEdges": 0,
@@ -13055,7 +13062,7 @@
           1.3957679271697998
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "e1005b0e09be42297edfd562674ce12b1915a8011d0c8de6381865a52bb8c64e",
+        "pngSha256": "2334b73335f6cc65e59e95cbfb5722ff02d90e08313c0c245f7b1f20f52f21e0",
         "vertices": 7582,
         "faces": 15160,
         "nonmanifoldEdges": 0,
@@ -13149,7 +13156,7 @@
           1.44082772731781
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "5d25210b7be0337b7db645003515686323d12a2b30c4380951d880129cdac60d",
+        "pngSha256": "78c567cc5ec75b1cc1254daefdb822a98fa2e95794685d576e8bfff8fe3c26b7",
         "vertices": 7912,
         "faces": 15820,
         "nonmanifoldEdges": 0,
@@ -13243,7 +13250,7 @@
           1.4713197946548462
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "09bc4428df4db4371f096f43b0b704ab481a9b1bc1206f114740d02c9aa270ec",
+        "pngSha256": "daf97ae1615fb1361d06d8de01262f9725e7f427aafefa92f1fec998d2c26ade",
         "vertices": 8184,
         "faces": 16364,
         "nonmanifoldEdges": 0,
@@ -13337,7 +13344,7 @@
           1.4878919124603271
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "82c4ea01bec96a022632ba8957d955877456476963f6f15cfc3ee163f0d66ebb",
+        "pngSha256": "75f2bf249830c097c951aa986f376cbeab90f027ddf32eb046723a238c148df7",
         "vertices": 8338,
         "faces": 16672,
         "nonmanifoldEdges": 0,
@@ -13431,7 +13438,7 @@
           1.4925298690795898
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "079adb6d154813bbbafa8dcaf78d2170c09a05278acf2f3bc30a72458dc5e561",
+        "pngSha256": "bd58bf71d1cbc94b447a71910537c5f1397c50a596699d42af6e9d01907eaa60",
         "vertices": 8474,
         "faces": 16944,
         "nonmanifoldEdges": 0,
@@ -13525,7 +13532,7 @@
           1.4954113960266113
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "c518c17e0b80ce0688800b20ad723196fecba4cfefee7c1dba780d907b4b1a22",
+        "pngSha256": "aa6c38b5390e2c15d9030db2da90a92a071c0b0f01c7c628f26b5a809ec7f577",
         "vertices": 8612,
         "faces": 17220,
         "nonmanifoldEdges": 0,
@@ -13619,7 +13626,7 @@
           1.4981954097747803
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "056262e28ef0bf17f45998f887fbb19e3129415d41d3782403d2b43993e7cf3f",
+        "pngSha256": "ad81d280fbac49a7936abd9f5c9b474f5a75ef63b69f25a8407cdf15bf831b19",
         "vertices": 8816,
         "faces": 17628,
         "nonmanifoldEdges": 0,
@@ -13713,7 +13720,7 @@
           1.5006541013717651
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "ee8bca64baee5751d62a4f8c858ca8f834958ed0ea8a6db1ba0457cd8f2f12bd",
+        "pngSha256": "ae94b3362809184b31a2e2c8001b9629bf7c73814c27a4493e9651f3bec5a731",
         "vertices": 9042,
         "faces": 18080,
         "nonmanifoldEdges": 0,
@@ -13807,7 +13814,7 @@
           1.5026355981826782
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "b3beb095a360a45f4e7e3fb4dade67b2fe89aa0308b75fc9a005b684d3fd7982",
+        "pngSha256": "2be0b923dd32d53b5a8e436a33f50dceb47f2c34b84adc821f3a226106a7c752",
         "vertices": 9298,
         "faces": 18592,
         "nonmanifoldEdges": 0,
@@ -13901,7 +13908,7 @@
           1.5041488409042358
         ],
         "sourceResolutionTier": "native-1920-detent",
-        "pngSha256": "252c0f8b90d826b0195ee144e81c660def7ab4a3409e143b353463eba3b75347",
+        "pngSha256": "f261edc4ff1a715f1deb66855ac2e4c145cac4d27e0982b73938526adf5cae9c",
         "vertices": 9516,
         "faces": 19028,
         "nonmanifoldEdges": 0,
@@ -13995,7 +14002,7 @@
           1.5051919221878052
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "91899ef8213e583ad843c10613657833fb37759ce73cf3ebb5a4c316eddc57af",
+        "pngSha256": "82f692730a94b2ce7b3829acc66c44c1acb66903289d551def7dd58ed651a7a9",
         "vertices": 9722,
         "faces": 19440,
         "nonmanifoldEdges": 0,
@@ -14089,7 +14096,7 @@
           1.5056203603744507
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "7d852802088a45b404c737f09038f1db3af8a544a48356f96f978bdfa98fd3f8",
+        "pngSha256": "302dea50c7c5193989bfc2c45d348aed8b60be2d16f9eb9584fba80828bc5bdf",
         "vertices": 9936,
         "faces": 19868,
         "nonmanifoldEdges": 0,
@@ -14183,7 +14190,7 @@
           1.5069772005081177
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "bcfe60e1a5339d9ec9669ce7e80ba0ba1621e1f05f579723fe5a9158a113e80d",
+        "pngSha256": "1f7b6f4ad48bdb0559bc84f7572edfce1e7173fd7af6c87b7c2e301ae4b09660",
         "vertices": 10134,
         "faces": 20264,
         "nonmanifoldEdges": 0,
@@ -14277,7 +14284,7 @@
           1.5187242031097412
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "89ebaf2e024319d26128bee1564e06620c4dde46dabddb9c1f2560606236a439",
+        "pngSha256": "007ca04ff478b79d6562912018480de18fc9b41831f18ba375c47bac7777da40",
         "vertices": 10302,
         "faces": 20600,
         "nonmanifoldEdges": 0,
@@ -14371,7 +14378,7 @@
           1.5404592752456665
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "44601356daa7892561cdece00c8c14b7b652cc562e9cc3cc7d0768ec8048db07",
+        "pngSha256": "b456441f9ea3ca8950ccb5d0b3b2afefd04c26b048615f9498c9bcd7f152cc2b",
         "vertices": 10466,
         "faces": 20928,
         "nonmanifoldEdges": 0,
@@ -14465,7 +14472,7 @@
           1.5695475339889526
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "4d06cb84facb34e07d1a55955db5a7572bb072517cdf6db835d5b03cb235f970",
+        "pngSha256": "1323d7bffb386cff376c39f05b7999c772d9a93d9d4841fdd7bb9a061bc646d1",
         "vertices": 10766,
         "faces": 21528,
         "nonmanifoldEdges": 0,
@@ -14559,7 +14566,7 @@
           1.6031112670898438
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "2acf73b7c8fa071d72bf65cf5f13e58631ddeee5308611c22b41fe9b827758c1",
+        "pngSha256": "01e9d789dea21306e520b3a780eb33db17dcba57dde23b891d194b13ff6c22b3",
         "vertices": 11234,
         "faces": 22464,
         "nonmanifoldEdges": 0,
@@ -14653,7 +14660,7 @@
           1.6385700702667236
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "bc7b8178839ede74d046a12d0281cc535ec9acf9670de26c08b15a715617f031",
+        "pngSha256": "2914efcdb8ac5328174f611d96cd0e21e0787cbe8b68e60c18208a0130755fb7",
         "vertices": 11792,
         "faces": 23580,
         "nonmanifoldEdges": 0,
@@ -14747,7 +14754,7 @@
           1.674118995666504
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "88cf26024ad0ebcaef9db57e46dffe9b34dfd61812301b111759ad3f0b9009ed",
+        "pngSha256": "a37764b6e7636f5bd5a3a299698262d9e6f16643cd691ea180d312595f04cca7",
         "vertices": 12326,
         "faces": 24648,
         "nonmanifoldEdges": 0,
@@ -14841,7 +14848,7 @@
           1.7087174654006958
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "95bba2aa6d0c6dd823daf37039b1eecdba25a9d2be5299bf611349d89fa42180",
+        "pngSha256": "65442b1ef12ccb5c414e4db08bab52307828d0cfc67aa57a6e76aa67a3d4ddc5",
         "vertices": 12912,
         "faces": 25820,
         "nonmanifoldEdges": 0,
@@ -14935,7 +14942,7 @@
           1.7416619062423706
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "81f2958652f01a1637dcd3c513ddab1d3d88aab1dd35703a6db906e1f960f7d3",
+        "pngSha256": "92e20b59ed763937bc3b7fe8fc5caa967c4a7884d55d2a30dedd315fed9ad648",
         "vertices": 13462,
         "faces": 26920,
         "nonmanifoldEdges": 0,
@@ -15029,7 +15036,7 @@
           1.7722190618515015
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "476fb5bd6d4e0f20f6e4f6868be7f53cfbfaa995f6f5868240993deae48da01b",
+        "pngSha256": "e32803879da66af4d2739685d3b22f753801a74c576be429c2166b011ef67ccf",
         "vertices": 14060,
         "faces": 28116,
         "nonmanifoldEdges": 0,
@@ -15123,7 +15130,7 @@
           1.7996257543563843
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "885bb05a9197c28ad9e94938a799be04ad8730e6db8c52690b8d51db900f05d7",
+        "pngSha256": "1e14dc000ffe8b538bfb4cbf8cdbc0f7f49437d4dde54219d384327d7a159fb2",
         "vertices": 14588,
         "faces": 29172,
         "nonmanifoldEdges": 0,
@@ -15217,7 +15224,7 @@
           1.8233155012130737
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "3cdd31ddde281101492740c18e86259b1da88cfc8a717777bf1f21c6d7ee33f5",
+        "pngSha256": "4d0b3f9703439bb35da8f6d0eb61bab01fdbd5b4bef9a09190c12d5a0972d583",
         "vertices": 15058,
         "faces": 30112,
         "nonmanifoldEdges": 0,
@@ -15311,7 +15318,7 @@
           1.8430474996566772
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "d50fc21449d1691f97db0e117fbcb40c62e855ed79ea7caf9e60d0e82ccddf55",
+        "pngSha256": "519e11a2f0e005e0b1950bb627b8de4823b9939088ef7abdd9ddd95434d8b0f6",
         "vertices": 15476,
         "faces": 30948,
         "nonmanifoldEdges": 0,
@@ -15405,7 +15412,7 @@
           1.858755111694336
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "1547d4d1148189078a0efd1f527ea022c83071d89ca2a87b356e733cf7b6c897",
+        "pngSha256": "bedfede127e0888b5f99494a8f0c7be8ef8e9960e0b7a7fd9e6a7f82f8e5963e",
         "vertices": 15832,
         "faces": 31660,
         "nonmanifoldEdges": 0,
@@ -15499,7 +15506,7 @@
           1.8702129125595093
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "34bfd6fc4d10e94ddb8ac1f765773dfd182454e0e48e68833a0da330b86d0aa2",
+        "pngSha256": "28dcded58d2d0a16e4604125e2cfa0234dc6426c5bb5a035ba2980258f14ab7f",
         "vertices": 16110,
         "faces": 32216,
         "nonmanifoldEdges": 0,
@@ -15593,7 +15600,7 @@
           1.8767929077148438
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "9cb4bb0ef1e1b297a99c04392508ef33a7cd9b65356a7b7c2e6e18b219d6547c",
+        "pngSha256": "5a837d9274556a53df050fbcce61aa11482c4b17ba04fe01fa24a6c2cd0120e3",
         "vertices": 16296,
         "faces": 32588,
         "nonmanifoldEdges": 0,
@@ -15687,7 +15694,7 @@
           1.8784184455871582
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "209e3db8e976d6c3de3e079f8c19038ba1ab574674afe49673736a9cafeaa8a0",
+        "pngSha256": "5aa7ef5b8b4a1152da7f5bfe095ff59236167a2768fc7d860f02dbe47ed960e7",
         "vertices": 16428,
         "faces": 32852,
         "nonmanifoldEdges": 0,
@@ -15781,7 +15788,7 @@
           1.8797398805618286
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "74b3627781922d2806ae0d754429c1509a10a09669d525baf9dc54a2b58db31c",
+        "pngSha256": "61cfb7c9a7e78599f0016eb114828bef9e537473b575a379d2a0a15a2f07cd20",
         "vertices": 16538,
         "faces": 33072,
         "nonmanifoldEdges": 0,
@@ -15875,7 +15882,7 @@
           1.8815346956253052
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "ca397a94c0dc3e77c9e25931f112d6a741191ce9463eded6f7f619c27da4379d",
+        "pngSha256": "1a3e8ec173cf54e1e2a19ac34582f86363bff4486ab97db0ffbd79b28828f4e2",
         "vertices": 16718,
         "faces": 33432,
         "nonmanifoldEdges": 0,
@@ -15969,7 +15976,7 @@
           1.8837803602218628
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "6a1f0b717bd3a8a2fc97d656557fc6088bf2441836608ab9a53b79a4bbc2568d",
+        "pngSha256": "e36e3af3a7e17881b0daa1fa16e34c174974aa325d86054ca378b6b75ac555e7",
         "vertices": 16964,
         "faces": 33924,
         "nonmanifoldEdges": 0,
@@ -16063,7 +16070,7 @@
           1.8863940238952637
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "8ea22480cb900e5baa2c2632c1549bf3881846e5712585c3c6c7647f9665c26f",
+        "pngSha256": "202341083940adc76cf6810c34a6a82dceb021f00fad682642d49d147912e6f9",
         "vertices": 17222,
         "faces": 34440,
         "nonmanifoldEdges": 0,
@@ -16157,7 +16164,7 @@
           1.8892167806625366
         ],
         "sourceResolutionTier": "native-1920-detent",
-        "pngSha256": "b22036ce1e3b633aa7c854ef1d02e025f9c6fb8a9d4273f9e066590658a8f9a6",
+        "pngSha256": "934652023b65c888ca8f5297d15c14afb157f045d0b5f069585ae8ee7f27630c",
         "vertices": 17464,
         "faces": 34924,
         "nonmanifoldEdges": 0,
@@ -16251,7 +16258,7 @@
           1.8921105861663818
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "97a95744cb5cb71ff925c5dbe0e424466d20ea16b37b8d585bfa28fe9028d35e",
+        "pngSha256": "9688829cb1b519c570529b41f6c929330b2fcddd0faca026263683a80598f304",
         "vertices": 17710,
         "faces": 35416,
         "nonmanifoldEdges": 0,
@@ -16345,7 +16352,7 @@
           1.8950127363204956
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "e6604654f5b32aba8cf64382c46e24f0eb2857cdae295e1d7100748d24cc7350",
+        "pngSha256": "a3fe1f7b729b43dddc945d45802c691df5cbd5a99349ba8f2fd51aeecde59cef",
         "vertices": 17928,
         "faces": 35852,
         "nonmanifoldEdges": 0,
@@ -16439,7 +16446,7 @@
           1.898715853691101
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "ed4c50167d0cd1590904ad64d1d69b21779ee8b291ee48e401aeabec70fe9f96",
+        "pngSha256": "3821efa2cd3a2596a5dd50aa4e2ecf6f4f2a49468fcb6415e4a3ca0c97e256e5",
         "vertices": 18130,
         "faces": 36256,
         "nonmanifoldEdges": 0,
@@ -16533,7 +16540,7 @@
           1.9078593254089355
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "35bf6b2f5fa601c961e041d026891a1e957379492be5ba1166c8cffa7a711d13",
+        "pngSha256": "a4fce6072c22d535242e39d6a48eaabee6b374fa8585f09332a76758f28528aa",
         "vertices": 18336,
         "faces": 36668,
         "nonmanifoldEdges": 0,
@@ -16627,7 +16634,7 @@
           1.9221323728561401
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "1d830bc064d38cbe6c1096e1fe96b29aa0630af1042730f32a03e0ab9f4acb30",
+        "pngSha256": "ee7645a8d4ad5e3be4ce5924be5eb603b6bdf85c9a19f4e531e28a3c1907f9d2",
         "vertices": 18508,
         "faces": 37012,
         "nonmanifoldEdges": 0,
@@ -16721,7 +16728,7 @@
           1.9403588771820068
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "2dab84ebbde35b3d97225906dc32e59841bb6e3841b05c5176995b177d6628b3",
+        "pngSha256": "024e2d0532abfb93120b05b4af1b770de2aef94b5508906bfe319b8156514dae",
         "vertices": 18816,
         "faces": 37628,
         "nonmanifoldEdges": 0,
@@ -16815,7 +16822,7 @@
           1.9614790678024292
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "62bb07705f40480f71d19f8f3af57e4c4053d22bd7e8566cca9da34d22c88ac1",
+        "pngSha256": "c46e38f9fd16c288909e901e76e684841c6b93a0626997c1c3aed2b5339b6f21",
         "vertices": 19292,
         "faces": 38580,
         "nonmanifoldEdges": 0,
@@ -16909,7 +16916,7 @@
           1.9844307899475098
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "f7aa78d1ebc4d934d911c436a5b9ee99523d9723479ea871fcc3f8158e64f8b7",
+        "pngSha256": "3984c017fdf24eac61a1350fdb67a34d2f88b71fa4dbab60ba0fc8c26b7b1017",
         "vertices": 19832,
         "faces": 39660,
         "nonmanifoldEdges": 0,
@@ -17003,7 +17010,7 @@
           2.008007526397705
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "af2e3618083ee4041b5c465fdd0fe0b562cdb192b1108613c39898860556af5b",
+        "pngSha256": "af8e47bc75a82b77cf5fc26d2016ad27173740febefe52a026a84ff7655000a5",
         "vertices": 20366,
         "faces": 40728,
         "nonmanifoldEdges": 0,
@@ -17097,7 +17104,7 @@
           2.0309484004974365
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "71b5f17adcfa2470f5fc80de29db9ee61cedba79c5c00a7a9289e33202a33bef",
+        "pngSha256": "6adda3ed0766eb59ecd5a9769e3a8f0dd8121b0c5a7a4c0334d25d6ad188800b",
         "vertices": 20894,
         "faces": 41784,
         "nonmanifoldEdges": 0,
@@ -17191,7 +17198,7 @@
           2.052232265472412
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "24fd5a0c0f2da5be105c4b2936485a74426d593365b73ff1ac98be2324afd0a9",
+        "pngSha256": "c7ce032359ff9d93d73adeba6e315361dac169c10cb3df036c6934002054b16e",
         "vertices": 21448,
         "faces": 42892,
         "nonmanifoldEdges": 0,
@@ -17285,7 +17292,7 @@
           2.0712802410125732
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "271498024a94f012fdd40e1a5d23c9c0c0df6daea555c50f5a423cf17fc109c7",
+        "pngSha256": "26ccd5fadb12857541f82c0dcd5f484edf205f5b958902de3ba58ae9b95ac7a6",
         "vertices": 21988,
         "faces": 43972,
         "nonmanifoldEdges": 0,
@@ -17379,7 +17386,7 @@
           2.0878474712371826
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "a5134bd4723ed33f4b5ced5eea7e08c9ae44aad8982936bbd97522a036456ef1",
+        "pngSha256": "0f360aadf67084a9f67c3bb1900866ecca102b3f66c5eaa29c42e27296013947",
         "vertices": 22466,
         "faces": 44928,
         "nonmanifoldEdges": 0,
@@ -17473,7 +17480,7 @@
           2.1017374992370605
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "585b672a2dd9c37e1659183cc8efdf90684e21692712aebba2905adbcd29fb4a",
+        "pngSha256": "78286687558a6dd12bc0b80317e7b92c93e32d33dd18a4ce140efa734fe5d757",
         "vertices": 22954,
         "faces": 45904,
         "nonmanifoldEdges": 0,
@@ -17567,7 +17574,7 @@
           2.1126506328582764
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "ffe44faf319592b632f0914a7910bb10a8146a21f406f440c92c9ea009efa390",
+        "pngSha256": "5242d75c770489998e5f845d2115e87cfc6ef5026e6622723a40f8b1eb97a1db",
         "vertices": 23396,
         "faces": 46788,
         "nonmanifoldEdges": 0,
@@ -17661,7 +17668,7 @@
           2.1202826499938965
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "12206acd5b2b03e5a17a80a7339d91ceb9613c6c3541e61e08ebd89f18b65949",
+        "pngSha256": "37653b7a61865040d959e91ca22015fdc67b764a0e5c4b4f7464c4293fb7652a",
         "vertices": 23752,
         "faces": 47500,
         "nonmanifoldEdges": 0,
@@ -17755,7 +17762,7 @@
           2.124495506286621
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "c5ec785ba45a4477caa8679a2e2dc5c01652a5b255d860b37495a33cde22c122",
+        "pngSha256": "fff753764ca48017f788a7ccb085cc603412033cc63ab83520194471b2b1cdd9",
         "vertices": 24064,
         "faces": 48124,
         "nonmanifoldEdges": 0,
@@ -17849,7 +17856,7 @@
           2.125321626663208
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "d15dc8bb76bfca44f4ec0e48c572d710c516ca4e9cf17c45363c0e93396bb0a9",
+        "pngSha256": "4acc96113c507da1edb3086199ad5f171c9074fd8dec9594a883990f0563be48",
         "vertices": 24288,
         "faces": 48572,
         "nonmanifoldEdges": 0,
@@ -17943,7 +17950,7 @@
           2.123162269592285
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "28a043987eb8ccc11d204e17931edb73b940beae2d4834271eb70909a730c9aa",
+        "pngSha256": "2e78030a08660169fb4c1f5d466177df365daeadc941dcd195c98448b34bc584",
         "vertices": 24414,
         "faces": 48824,
         "nonmanifoldEdges": 0,
@@ -18037,7 +18044,7 @@
           2.12103271484375
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "a5e3f3340ea186236b87c79a9413c25884da12ca0c678ea35e3f116462b4ca96",
+        "pngSha256": "a9db05afda21747bdc96398c9365e563a4fc302fb1430b79226898dce09f3e82",
         "vertices": 24506,
         "faces": 49008,
         "nonmanifoldEdges": 0,
@@ -18131,7 +18138,7 @@
           2.1193599700927734
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "57364a3c452f08d1c0f9fafbc411166c199c2d7a185cd4f948c46d9f1790c69d",
+        "pngSha256": "61a721089f14b01e7f4880ae2e2fe58f6ba908d22e0029aa5fedb15540d48a12",
         "vertices": 24672,
         "faces": 49340,
         "nonmanifoldEdges": 0,
@@ -18225,7 +18232,7 @@
           2.118216037750244
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "6c6d4b7f1257e15f55c3c565115b6bdf2f124192fe9f17f91db32b6de8a6f2dc",
+        "pngSha256": "fb228c3a63089e777001a03129629e14edb4b31f6b27bce886553c8d6da2065c",
         "vertices": 24868,
         "faces": 49732,
         "nonmanifoldEdges": 0,
@@ -18319,7 +18326,7 @@
           2.1176507472991943
         ],
         "sourceResolutionTier": "native-1280-motion-upscaled-for-desktop",
-        "pngSha256": "40d954917273046ba8965a413e2bab1bf63a80e09149d55d6d6814970180f4f6",
+        "pngSha256": "7200722255f5422dd159fae945890f3a862ff9b87a1ae33501e194763312d6a5",
         "vertices": 25112,
         "faces": 50220,
         "nonmanifoldEdges": 0,
@@ -18413,7 +18420,7 @@
           2.1176884174346924
         ],
         "sourceResolutionTier": "native-1920-detent",
-        "pngSha256": "c9c2f61f46a3e63f533bfede7924192e7fbe1d49822581f4b98a80ec8be51b3b",
+        "pngSha256": "2d200a04d54d76c07c7593fae42804b6c8cac67494b86e43d5a8678858f8cdf6",
         "vertices": 25334,
         "faces": 50664,
         "nonmanifoldEdges": 0,
@@ -18476,7 +18483,7 @@
     },
     {
       "path": "scripts/blender/render_thinfilm_sequence.py",
-      "sha256": "48b4edd746a4bdffefb880655ea260923cae1da5627d917f9b8097e7851f17b0"
+      "sha256": "a877c8ee6dc66a639d9a1fde4cc2d314aa9c67c7ad265b8a6e3cf372d038c1bd"
     }
   ],
   "sourceStages": {
@@ -18506,7 +18513,7 @@
     "physics_dataset_sha256": "14219b577ee6edfde5b3547788ddd08f16e31245cfabec6aa12d8f2d908c3f10",
     "physics_ledger_sha256": "33a568040f23577b2e59bb0ba0500dfb1ec2a4ae632cfa2a5e2b6354d9c4aa29",
     "reservoir_plan_sha256": "ea6d3d8ff0171c93c157bbf16d7634edf48c9af197ac2cf536c30a6ebfdfc552",
-    "renderProvenance": "22c6ddefa0bbef76e940c7bf7c95e5f94f005c5656bd6aecfc22b3016ae13e1c",
+    "renderProvenance": "b75b964c9bc82e01c4160d9b26d543d41cc21a2a8cdeef45daf934f15cfcfa7e",
     "renderFrames": "2839aa13df77ba82573d441e15d6134661e87d2a5bc40007710c969e742c0436"
   }
 }

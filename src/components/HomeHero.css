@@ -68,3 +68,6 @@
 @media(max-width:359px){.home-photograph{height:auto}.home-photo-scene{min-height:312px}}
 /* Keep the choice and its action together without squeezing enlarged text. */
 @media(max-width:620px){.home-gather-option{grid-template-columns:minmax(0,1fr);gap:8px;padding:20px 0}.home-option-action{grid-column:1;grid-row:auto;justify-self:start}}
+/* Let the artwork stage grow with its card when the visitor enlarges text. */
+@media(max-width:620px){.home-photo-scene{display:grid;align-items:end}.home-evening-card{position:relative;left:auto;bottom:auto;width:min(9.9em,calc(100% - 26px));margin:16px 0}.home-card-title{white-space:normal;overflow-wrap:normal}}
+@media(max-width:359px){.home-evening-card{width:min(9.375em,calc(100% - 26px))}}

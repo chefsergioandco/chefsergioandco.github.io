@@ -60,6 +60,7 @@ textarea.booking-input {resize:vertical;}
 .booking-actions {display:flex;flex-wrap:wrap;gap:.75rem;margin-top:2.2rem;}
 .booking-actions button {min-height:3.2rem;min-width:44px;}
 .booking-error-summary,.booking-notice {margin-top:1.4rem;padding:1rem;border-left:3px solid rgb(var(--c-ink));background:rgb(var(--c-ink)/.045);font-size:.9rem;line-height:1.65;}
+.booking-notice>button.link {display:inline-flex;align-items:center;min-height:44px;}
 .booking-error-summary ul {margin-top:.4rem;list-style:disc;padding-left:1.1rem;}
 .booking-error-summary button {text-decoration:underline;text-underline-offset:3px;text-align:left;}
 .booking-field-error {font-size:.875rem;color:oklch(var(--c-alert,155 42 35));font-weight:500;}

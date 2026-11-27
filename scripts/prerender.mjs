@@ -49,10 +49,11 @@ function homeModulePreloads() {
   return [...files].map((file) => `<link rel="modulepreload" crossorigin href="${base}${file}">`).join('\n    ')
 }
 const homePreloads = homeModulePreloads()
-// Account CSS stays outside the anonymous homepage graph but is present before
-// first paint on direct static account/newsletter routes, including without JS.
+// Route CSS stays outside the anonymous homepage graph but is present before
+// first paint on direct static routes, including without JS.
 function routeStyleLinks(route) {
   const key = route.startsWith('/invitation/') ? 'src/invitations/InvitationPage.tsx'
+    : ['/book/', '/privatedining/', '/cookingclasses/', '/catering/', '/sergios-table/'].includes(route) ? 'src/pages/Services.tsx'
     : route === '/status/' ? 'src/pages/ServiceStatus.tsx'
     : route === '/privacy/' || route === '/terms/' ? 'src/pages/Legal.tsx'
     : route === '/gift/' ? 'src/gift/GiftPage.tsx'
