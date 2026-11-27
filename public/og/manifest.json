@@ -61,5 +61,23 @@
     "hash": "768515cd046c",
     "text": "Dinner at Sergio’s table.",
     "photo": null
+  },
+  "/privacy/": {
+    "file": "privacy.png",
+    "size": 96,
+    "bytes": 11105,
+    "sha256": "ef34c80b47fa09a537fea298d9896c85035722c5a10e16559fc172c7e3531d8c",
+    "hash": "68131b92d782",
+    "text": "Privacy Policy",
+    "photo": null
+  },
+  "/terms/": {
+    "file": "terms.png",
+    "size": 96,
+    "bytes": 11278,
+    "sha256": "e6577f4cef25c4d2a78cb083f71d0c8158c38dd8fbf46a9f7fa639e6d38c1d53",
+    "hash": "523ef6f7c655",
+    "text": "Terms of Service",
+    "photo": null
   }
 }

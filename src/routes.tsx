@@ -18,6 +18,7 @@ import { ReceiptPage } from './account/ReceiptPage'
 import { NewsletterConfirm, NewsletterUnsubscribe } from './components/NewsletterTokenPage'
 import { AdminPage } from './account/AdminPage'
 import { ServiceStatus } from './pages/ServiceStatus'
+import { PrivacyPolicy, TermsOfService } from './pages/Legal'
 
 export type Route = {
   path: string
@@ -104,6 +105,8 @@ const service = (name: string, path: string, description: string, from: number |
 })
 
 const all: Route[] = [
+  { path: '/privacy/', title: 'Privacy Policy | Chef Sergio & Co.', description: 'How Chef Sergio and Co. handles booking details, dietary information, accounts, payments, gift cards and newsletter choices, and how to make a privacy request.', h1: 'Privacy Policy', Page: PrivacyPolicy },
+  { path: '/terms/', title: 'Terms of Service | Chef Sergio & Co.', description: 'Terms for using Chef Sergio and Co.’s website and arranging culinary experiences, including booking confirmation, payments, cancellations and gift cards.', h1: 'Terms of Service', Page: TermsOfService },
   { path: '/status/', title: 'Service status | Chef Sergio & Co.', description: 'Current service status, incident updates and uptime history for Chef Sergio and Co., provided by Better Stack.', h1: 'Service status', Page: ServiceStatus, noindex: true, bookingLinkRequired: false, og: { card: 'home' } },
   { path: '/newsletter/confirm/', title: 'Confirm your subscription | Chef Sergio & Co.', description: 'Confirm your choice to receive the seasonal letter from Chef Sergio and Co.', h1: 'Confirm your subscription', Page: NewsletterConfirm, noindex: true, og: {card:'home'} },
   { path: '/newsletter/unsubscribe/', title: 'Unsubscribe from the letter | Chef Sergio & Co.', description: 'Manage your subscription to the seasonal letter from Chef Sergio and Co.', h1: 'Unsubscribe from the letter', Page: NewsletterUnsubscribe, noindex: true, og: {card:'home'} },

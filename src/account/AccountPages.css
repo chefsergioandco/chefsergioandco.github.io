@@ -260,6 +260,7 @@
 }
 
 .account-shell{min-height:100vh}.account-shell .auth-panel button{max-width:100%}.account-shell .ev-menu-copy{white-space:pre-wrap}.account-shell .footer{margin-top:2rem}
+.account-shell .account-footer-links,.account-shell .account-footer-links nav{display:flex;flex-direction:column;align-items:flex-start}.account-shell .account-footer-links a{display:inline-flex;align-items:center;min-height:44px}.account-shell .account-footer-links nav{margin-top:8px}
 
 .account-shell .arrival .arrival-subtitle{font-family:'EB Garamond',Garamond,Georgia,serif;font-size:1.125rem;font-style:italic;font-weight:400;font-synthesis:style;line-height:1.4;letter-spacing:normal;text-transform:lowercase}
 /* Appearance: account panels lift with paper in dark instead of a white wash, and

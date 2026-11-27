@@ -115,6 +115,7 @@ export function SiteFooter() {
         <FooterAccount/>
         <div className="footer-colophon">
           <p>© {new Date().getFullYear()} {site.name}</p>
+          <nav className="footer-legal" aria-label="Legal"><a href={href('/privacy/')} data-native-navigation>Privacy Policy</a><a href={href('/terms/')} data-native-navigation>Terms of Service</a></nav>
           <AppearanceControl/>
           <a href="#main"><span>Back to top</span><Icon name="arrow-up" size={16} /></a>
         </div>
