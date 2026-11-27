@@ -147,9 +147,31 @@ try {
  await fixture.$eval('textarea', node => { const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set; setter.call(node, 'A long, relaxed supper.'); node.dispatchEvent(new Event('input',{bubbles:true})) })
  await fixture.waitForFunction(() => !document.querySelector('form.ev-form button[type=submit]')?.disabled)
  await fixture.evaluate(() => document.querySelector('form.ev-form button[type=submit]').click())
- await fixture.waitForFunction(() => document.body.textContent.includes('Your profile is saved.'))
+ await fixture.waitForFunction(() => document.body.textContent.includes('Profile saved') && document.body.textContent.includes('Existing bookings and their contact details have not changed.'))
  assert(writes.some(item => item.path === '/customer/profile' && item.body.preferences === 'A long, relaxed supper.'))
  pass('profile changes use the authenticated API and reflect its returned saved state')
+ const priorTheme = await fixture.evaluate(() => document.documentElement.getAttribute('data-theme'))
+ for (const theme of ['light', 'dark']) {
+  await fixture.evaluate(theme => { document.documentElement.dataset.theme = theme }, theme)
+  const rewardControl = 'nav.ev-nav [aria-label="Rewards"]'
+  await fixture.mouse.move(0,0)
+  await fixture.hover(rewardControl)
+  const label = rewardControl + ' .account-icon-nav-hint > span'
+  await fixture.waitForSelector(label, { visible: true })
+  const result = await fixture.$eval(label, node => {
+   const style = getComputedStyle(node), context = document.createElement('canvas').getContext('2d')
+   const channels = color => { context.clearRect(0,0,1,1); context.fillStyle=color; context.fillRect(0,0,1,1); return [...context.getImageData(0,0,1,1).data] }
+   const luminance = rgba => { const c=rgba.slice(0,3).map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4); return .2126*c[0]+.7152*c[1]+.0722*c[2] }
+   const foreground=channels(style.color), background=channels(style.backgroundColor), values=[luminance(foreground),luminance(background)].sort((a,b)=>a-b)
+   return {text:node.textContent,contrast:(values[1]+.05)/(values[0]+.05),alpha:background[3]}
+  })
+  assert.equal(result.text, 'Rewards'); assert.equal(result.alpha,255); assert(result.contrast >= 4.5, theme + ' account hover label lacks text contrast')
+  await fixture.keyboard.press('Escape')
+  await fixture.waitForFunction(selector => document.querySelector(selector)?.hidden === true, {}, rewardControl + ' .account-icon-nav-hint')
+ }
+ await fixture.evaluate(theme => { if(theme===null)document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',theme) }, priorTheme)
+ pass('account hover labels remain readable in both themes and dismiss with Escape')
+
  const savedText=edition.text
  edition.text='LOCAL REVISED EDITION BETA\n\nA different approved menu';edition.version='b'.repeat(64)
  await tab(fixture,'Your evenings');await refreshDetails(fixture)

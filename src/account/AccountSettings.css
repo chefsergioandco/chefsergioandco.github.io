@@ -22,8 +22,6 @@
 .account-shell .settings-methods h3{font-size:1.6rem;margin:0 0 .6rem}
 .account-shell .settings-methods p{margin:0;max-width:36rem}
 .account-shell .settings-connected{font:.875rem/1.5 Archivo,Arial,sans-serif;border:1px solid var(--rule);padding:.3rem .6rem;white-space:nowrap}
-.account-shell .settings-notice{border-left:3px solid var(--rouge);padding:1rem 1.2rem;margin:1rem 0 1.5rem;font-size:1.1rem;line-height:1.55;background:rgb(255 255 255/.025)}
-.account-shell .settings-notice p:last-child{margin-bottom:0}
 .account-shell .settings-privacy-options{display:grid;gap:0;max-width:45rem}
 .account-shell .settings-privacy-options article{padding:1.5rem 0;border-top:1px solid var(--rule)}
 .account-shell .settings-privacy-options p{max-width:41rem;font-size:1.125rem;line-height:1.55;margin-bottom:.6rem}
@@ -41,7 +39,7 @@
 .account-shell .settings-request-title h4{font-size:1.5rem;margin-bottom:.6rem}
 .account-shell .settings-request-title>p{font:1rem/1.5 Archivo,Arial,sans-serif;margin:0 0 .6rem}
 .account-shell .settings-preserve{white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.125rem;line-height:1.55}
-.account-shell .settings-response{padding:1rem 1.2rem;border-left:2px solid var(--rouge);margin:1rem 0}
+.account-shell .settings-response{padding:1rem 0;border-top:1px solid var(--rule);margin:1rem 0}
 .account-shell .settings-response h5{font:1rem/1.5 Archivo,Arial,sans-serif;margin:0 0 .5rem}
 .account-shell .settings-request-history{font-size:1rem;margin-top:1rem}
 .account-shell .settings-request-history summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:.25em}

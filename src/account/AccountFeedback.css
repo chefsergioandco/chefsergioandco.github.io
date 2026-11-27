@@ -1,0 +1,9 @@
+.account-shell .account-feedback{display:grid;grid-template-columns:22px minmax(0,1fr);gap:14px;align-items:start;max-width:44rem;margin:1.5rem 0 2rem;padding:.25rem 0;color:var(--ink);overflow-wrap:anywhere}
+.account-shell .account-feedback-icon{margin-top:.25rem;color:var(--rouge);flex:none}
+.account-shell .account-feedback-copy{min-width:0}
+.account-shell .account-feedback .account-feedback-title{margin:0 0 .5rem;font:400 1.625rem/1.2 var(--f-display,'EB Garamond',Georgia,serif);letter-spacing:-.01em}
+.account-shell .account-feedback .account-feedback-detail{margin:0 0 .5rem;font:400 1rem/1.65 var(--f-ui,Archivo,Arial,sans-serif);max-width:58ch}
+.account-shell .account-feedback .account-feedback-note{margin:0;font:400 .875rem/1.65 var(--f-ui,Archivo,Arial,sans-serif);color:var(--ev-muted,rgb(var(--c-ink-soft)));max-width:62ch}
+.account-shell .account-feedback-copy>.ev-text-button{margin-top:.5rem}
+@media(max-width:600px){.account-shell .account-feedback{gap:12px;margin-block:1.25rem 1.75rem}.account-shell .account-feedback .account-feedback-title{font-size:1.5rem}.account-shell .account-feedback .account-feedback-note{font-size:.9375rem}}
+@media(forced-colors:active){.account-shell .account-feedback-icon{color:CanvasText}}

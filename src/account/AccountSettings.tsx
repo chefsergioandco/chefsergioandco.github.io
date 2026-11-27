@@ -4,6 +4,7 @@ import { useAuth } from './AuthProvider'
 import { accountReturnHref, currentReturnTo } from './config'
 import { AccountIconNavControl } from './AccountIconNav'
 import { renderPersonalDataCopy } from './export-copy'
+import { AccountFeedback, type AccountNotice } from './AccountFeedback'
 import './AccountSettings.css'
 
 type Profile = { displayName: string; preferences: string; email: string; emailVerified: boolean }
@@ -45,7 +46,7 @@ function useSection<T>(path: string) {
   return { data, setData, error, loading, load }
 }
 function SectionFailure({ message, retry }: { message: string; retry: () => void }) {
-  return <div className="settings-notice" role="alert"><p>{message}</p><button type="button" className="ev-text-button" onClick={retry}>Try again</button></div>
+  return <AccountFeedback title="This section couldn’t be opened" detail={message} alert><button type="button" className="ev-text-button" onClick={retry}>Try again</button></AccountFeedback>
 }
 
 /** Each account gets a separate instance; pending responses from a previous account cannot populate this one. */
@@ -60,7 +61,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
   const privacy = useSection<Privacy>('/customer/privacy')
   const newsletter = useSection<Newsletter>('/customer/newsletter-preference')
   const [name, setName] = useState(''), [preferences, setPreferences] = useState(''), [dirty, setDirty] = useState(false)
-  const [busy, setBusy] = useState(''), [notice, setNotice] = useState(''), [actionError, setActionError] = useState('')
+  const [busy, setBusy] = useState(''), [notice, setNotice] = useState<AccountNotice | null>(null), [actionError, setActionError] = useState('')
   const [resetStatus, setResetStatus] = useState('')
   const [draft, setDraft] = useState<{ kind: RequestKind; signInAction?: 'change_method' | 'disconnect_google' } | null>(null)
   const [message, setMessage] = useState(''), [confirmed, setConfirmed] = useState(false)
@@ -80,7 +81,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
   async function act(key: string, task: (current: () => boolean) => Promise<void>) {
     if (flight.current) return
     const run = epoch.current
-    flight.current = true; setBusy(key); setNotice(''); setActionError('')
+    flight.current = true; setBusy(key); setNotice(null); setActionError('')
     try { await task(() => run === epoch.current) }
     catch (error) { if (run === epoch.current) setActionError(failure(error)) }
     finally { if (run === epoch.current) { flight.current = false; setBusy('') } }
@@ -93,7 +94,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
       if (!result.profile || typeof result.profile.displayName !== 'string' || typeof result.profile.preferences !== 'string' || typeof result.profile.email !== 'string' || typeof result.profile.emailVerified !== 'boolean') throw new Error('The saved profile could not be confirmed. Refresh it before trying again.')
       profile.setData(result); setName(result.profile.displayName); setPreferences(result.profile.preferences); setDirty(false)
       window.dispatchEvent(new Event('site:account-profile-saved'))
-      setNotice('Your profile is saved. Existing bookings and their contact details have not changed.')
+      setNotice({ title: 'Profile saved', detail: 'Existing bookings and their contact details have not changed.' })
     })
   }
   function resetPassword() {
@@ -101,13 +102,13 @@ function SettingsContents({ verified }: { verified: boolean }) {
       const result = await accountApi<{ status: string }>('/account/password/reset', { requestId: mutationId('password', {}) })
       if (!current()) return
       setResetStatus(result.status)
-      if (result.status === 'requested') setNotice('Your password-reset request was accepted. Check the sign-in email shown below, including its spam folder. Acceptance does not confirm delivery or a changed password.')
-      else if (result.status === 'processing' || result.status === 'unknown') setNotice('The reset request has not been confirmed. Check your inbox first. Retrying checks the same request so it does not deliberately send a second message.')
+      if (result.status === 'requested') setNotice({ title: 'Reset link requested', detail: 'Check the sign-in email shown below, including its spam folder.', note: 'An accepted request does not confirm email delivery or a changed password.', icon: 'mail' })
+      else if (result.status === 'processing' || result.status === 'unknown') setNotice({ title: 'Reset request not confirmed', detail: 'Check your inbox first.', note: 'Retrying checks the same request so it does not deliberately send a second message.', icon: 'clock' })
       else throw new Error('Password recovery is not available for this sign-in method right now. Refresh your sign-in methods or use secure sign-in help.')
     })
   }
   function openRequest(kind: RequestKind, signInAction?: 'change_method' | 'disconnect_google') {
-    setDraft({ kind, signInAction }); setMessage(''); setConfirmed(false); setNotice(''); setActionError('')
+    setDraft({ kind, signInAction }); setMessage(''); setConfirmed(false); setNotice(null); setActionError('')
   }
   function sendRequest(event: FormEvent) {
     event.preventDefault()
@@ -118,7 +119,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
       if (!current()) return
       if (!validRequest(result.request) || result.request.kind !== payload.kind || (result.request.signInAction ?? undefined) !== payload.signInAction) throw new Error('Receipt of this request could not be confirmed. Retry to recover the same request.')
       pending.current.delete('request'); setDraft(null); setMessage(''); setConfirmed(false)
-      setNotice(payload.kind==='consent_withdrawal'?'Your consent withdrawal is recorded and optional sensitive-information use is blocked. Removal and any necessary retained records are being reviewed. Your bookings are unchanged.':payload.kind==='restriction'?'Your restriction is recorded and optional processing is paused while reviewed. Necessary booking and rights correspondence can continue.':payload.kind==='objection'?'Your objection is recorded and marketing is blocked while the remaining scope is reviewed.':'Your request was received. Follow its progress and replies below. Bookings and sign-in methods are unchanged.')
+      setNotice(payload.kind === 'consent_withdrawal' ? { title: 'Consent withdrawal recorded', detail: 'Optional sensitive-information use is blocked. Removal and any necessary retained records are being reviewed.', note: 'Your bookings are unchanged.' } : payload.kind === 'restriction' ? { title: 'Restriction recorded', detail: 'Optional processing is paused while reviewed.', note: 'Necessary booking and rights correspondence can continue.' } : payload.kind === 'objection' ? { title: 'Objection recorded', detail: 'Marketing is blocked while the remaining scope is reviewed.' } : { title: 'Request received', detail: 'Follow its progress and replies below.', note: 'Bookings and sign-in methods are unchanged.' })
       await privacy.load()
     })
   }
@@ -129,7 +130,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
       const result = await accountApi<{ request: PrivacyRequest }>('/customer/privacy/reply', { ...payload, requestId: mutationId('reply', payload) })
       if (!current()) return
       if (!validRequest(result.request) || result.request.id !== request.id || result.request.revision <= request.revision || !result.request.history?.some(event => event.actor === 'customer' && event.message === payload.message)) throw new Error('Your saved reply could not be confirmed. Retry to recover the same reply.')
-      pending.current.delete('reply'); setReplyTo(null); setReply(''); setNotice('Your reply is saved for review.'); await privacy.load()
+      pending.current.delete('reply'); setReplyTo(null); setReply(''); setNotice({ title: 'Reply saved for review' }); await privacy.load()
     })
   }
   async function download(request: PrivacyRequest, format: 'json' | 'html' = 'json') {
@@ -154,7 +155,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
       if (!current()) return
       const url = URL.createObjectURL(blob), link = document.createElement('a')
       link.href = url; link.download = 'chef-sergio-personal-data.' + format; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setNotice('Your personal-data export passed its integrity check and was downloaded. The file includes source coverage and any redaction explanations.')
+      setNotice({ title: 'Download verified', detail: 'Your personal-data export passed its integrity check and was downloaded.', note: 'The file includes source coverage and any redaction explanations.' })
     })
   }
   const s = security.data, methodsReady = !!s?.methodsVerified && Array.isArray(s.methods)
@@ -165,8 +166,8 @@ function SettingsContents({ verified }: { verified: boolean }) {
   return <section className="ev-panel account-settings" aria-labelledby="settings-heading">
     <header className="settings-heading"><p className="ev-eyebrow">Your account, in your hands</p><h1 id="settings-heading" tabIndex={-1}>Settings &amp; profile.</h1><p className="ev-intro">Your personal details, how you sign in, and what happens to your information.</p></header>
     <nav className="settings-sections account-icon-nav" aria-label="Settings sections">{([['settings-profile', 'Profile', 'profile'], ['settings-security', 'Sign-in & security', 'security'], ['settings-privacy', 'Privacy & account', 'privacy']] as const).map(([id, label, symbol], index, items) => <AccountIconNavControl key={id} kind="button" symbol={symbol} label={label} controls={id} edge={index === 0 ? 'start' : index === items.length - 1 ? 'end' : undefined} onClick={() => { const section = document.getElementById(id); section?.scrollIntoView({ block: 'start', behavior: 'instant' }); section?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true }) }}/>)}</nav>
-    <div ref={feedback} tabIndex={-1} className="settings-feedback">{notice && <p className="settings-notice" role="status">{notice}</p>}
-    {actionError && <p className="settings-notice settings-notice--error" role="alert">{actionError}{(dirty || draft || replyTo) && ' Your unsent answers are still here.'}</p>}</div>
+    <div ref={feedback} tabIndex={-1} className="settings-feedback">{notice && <AccountFeedback {...notice}/>}
+    {actionError && <AccountFeedback title="Please check this request" detail={actionError} note={dirty || draft || replyTo ? 'Your unsent answers are still here.' : undefined} alert/>}</div>
 
     <section id="settings-profile" className="settings-section" aria-labelledby="settings-profile-heading">
       <div className="settings-section-heading"><span aria-hidden="true">01</span><div><h2 id="settings-profile-heading" tabIndex={-1}>Profile</h2><p>How Sergio knows you.</p></div></div>
@@ -186,7 +187,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
       {security.error ? <SectionFailure message={security.error} retry={() => void security.load()}/> : !s ? <p role="status">Checking your sign-in methods…</p> : !methodsReady ? <SectionFailure message="Your connected sign-in methods could not be verified." retry={() => void security.load()}/> : <>
         <ul className="settings-methods">{s.methods.map((method, index) => <li key={method.provider + index}><div><h3>{method.label}</h3><p className="ev-note">Connected{method.primary ? ' · main sign-in method' : ''}. {method.passwordManagedBy === 'google' ? 'Your Google password is managed by Google.' : method.passwordManagedBy === 'auth0' ? 'Password managed by the secure Chef Sergio sign-in service.' : 'Credentials managed by your sign-in provider.'}</p></div><span className="settings-connected">Connected</span></li>)}</ul>
         {s.passwordResetEnabled && <div className="settings-fact"><h3>Change or recover your password</h3><p>A secure reset link goes to <span className="settings-email">{s.passwordResetEmail || s.email}</span>. You’ll choose the new password on the sign-in service, then sign in again.</p><button className="ev-text-button" type="button" onClick={resetPassword} disabled={!!busy || resetStatus === 'requested'}>{busy === 'password' ? 'Requesting reset…' : resetStatus === 'requested' ? 'Reset request accepted' : resetStatus === 'unknown' || resetStatus === 'processing' ? 'Check the same reset request' : 'Request password reset'}</button><p className="ev-note">A request being accepted does not confirm that the email arrived or that your password changed.</p></div>}
-        {!s.passwordResetEnabled && s.methods.some(method => method.provider === 'auth0') && <p className="settings-notice">{s.passwordResetReason === 'staging_email_restricted' ? 'Password-reset delivery is limited to the approved test inbox on this preview. Your connected password sign-in has not changed.' : 'We can’t verify password-reset eligibility for this connected method right now. Refresh the sign-in methods or ask for a sign-in review.'}</p>}
+        {!s.passwordResetEnabled && s.methods.some(method => method.provider === 'auth0') && <AccountFeedback title="Password reset unavailable" detail={s.passwordResetReason === 'staging_email_restricted' ? 'Password-reset delivery is limited to the approved test inbox on this preview. Your connected password sign-in has not changed.' : 'We can’t verify password-reset eligibility for this connected method right now. Refresh the sign-in methods or ask for a sign-in review.'} icon="clock"/>}
         {google && <div className="settings-fact"><h3>Google sign-in</h3><p>You can manage your Google password in <a className="ev-text-button" href="https://myaccount.google.com/security" target="_blank" rel="noopener noreferrer">Google Account security (opens in a new tab)</a>.</p><p className="ev-note">{s.googleDisconnect.reason === 'last_method' ? 'Google is your only connected sign-in method. A verified alternative is needed before it can be disconnected.' : s.googleDisconnect.reason === 'primary_identity' ? 'This account was created with Google. Changing that sign-in needs a review so your bookings stay connected.' : 'Disconnection needs an identity check and a verified alternative sign-in. Sergio will arrange the next steps before any change.'}</p><button type="button" className="ev-text-button" disabled={!!busy || !verified} onClick={() => openRequest('sign_in_change', 'disconnect_google')}>Request a Google sign-in change</button><p className="ev-note">This requests a review; it does not disconnect Google. Removing Chef Sergio from Google’s connected apps is a separate action and does not erase this account.</p></div>}
         <div className="ev-actions"><a className="ev-text-button" href={accountReturnHref('/account/verify-email/', returnTo)}>Email verification</a><a className="ev-text-button" href={accountReturnHref('/account/password-reset/', returnTo)}>Secure sign-in help</a><a className="ev-text-button" href="/auth/logout/">Sign out of this browser</a><button className="ev-text-button" type="button" disabled={!!busy || security.loading} onClick={() => void security.load()}>Refresh sign-in methods</button></div>
       </>}
@@ -194,7 +195,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
 
     <section id="settings-privacy" className="settings-section" aria-labelledby="settings-privacy-heading">
       <div className="settings-section-heading"><span aria-hidden="true">03</span><div><h2 id="settings-privacy-heading" tabIndex={-1}>Privacy &amp; account</h2><p>Clear choices about your information.</p></div></div>
-      <div className="settings-fact"><h3>Sergio’s seasonal letter</h3>{newsletter.error ? <SectionFailure message={newsletter.error} retry={() => void newsletter.load()}/> : !newsletter.data ? <p role="status">Checking your letter preference…</p> : <><p>{subscription === 'confirmed' || subscription === 'subscribed' ? 'You’re subscribed.' : subscription === 'pending' ? 'Your subscription is awaiting confirmation.' : subscription === 'unsubscribed' ? 'You’ve opted out.' : 'This account email is not subscribed.'}</p>{subscribed && <button type="button" className="ev-text-button" disabled={!!busy || !verified} onClick={() => void act('newsletter', async current => { const result = await accountApi<Newsletter>('/customer/newsletter/withdraw', { requestId: mutationId('newsletter', {}) }); if (!current()) return; if (result.newsletter?.status !== 'unsubscribed') throw new Error('Withdrawal could not be confirmed. Retry to recover the same request.'); newsletter.setData(result); pending.current.delete('newsletter'); setNotice('Your seasonal-letter consent is withdrawn. Booking messages and existing bookings are separate.'); await newsletter.load() })}>Withdraw seasonal-letter consent</button>}<p className="ev-note">This preference covers the seasonal letter. Necessary messages about a booking are separate. Booking never signs you up for the letter.</p></>}</div>
+      <div className="settings-fact"><h3>Sergio’s seasonal letter</h3>{newsletter.error ? <SectionFailure message={newsletter.error} retry={() => void newsletter.load()}/> : !newsletter.data ? <p role="status">Checking your letter preference…</p> : <><p>{subscription === 'confirmed' || subscription === 'subscribed' ? 'You’re subscribed.' : subscription === 'pending' ? 'Your subscription is awaiting confirmation.' : subscription === 'unsubscribed' ? 'You’ve opted out.' : 'This account email is not subscribed.'}</p>{subscribed && <button type="button" className="ev-text-button" disabled={!!busy || !verified} onClick={() => void act('newsletter', async current => { const result = await accountApi<Newsletter>('/customer/newsletter/withdraw', { requestId: mutationId('newsletter', {}) }); if (!current()) return; if (result.newsletter?.status !== 'unsubscribed') throw new Error('Withdrawal could not be confirmed. Retry to recover the same request.'); newsletter.setData(result); pending.current.delete('newsletter'); setNotice({ title: 'Seasonal-letter consent withdrawn', detail: 'Booking messages and existing bookings are separate.' }); await newsletter.load() })}>Withdraw seasonal-letter consent</button>}<p className="ev-note">This preference covers the seasonal letter. Necessary messages about a booking are separate. Booking never signs you up for the letter.</p></>}</div>
       <div className="settings-privacy-options">
         <article><h3>Access &amp; export your information</h3><p>Request your personal data, including relevant booking, communication, payment and provider records, together with information about how it is used. Other people’s information and access credentials are protected.</p><button type="button" className="ev-text-button" disabled={!!busy || !verified} onClick={() => openRequest('access_export')}>Request personal-data export</button></article>
         <article><h3>Close your account</h3><p>Ask to end account access. Closure is reviewed separately from erasing records and does not cancel a booking or arrange a refund.</p><button type="button" className="ev-text-button" disabled={!!busy || !verified} onClick={() => openRequest('account_closure')}>Request account closure</button></article>
@@ -205,7 +206,7 @@ function SettingsContents({ verified }: { verified: boolean }) {
         <article><h3>Data portability</h3><p>Request a structured, machine-readable copy of information you provided where portability applies. This is distinct from the broader right of access.</p><button type="button" className="ev-text-button" disabled={!!busy || !verified} onClick={() => openRequest('portability')}>Request portability</button></article>
       </div>
       <p className="ev-note">We respond to data-rights requests within one calendar month of receipt. If a lawful extension is necessary, we explain it within that first month. Asking for clarification does not automatically restart that deadline. Sending a request does not cancel a booking. You can also contact <a href="mailto:admin.chefsergioandco@gmail.com?subject=Personal%20data%20rights%20request">admin.chefsergioandco@gmail.com</a>, including if you cannot sign in. You may complain to your competent data-protection authority.</p>
-      {!verified && <p className="settings-notice">Verify your account email before sending an account or privacy request. <a className="ev-text-button" href={accountReturnHref('/account/verify-email/', returnTo)}>Verify email</a></p>}
+      {!verified && <AccountFeedback title="Confirm your email first" detail="Verify your account email before sending an account or privacy request." icon="mail"><a className="ev-text-button" href={accountReturnHref('/account/verify-email/', returnTo)}>Verify email</a></AccountFeedback>}
 
       {draft && <form className={`ev-form settings-request-form${destructive ? ' settings-request-form--consequential' : ''}`} onSubmit={sendRequest}>
         <h3 ref={requestHeading} tabIndex={-1}>{draft.signInAction === 'disconnect_google' ? 'Request a Google sign-in change' : requestTitles[draft.kind]}</h3>
