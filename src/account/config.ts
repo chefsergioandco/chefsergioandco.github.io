@@ -14,7 +14,7 @@ export function safeReturnTo(value: unknown, fallback = '/dashboard/'): string {
     if (decoded.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(decoded)) return fallback
     const target = new URL(value, 'https://return.invalid')
     if (target.origin !== 'https://return.invalid' || ['/auth/callback/', '/account/callback/', '/auth/logout/', '/account/sign-out/'].includes(target.pathname)) return fallback
-    const routes = ['/', '/dashboard/', '/admin/', '/account/sign-in/', '/account/create/', '/account/verify-email/', '/account/password-reset/', '/account/check-email/', '/account/signed-out/', '/receipt/', '/newsletter/confirm/', '/newsletter/unsubscribe/', '/book/', '/book/done/', '/invitation/', '/privatedining/', '/cookingclasses/', '/catering/', '/about/', '/gift/', '/sergios-table/']
+    const routes = ['/', '/dashboard/', '/admin/', '/account/sign-in/', '/account/create/', '/account/verify-email/', '/account/password-reset/', '/account/check-email/', '/account/signed-out/', '/receipt/', '/newsletter/confirm/', '/newsletter/unsubscribe/', '/book/', '/book/done/', '/invitation/', '/privatedining/', '/cookingclasses/', '/catering/', '/about/', '/gift/', '/sergios-table/', '/privacy/', '/terms/']
     return routes.includes(target.pathname) ? target.pathname + target.search + target.hash : fallback
   } catch { return fallback }
 }

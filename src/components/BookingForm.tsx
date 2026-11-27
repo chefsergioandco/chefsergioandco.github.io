@@ -8,7 +8,7 @@ import { attachFriend, forgetFriendCode, lookupFriend, pendingFriendCode, type F
 import { navigateAccount } from '../account/navigation'
 import { Calendar } from '../booking/Calendar'
 import { addMonths, clock, longDate, money } from '../booking/format'
-import { budgetLabel, DRAFT_KEY, EMPTY, migrateLegacyDraft, planningRequest, selectedBand, todayET, validDate, validDraft, validatePlanningStep, type PlanningState, type SavedDraft } from '../booking/planning'
+import { budgetLabel, DRAFT_KEY, EMPTY, privateDraftState, migrateLegacyDraft, planningRequest, selectedBand, todayET, validDate, validDraft, validatePlanningStep, type PlanningState, type SavedDraft } from '../booking/planning'
 import { canRequestNight, NightPicker } from '../booking/TableNights'
 import { BookingError, type Availability, type Kind, type Night, type PlanningConfig } from '../booking/types'
 import { booking } from '../content/booking'
@@ -20,6 +20,7 @@ import { GuestTag } from './GuestTag'
 import { Icon, type IconName } from './Icons'
 import { href, track } from './ui'
 import { formatGiftCode, isGiftCode } from '../../prototypes/sergio-admin/shared/gift-cards/code'
+import { SensitiveDataConsent } from '../privacy/SensitiveDataConsent'
 import './BookingForm.css'
 
 // The same icons and guest ranges as the header's Experiences menu, so a private dinner and a small event read as
@@ -91,6 +92,8 @@ export function BookingForm() {
     try {
       const candidate = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null')
       saved = validDraft(candidate) ? candidate : migrateLegacyDraft(JSON.parse(localStorage.getItem('booking-draft') || 'null'))
+      if(saved) { saved={...saved,s:privateDraftState(saved.s)}; localStorage.setItem(DRAFT_KEY,JSON.stringify(saved)) } else localStorage.removeItem(DRAFT_KEY)
+      localStorage.removeItem('booking-draft')
     } catch { /* Storage is optional. */ }
     if (query.get('resume') && saved) { setState(saved.s); setStep(saved.step); if (saved.s.date) setMonth(saved.s.date.slice(0, 7)) }
     else {
@@ -117,7 +120,7 @@ export function BookingForm() {
   }, [])
   useEffect(() => {
     if (!activated || !hydrated || !s.kind || draft) return
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ version: 2, savedAt: new Date().toISOString(), step, s })) } catch { /* A server receipt never depends on local storage. */ }
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ version: 2, savedAt: new Date().toISOString(), step, s: privateDraftState(s) })) } catch { /* A server receipt never depends on local storage. */ }
   }, [s, step, hydrated, draft, activated])
   useEffect(() => {
     let current = true; setConfigError('')
@@ -256,8 +259,8 @@ export function BookingForm() {
             <Field id="f-foodIdeas" label="What would you love to eat?" hint="Optional. A dish, a favorite ingredient, a style of cooking, or the feeling you want."><textarea id="f-foodIdeas" className={inputClass} rows={3} maxLength={2000} value={s.foodIdeas} onChange={event => set({ foodIdeas: event.target.value })} aria-describedby="f-foodIdeas-hint" placeholder="We’re celebrating a graduation. Something like cordon bleu would be lovely."/></Field>
           </>}
           {table && night && <div className="booking-night-menu"><p className="booking-eyebrow">{night.title}</p><p>{night.menu}</p></div>}
-          <fieldset className="booking-field"><legend>Dietary requirements (if known)</legend><p className="booking-field-hint">These are requirements for Sergio to review. He will confirm what he can accommodate.</p><div className="booking-dietary">{DIETARY.map(item => <Check key={item} id={`diet-${item}`} label={item} checked={s.dietary.includes(item)} onChange={checked => set({ dietary: checked ? [...s.dietary, item] : s.dietary.filter(value => value !== item) })}/>)}</div></fieldset>
-          <Field id="f-allergies" label="Any allergies Sergio should discuss with you?" hint="Optional if not yet known. Please describe allergies separately from food preferences."><textarea id="f-allergies" className={inputClass} rows={3} maxLength={2000} value={s.allergies} onChange={event => set({ allergies: event.target.value })} aria-describedby="f-allergies-hint"/></Field>
+          <SensitiveDataConsent checked={s.sensitiveConsent === true} onChange={granted => set({sensitiveConsent:granted,...(!granted?{dietary:[],allergies:''}:{})})} disabled={busy}/><fieldset className="booking-field" disabled={!s.sensitiveConsent || busy}><legend>Your own dietary requirements (optional)</legend><p className="booking-field-hint">These are requirements for Sergio to review. He will confirm what he can accommodate.</p><div className="booking-dietary">{DIETARY.map(item => <Check key={item} id={`diet-${item}`} label={item} checked={s.dietary.includes(item)} onChange={checked => set({ dietary: checked ? [...s.dietary, item] : s.dietary.filter(value => value !== item) })}/>)}</div></fieldset>
+          <Field id="f-allergies" label="Any allergies Sergio should discuss with you?" hint="Optional if not yet known. Please describe allergies separately from food preferences."><textarea id="f-allergies" className={inputClass} disabled={!s.sensitiveConsent || busy} rows={3} maxLength={2000} value={s.allergies} onChange={event => set({ allergies: event.target.value })} aria-describedby="f-allergies-hint"/></Field>
           <Field id="f-notes" label="Anything else for your conversation?" hint="Optional. Any details you haven’t settled can be discussed with Sergio."><textarea id="f-notes" className={inputClass} rows={3} maxLength={4000} value={s.notes} onChange={event => set({ notes: event.target.value })} aria-describedby="f-notes-hint"/></Field>
         </>}
         {step === 3 && <>
@@ -267,7 +270,7 @@ export function BookingForm() {
           <Field id="f-email" label="Email" error={errors.email}><input id="f-email" className={inputClass} type="email" autoComplete="email" maxLength={254} value={s.email} onChange={event => set({ email: event.target.value })} aria-invalid={!!errors.email} aria-describedby={described('f-email')}/></Field>
           <Choices id="f-contactBy" label="How would you like Sergio to reach you?" value={s.contactBy} onChange={contactBy => set({ contactBy })} options={[{ value: 'email', label: 'Email' }, { value: 'call', label: 'Phone call' }, { value: 'text', label: 'Text message' }]}/>
           <Field id="f-phone" label={`Phone${s.contactBy === 'email' ? ' (optional)' : ''}`} error={errors.phone}><input id="f-phone" className={inputClass} type="tel" autoComplete="tel" maxLength={40} value={s.phone} onChange={event => set({ phone: event.target.value })} aria-invalid={!!errors.phone} aria-describedby={described('f-phone')}/></Field>
-          {!table && <div className="booking-invitations"><Check id="f-physical" label="I’m interested in physical invitations for my guests" checked={s.physicalInvitations} onChange={physicalInvitations => set({ physicalInvitations })}/><p className="booking-field-hint">Your digital invitation is a link you can share, with guest RSVPs and dietary details. Physical invitations are optional and sent to you.{config?.postageAllowance != null ? ` The fixed postage allowance is ${money(config.postageAllowance)}, added to the final bill.` : ' Sergio will confirm the physical-invitation cost and postage before adding them to your final bill.'}</p></div>}
+          {!table && <div className="booking-invitations"><Check id="f-physical" label="I’m interested in physical invitations for my guests" checked={s.physicalInvitations} onChange={physicalInvitations => set({ physicalInvitations })}/><p className="booking-field-hint">Your digital invitation is a link you can share. Guests enter their own optional dietary details with their own consent. Physical invitations are optional and sent to you.{config?.postageAllowance != null ? ` The fixed postage allowance is ${money(config.postageAllowance)}, added to the final bill.` : ' Sergio will confirm the physical-invitation cost and postage before adding them to your final bill.'}</p></div>}
           {giftOpen ? <Field id="f-gift" label="Gift card code" hint="Sergio applies the card to your deposit, then the rest." error={s.gift.trim() && !isGiftCode(s.gift) ? 'That code isn’t complete. It has 16 characters; the letters I, L, O and U aren’t used.' : undefined}><input id="f-gift" className={inputClass} maxLength={100} autoComplete="off" spellCheck={false} value={s.gift} onChange={event => set({ gift: event.target.value.toUpperCase() })} onBlur={() => { if (isGiftCode(s.gift)) set({ gift: formatGiftCode(s.gift) }) }}/></Field> : <button type="button" className="link" onClick={() => setGiftOpen(true)}>Have a gift card?</button>}
           <section className="booking-payment-review" aria-label="Payment and next steps" data-money-line>
             <div className="booking-payment-total"><span>{table ? 'Listed seat total' : 'Your deposit'}</span><strong>{table ? seatTotal == null ? 'To be confirmed' : money(seatTotal) : band?.deposit == null ? 'To be confirmed' : money(band.deposit)}</strong></div>

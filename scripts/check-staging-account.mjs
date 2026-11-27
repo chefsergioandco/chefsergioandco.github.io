@@ -87,7 +87,9 @@ try {
    else if (path === '/customer/bookings') { status = bookingsStatus; data = status === 200 ? { user: { name: profile.displayName, email: profile.email, emailVerified }, bookings: emailVerified ? [booking, ...extraBookings] : [] } : {error:{code:'access_denied',message:'Local fixture: booking access was revoked.'}} }
    else if (path === '/customer/profile') { if (body) profile = { ...profile, ...body }; data = { profile: {...profile,emailVerified} } }
    else if (path === '/customer/menus') { status = menusStatus; data = status === 200 ? { menus: saved } : {error:{code:'access_denied',message:'Local fixture: saved-menu access was revoked.'}} }
-   else if (path === '/account/security') data = { email: profile.email, emailVerified, verificationResendEnabled: false, verificationCheckEnabled: true, passwordResetEnabled: true, passwordProvider: 'auth0' }
+   else if (path === '/customer/privacy') data = {requests:[]}
+   else if (path === '/customer/newsletter-preference') data = {newsletter:{status:'not_subscribed',consentVersion:null,updatedAt:null}}
+   else if (path === '/account/security') data = { email: profile.email, emailVerified, verificationResendEnabled: false, verificationCheckEnabled: true, passwordResetEnabled: true, passwordProvider: 'auth0', passwordResetEmail: profile.email, methodsVerified: true, methods: [{provider:'auth0',label:'Email and password',primary:true,passwordManagedBy:'auth0'}],googleDisconnect:{available:false,mode:'not_connected',reason:'not_connected'} }
    else if (path === '/customer/menus/save') { if(body.version !== edition.version) {status=409;data={error:{code:'menu_changed',message:'The approved menu changed. Open the current menu before saving it.'}}}else{saved = [{ ...edition, id: 'cm_' + edition.version.slice(0,32), bookingId: booking.id, service: booking.service, date: booking.date, occasion: booking.occasion, savedAt: '2026-11-23T12:00:00Z' }]; data = { menu: saved[0] }} }
    else if (path === '/customer/menus/remove') {saved=saved.filter(menu=>menu.id!==body.id);data={ok:true}}
    else if (path === '/workspace') return request.respond({ status: 503, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': new URL(base).origin }, body: JSON.stringify({error:{code:'fixture_unavailable',message:'Local transport fixture.'}}) })
@@ -111,17 +113,18 @@ try {
  assert.equal(writes.length, 0)
  pass('fixture callback restores local query/hash through one SDK singleton without auto-claiming')
  await fixture.screenshot({ path: directory + '/fixture-evenings-desktop.png', fullPage: true })
- for(const label of ['Saved menus','Your details','Your evenings']) {
+ for(const label of ['Saved menus','Settings & profile','Your evenings']) {
   await tab(fixture,label)
   assert.equal(await fixture.evaluate(()=>new URLSearchParams(location.search).get('ref')),'CS-fixture')
   assert.equal(await fixture.evaluate(()=>location.hash),'#access='+'a'.repeat(43))
  }
- await tab(fixture,'Your details')
- for(const label of ['Email verification','Sign-in help']) {
+ await tab(fixture,'Settings & profile')
+ await fixture.waitForFunction(()=>['Email verification','Secure sign-in help'].every(label=>[...document.querySelectorAll('a')].some(node=>node.textContent.trim()===label)))
+ for(const label of ['Email verification','Secure sign-in help']) {
   const href=await fixture.evaluate(label=>[...document.querySelectorAll('a')].find(node=>node.textContent.trim()===label)?.href,label)
   assert(href,label+' must have a real destination')
   const url=new URL(href),target=new URL(url.searchParams.get('returnTo'),base);if(!target.hash)target.hash=url.hash
-  assert.equal(target.pathname,'/dashboard/');assert.equal(target.searchParams.get('ref'),'CS-fixture');assert.equal(target.searchParams.get('view'),'details');assert.equal(target.hash,'#access='+'a'.repeat(43))
+  assert.equal(target.pathname,'/dashboard/');assert.equal(target.searchParams.get('ref'),'CS-fixture');assert.equal(target.searchParams.get('view'),'settings');assert.equal(target.hash,'#access='+'a'.repeat(43))
   assert(!url.search.includes('a'.repeat(43)),'Private proof must stay in fragment, outside account URL query')
  }
  pass('prepared reference and private fragment survive every tab and verification/help round-trip')
@@ -139,12 +142,12 @@ try {
  await fixture.waitForFunction(() => document.body.textContent.includes('This approved edition is saved to your menus.'))
  assert(writes.some(item => item.path === '/customer/menus/save' && item.body.version === edition.version))
  pass('saving a menu sends its actual approved version and confirms the server response')
- await tab(fixture,'Your details')
+ await tab(fixture,'Settings & profile')
  await fixture.waitForSelector('textarea')
  await fixture.$eval('textarea', node => { const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set; setter.call(node, 'A long, relaxed supper.'); node.dispatchEvent(new Event('input',{bubbles:true})) })
  await fixture.waitForFunction(() => !document.querySelector('form.ev-form button[type=submit]')?.disabled)
  await fixture.evaluate(() => document.querySelector('form.ev-form button[type=submit]').click())
- await fixture.waitForFunction(() => document.body.textContent.includes('Your details are saved.'))
+ await fixture.waitForFunction(() => document.body.textContent.includes('Your profile is saved.'))
  assert(writes.some(item => item.path === '/customer/profile' && item.body.preferences === 'A long, relaxed supper.'))
  pass('profile changes use the authenticated API and reflect its returned saved state')
  const savedText=edition.text
@@ -215,10 +218,10 @@ try {
  await fixture.screenshot({ path: directory + '/fixture-evenings-mobile.png', fullPage: true })
  for(const width of [320,390,1200]) {
   await fixture.setViewport({width,height:844})
-  for(const label of ['Your evenings','Saved menus','Your details']) {await tab(fixture,label);assert(await fixture.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+' overflows at '+width+'px')}
+  for(const label of ['Your evenings','Saved menus','Settings & profile']) {await tab(fixture,label);assert(await fixture.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+' overflows at '+width+'px')}
  }
  await fixture.setViewport({width:320,height:844});await fixture.evaluate(()=>{document.documentElement.style.fontSize='200%'})
- for(const label of ['Your evenings','Saved menus','Your details']) {await tab(fixture,label);assert(await fixture.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+' overflows at320px with doubled text')}
+ for(const label of ['Your evenings','Saved menus','Settings & profile']) {await tab(fixture,label);assert(await fixture.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+' overflows at320px with doubled text')}
  await fixture.evaluate(()=>{document.documentElement.style.fontSize=''})
  pass('all account panels fit320–1200px and320px with doubled root text')
  await fixture.goto(base + '/admin/', { waitUntil: 'networkidle0' })

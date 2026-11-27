@@ -23,7 +23,8 @@
     "preview": "node scripts/serve.mjs",
     "check:booking": "node scripts/check-booking-client.mjs && node scripts/check-quick-booking.mjs && node scripts/check-invitation-menu.mjs",
     "check:account": "node scripts/check-staging-account.mjs",
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc --noEmit",
+    "check:account-export": "node scripts/check-account-export.mjs"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "2.30.0",

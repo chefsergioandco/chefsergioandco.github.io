@@ -1,3 +1,4 @@
+import type { SensitiveDataConsent } from '../privacy/policy'
 import type { FormatKey } from '../content/site'
 
 /** What is being booked. `table` = seats at a published Sergio's table night. */
@@ -40,6 +41,8 @@ export type BookingRequest = {
   occasion?: string
   dishes?: string[]
   dietary?: string[]
+  allergies?: string
+  sensitiveDataConsent?: SensitiveDataConsent
   notes?: string
   name: string
   email: string
@@ -103,7 +106,7 @@ export type PublicHoldResult = HoldResult & { next: 'done'; accessToken: string;
 /** Options for a hold: open the deposit checkout in the same round trip, and report the guest's page-load-to-submit time. */
 export type HoldOptions = { checkout?: boolean; elapsedMs?: number }
 /** Menu-conversation answers a guest can add after the deposit. Sergio's agreed topics are never overwritten. */
-export type GuestDetails = { occasion?: string; kitchen?: string; foodIdeas?: string; dietary?: string[]; allergies?: string; notes?: string; budgetMode?: 'range' | 'guidance'; budgetMin?: number; budgetMax?: number; budgetUnit?: 'total' | 'per_person'; physicalInvitations?: boolean }
+export type GuestDetails = { sensitiveDataConsent?: SensitiveDataConsent; occasion?: string; kitchen?: string; foodIdeas?: string; dietary?: string[]; allergies?: string; notes?: string; budgetMode?: 'range' | 'guidance'; budgetMin?: number; budgetMax?: number; budgetUnit?: 'total' | 'per_person'; physicalInvitations?: boolean }
 export interface PublicBookingApi extends Omit<BookingApi, 'booking' | 'hold' | 'waitlist'> {
   config(): Promise<PlanningConfig>
   hold(req: BookingRequest, honeypot?: string, options?: HoldOptions): Promise<PublicHoldResult>

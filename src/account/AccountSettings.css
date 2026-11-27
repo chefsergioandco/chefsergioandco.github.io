@@ -1,0 +1,51 @@
+.account-shell .account-settings{max-width:58rem;padding-bottom:3rem}
+.account-shell .settings-heading{padding-bottom:1.75rem}
+.account-shell .settings-heading .ev-intro{max-width:40rem}
+.account-shell .settings-sections{display:flex;flex-wrap:wrap;gap:.5rem 1.75rem;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:.65rem 0;margin-bottom:.5rem;font:1rem/1.5 Archivo,Arial,sans-serif}
+.account-shell .settings-sections button{display:inline-flex;align-items:center;min-height:44px;text-underline-offset:.25em;background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}
+.account-shell .settings-section{padding:2.75rem 0;scroll-margin-top:2rem}
+.account-shell .settings-section+.settings-section{border-top:1px solid var(--rule)}
+.account-shell .settings-section-heading{display:flex;gap:1.2rem;align-items:baseline;margin-bottom:1.8rem}
+.account-shell .settings-section-heading>span{font:1rem/1 Archivo,Arial,sans-serif;color:var(--rouge)}
+.account-shell .settings-section-heading h2{font-size:2.2rem}
+.account-shell .settings-section-heading p{margin:.55rem 0 0;font-size:1.2rem}
+.account-shell .settings-fact{padding:1.5rem 0;border-top:1px solid var(--rule);max-width:45rem}
+.account-shell .settings-fact h3,.account-shell .settings-privacy-options h3{font-size:1.5rem;margin:0 0 .8rem}
+.account-shell .settings-fact>p{font-size:1.125rem;line-height:1.55;max-width:43rem}
+.account-shell .settings-fact .ev-note,.account-shell .settings-section .ev-note{font-size:1rem;line-height:1.6}
+.account-shell .settings-email{overflow-wrap:anywhere}
+.account-shell .settings-profile-form{max-width:40rem;margin-bottom:2rem}
+.account-shell .account-settings .ev-form label{font-size:1rem}
+.account-shell .account-settings .ev-form textarea{resize:vertical}
+.account-shell .settings-methods{list-style:none;padding:0;margin:0 0 1.5rem}
+.account-shell .settings-methods>li{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1.25rem 0;border-top:1px solid var(--rule)}
+.account-shell .settings-methods h3{font-size:1.6rem;margin:0 0 .6rem}
+.account-shell .settings-methods p{margin:0;max-width:36rem}
+.account-shell .settings-connected{font:.875rem/1.5 Archivo,Arial,sans-serif;border:1px solid var(--rule);padding:.3rem .6rem;white-space:nowrap}
+.account-shell .settings-notice{border-left:3px solid var(--rouge);padding:1rem 1.2rem;margin:1rem 0 1.5rem;font-size:1.1rem;line-height:1.55;background:rgb(255 255 255/.025)}
+.account-shell .settings-notice p:last-child{margin-bottom:0}
+.account-shell .settings-privacy-options{display:grid;gap:0;max-width:45rem}
+.account-shell .settings-privacy-options article{padding:1.5rem 0;border-top:1px solid var(--rule)}
+.account-shell .settings-privacy-options p{max-width:41rem;font-size:1.125rem;line-height:1.55;margin-bottom:.6rem}
+.account-shell .settings-request-form{border:1px solid var(--rule);padding:1.75rem;margin:2rem 0;max-width:45rem}
+.account-shell .settings-request-form h3{font-size:1.8rem;outline-offset:.4rem}
+.account-shell .settings-request-form>p{font-size:1.125rem;line-height:1.55}
+.account-shell .settings-request-form--consequential{border-color:var(--rouge)}
+.account-shell .settings-confirm{display:flex!important;align-items:flex-start;gap:.8rem;line-height:1.55!important}
+.account-shell .settings-confirm input{width:1.2rem!important;min-height:1.2rem!important;flex:0 0 1.2rem;margin-top:.2rem;padding:0;accent-color:var(--rouge)}
+.account-shell .settings-requests{margin-top:2rem;border-top:1px solid var(--rule);padding-top:1.5rem}
+.account-shell .settings-requests-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+.account-shell .settings-requests-heading h3{font-size:1.8rem}
+.account-shell .settings-request-list{list-style:none;padding:0;margin:0}
+.account-shell .settings-request-list>li{padding:1.5rem 0;border-top:1px solid var(--rule)}
+.account-shell .settings-request-title h4{font-size:1.5rem;margin-bottom:.6rem}
+.account-shell .settings-request-title>p{font:1rem/1.5 Archivo,Arial,sans-serif;margin:0 0 .6rem}
+.account-shell .settings-preserve{white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.125rem;line-height:1.55}
+.account-shell .settings-response{padding:1rem 1.2rem;border-left:2px solid var(--rouge);margin:1rem 0}
+.account-shell .settings-response h5{font:1rem/1.5 Archivo,Arial,sans-serif;margin:0 0 .5rem}
+.account-shell .settings-request-history{font-size:1rem;margin-top:1rem}
+.account-shell .settings-request-history summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:.25em}
+.account-shell .settings-request-history ol{padding-left:1.4rem}
+.account-shell .settings-request-history li{padding:.75rem 0}
+@media(max-width:600px){.account-shell .settings-section{padding-block:2rem}.account-shell .settings-section-heading{gap:.8rem}.account-shell .settings-section-heading h2{font-size:1.9rem}.account-shell .settings-methods>li{flex-direction:column;gap:.7rem}.account-shell .settings-request-form{padding:1.2rem}.account-shell .settings-requests-heading{align-items:flex-start;flex-direction:column;gap:.3rem}}
+.account-shell .account-settings .ev-note a{text-decoration:underline;text-underline-offset:.2em}

@@ -1,5 +1,5 @@
 /** Shared customer-communication contracts. Private links are resolved only while rendering. */
-export type EmailKind = 'request_received' | 'waitlist_received' | 'plan_ready' | 'interview_scheduled' | 'booking_held' | 'booking_confirmed' | 'booking_changed' | 'booking_cancelled' | 'payment_received' | 'refund_received' | 'invitation_ready' | 'pre_event' | 'thank_you'
+export type EmailKind = 'privacy_request_notification' | 'privacy_inactivity_notice' | 'privacy_request_update' | 'request_received' | 'waitlist_received' | 'plan_ready' | 'interview_scheduled' | 'booking_held' | 'booking_confirmed' | 'booking_changed' | 'booking_cancelled' | 'payment_received' | 'refund_received' | 'invitation_ready' | 'pre_event' | 'thank_you'
 export type EmailMode = 'preview' | 'test' | 'live'
 export type EmailStatus = 'preview' | 'queued' | 'sending' | 'sent' | 'delivered' | 'retry' | 'failed' | 'bounced' | 'complained' | 'needs_review' | 'suppressed' | 'cancelled' | 'needs_contact'
 export type ReceiptSnapshot = {

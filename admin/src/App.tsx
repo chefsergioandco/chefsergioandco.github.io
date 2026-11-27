@@ -12,17 +12,19 @@ import Communications from './Communications'
 import Reviews from './Reviews'
 import Rewards from './Rewards'
 import Newsletter from './Newsletter'
+import PrivacyRequests from './PrivacyRequests'
+import PrivacyExternalRequests from './PrivacyExternalRequests'
 import { getAdminNavigation } from './api-client'
 
-type WindowName = 'requests' | 'bookings' | 'calendar' | 'table' | 'payments' | 'communications' | 'reviews' | 'rewards' | 'newsletter' | 'website' | 'activity'
-const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Table & classes',payments:'Billing & records',communications:'Communications',reviews:'Client reviews',rewards:'Referrals & credits',newsletter:'Newsletter',website:'Your website',activity:'Recent activity'}
+type WindowName = 'requests' | 'bookings' | 'calendar' | 'table' | 'payments' | 'communications' | 'reviews' | 'rewards' | 'newsletter' | 'website' | 'activity' | 'privacy'
+const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Table & classes',payments:'Billing & records',communications:'Communications',reviews:'Client reviews',rewards:'Referrals & credits',newsletter:'Newsletter',website:'Your website',activity:'Recent activity',privacy:'Account & privacy'}
 function fromHash():WindowName|null {
  const hash=location.hash.slice(1)
  if(hash==='overview'||!hash)return null
  if(hash==='nights')return 'table'
  return Object.hasOwn(windowTitles,hash)?hash as WindowName:null
 }
-const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Table & classes',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'reviews',label:'Reviews',icon:'people'},{id:'rewards',label:'Referrals',icon:'card'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'}]
+const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Table & classes',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'reviews',label:'Reviews',icon:'people'},{id:'rewards',label:'Referrals',icon:'card'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'},{id:'privacy',label:'Account & privacy',icon:'lock'}]
 const twoDigits=(value:number)=>String(Math.round(value)).padStart(2,'0')
 export default function App(){
  const accountNavigation=getAdminNavigation()
@@ -134,6 +136,7 @@ export default function App(){
    {activeWindow==='reviews'&&<Reviews/>}
    {activeWindow==='rewards'&&<Rewards/>}
    {activeWindow==='newsletter'&&<Newsletter/>}
+   {activeWindow==='privacy'&&<><PrivacyRequests/><PrivacyExternalRequests/></>}
    {activeWindow==='activity'&&<section className="kiosk-activity"><ol>{state.activity.map(a=><li key={a.id}><span className="kiosk-activity-icon"><Icon name="check" size={18}/></span><div><p>{a.text}</p><time dateTime={a.at}>{new Date(a.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</time></div></li>)}</ol>{!state.activity.length&&<p className="empty-state">Your recent actions will appear here.</p>}</section>}
   </WorkspaceWindow>}
   {help&&<Modal title="Workspace & connections" onClose={()=>setHelp(false)}><div className="modal-body help-content"><p>Signed in as <strong>{user.email}</strong>. Your sign-in identity controls access and identifies saved changes in the activity record.</p><div className="notice"><Icon name="shield" size={20}/><p>Bookings, guest requirements, calendar settings, and receipts are saved privately and shared between approved administrators.</p></div><dl className="connection-list"><div><dt>Business records</dt><dd>Connected · shared storage</dd></div><div><dt>Card payments</dt><dd>Not connected · offline receipts available</dd></div><div><dt>Public booking page</dt><dd>Connected · new requests arrive here</dd></div><div><dt>Website publishing</dt><dd>Not connected · save drafts here</dd></div><div><dt>Google Calendar</dt><dd>Not connected</dd></div><div><dt>Guest email</dt><dd>Connection status in Communications</dd></div></dl><p>Use your approved Google or email account to sign in. New records stay empty until you add them; no sample bookings or payments are imported.</p></div><div className="modal-actions"><button className="button" onClick={()=>setHelp(false)}>Done</button></div></Modal>}

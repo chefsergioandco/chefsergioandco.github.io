@@ -1,0 +1,12 @@
+.account-shell .evenings-account .account-icon-nav{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;overflow:visible}
+.account-shell .evenings-account .account-icon-nav .account-icon-nav-control{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 3rem;inline-size:3rem;min-inline-size:3rem;max-inline-size:3rem;block-size:3rem;min-block-size:3rem;padding:0;border:0;border-radius:0;background:transparent;color:var(--ev-muted);text-decoration:none;cursor:pointer;isolation:isolate}
+.account-shell .evenings-account .account-icon-nav .account-icon-nav-control:hover,.account-shell .evenings-account .account-icon-nav .account-icon-nav-control[aria-current=page]{color:var(--ink)}
+.account-shell .evenings-account .account-icon-nav .account-icon-nav-control:focus-visible{outline:2px solid var(--rouge);outline-offset:3px}
+.account-shell .evenings-account .account-icon-nav-control>svg{flex-shrink:0}
+.account-shell .evenings-account .account-icon-nav-control .account-icon-nav-hint{position:absolute;inset-block-start:100%;inset-inline-start:50%;transform:translateX(-50%);z-index:20;inline-size:max-content;max-inline-size:min(16rem,calc(100vw - 2rem));padding-block-start:.5rem;white-space:normal;text-align:start;font:400 .875rem/1.4 Archivo,Arial,sans-serif;letter-spacing:0;cursor:pointer}
+.account-shell .evenings-account .account-icon-nav-control .account-icon-nav-hint[hidden]{display:none}
+.account-shell .evenings-account .account-icon-nav-hint>span{display:block;padding:.5rem .75rem;border:1px solid var(--rule);background:var(--ink);color:var(--paper);box-shadow:0 3px 10px rgb(0 0 0/.12)}
+.account-shell .evenings-account .account-icon-nav-control[data-label-edge=start] .account-icon-nav-hint{inset-inline-start:0;transform:none}
+.account-shell .evenings-account .account-icon-nav-control[data-label-edge=end] .account-icon-nav-hint{inset-inline-start:auto;inset-inline-end:0;transform:none}
+@media(forced-colors:active){.account-shell .evenings-account .account-icon-nav-hint>span{background:Canvas;color:CanvasText;border-color:CanvasText}.account-shell .evenings-account .account-icon-nav-control:focus-visible{outline-color:Highlight}}
+@media print{.account-shell .evenings-account .account-icon-nav{display:none}}

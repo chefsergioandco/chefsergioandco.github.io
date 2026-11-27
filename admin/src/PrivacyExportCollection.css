@@ -1,0 +1,33 @@
+.privacy-export{display:grid;gap:1rem;min-width:0;border-top:1px solid #dddcd8;padding-top:1.5rem}
+.privacy-export header{display:grid;gap:.6rem}
+.privacy-export h4{font-size:1.2rem;margin:0}
+.privacy-export p{margin:0;line-height:1.6;overflow-wrap:anywhere}
+.privacy-export-note{padding:1rem;background:#fafaf9;border-left:3px solid #8f3b32}
+.privacy-export-error{color:#8f2f25}
+.privacy-export-actions{display:flex;flex-wrap:wrap;gap:.8rem}
+.privacy-export-obligations{display:grid;gap:.8rem;padding:1rem;border:1px solid #c9c8c4}
+.privacy-export-obligations h5{font-size:1rem;margin:0}
+.privacy-export-obligations ul{display:grid;gap:1rem;margin:0;padding-left:1.2rem}
+.privacy-export-obligations li{display:grid;gap:.4rem;min-width:0}
+.privacy-export-obligations code{font-size:.85rem;overflow-wrap:anywhere}
+.privacy-export-reconcile{display:grid;gap:.8rem}
+.privacy-export-id{overflow-wrap:anywhere;word-break:break-word}
+.privacy-export-sources{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem}
+.privacy-export-sources li{min-width:0;border:1px solid #dddcd8}
+.privacy-export-sources button{display:grid;gap:.4rem;min-height:64px;width:100%;padding:.85rem;text-align:left;font:inherit;color:inherit;border:0;background:#fefefd;cursor:pointer}
+.privacy-export-sources button[aria-current=true]{background:#fafaf9;box-shadow:inset 3px 0 #8f3b32}
+.privacy-export-sources button span,.privacy-export-sources small{font-size:.9rem}
+.privacy-export-sources details{padding:0 .85rem .7rem}
+.privacy-export-sources details p{white-space:pre-wrap;font-size:.9rem}
+.privacy-export form,.privacy-export fieldset{display:grid;gap:1rem;min-width:0}
+.privacy-export fieldset{border:1px solid #dddcd8;padding:1rem;margin:0}
+.privacy-export legend{font-weight:600;padding:0 .4rem}
+.privacy-export label{display:grid;gap:.5rem;font-size:1rem;line-height:1.5}
+.privacy-export :is(select,textarea,input[type=file]){box-sizing:border-box;max-width:100%;width:100%;padding:.7rem .8rem;font:inherit;color:#282723;background:#fefefd;border:1px solid #c9c8c4;border-radius:3px;min-height:44px}
+.privacy-export textarea{resize:vertical}
+.privacy-export .privacy-export-json{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.85rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.privacy-export .privacy-export-confirm{display:flex;align-items:flex-start;gap:.8rem}
+.privacy-export-confirm input{width:1.2rem;flex:0 0 1.2rem;min-height:1.2rem;margin-top:.2rem}
+.privacy-export :is(button,input,textarea,select,summary):focus-visible{outline:2px solid #8f3b32;outline-offset:3px}
+.privacy-export :disabled{cursor:default}
+@media(max-width:600px){.privacy-export-sources{grid-template-columns:minmax(0,1fr)}.privacy-export fieldset{padding:.8rem}}

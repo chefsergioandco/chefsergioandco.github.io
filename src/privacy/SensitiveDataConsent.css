@@ -1,0 +1,8 @@
+.sensitive-consent{display:grid;gap:.8rem;min-width:0;padding:1rem;border:1px solid var(--rule,rgba(44,40,34,.22));border-radius:3px}
+.sensitive-consent p{margin:0;line-height:1.6}
+.sensitive-consent .sensitive-consent-choice{display:flex;align-items:flex-start;gap:.75rem;min-height:44px;font:inherit;line-height:1.55;cursor:pointer}
+.sensitive-consent-choice input[type=checkbox]{appearance:auto;flex:0 0 1.2rem;width:1.2rem;height:1.2rem;min-height:1.2rem;margin:.2rem 0 0;padding:0;accent-color:var(--rouge,#8f3b32)}
+.sensitive-consent .sensitive-consent-note{font-size:.9rem}
+.sensitive-consent a{text-decoration:underline;text-underline-offset:.16em;overflow-wrap:anywhere}
+.sensitive-consent :is(input,a):focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.sensitive-consent-choice:has(input:disabled){cursor:default}

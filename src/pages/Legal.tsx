@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { site } from '../content/site'
 import { href } from '../components/ui'
+import { PRIVACY_CONTACT_EMAIL, PRIVACY_POLICY_VERSION, PRIVACY_RETENTION } from '../privacy/policy'
 import './Legal.css'
 
 const UPDATED = '2026-11-27'
-const PRIVACY_EMAIL = 'admin.chefsergioandco@gmail.com'
+const PRIVACY_EMAIL = PRIVACY_CONTACT_EMAIL
 type Section = { id: string; title: string; body: ReactNode }
 
 function Contact({ privacy = false }: { privacy?: boolean }) {
@@ -17,7 +18,7 @@ function Contents({ sections }: { sections: Section[] }) {
 }
 
 function LegalPage({ title, introduction, sections, other }: { title: string; introduction: string; sections: Section[]; other: 'privacy' | 'terms' }) {
-  return <article className="legal-page">
+  return <article className="legal-page" data-privacy-policy-version={other === 'terms' ? PRIVACY_POLICY_VERSION : undefined}>
     <header className="legal-intro">
       <p className="legal-eyebrow">The small print, in plain language</p>
       <h1>{title}</h1>
@@ -41,7 +42,7 @@ export function PrivacyPolicy() {
     { id: 'information-you-share', title: 'Information you share', body: <>
       <ul>
         <li><strong>Inquiries and bookings.</strong> Your name, email, phone, contact preference, occasion, dates, location, party size, budget, kitchen or venue details, food preferences, and information you put in a request or message.</li>
-        <li><strong>Guest responses and dietary needs.</strong> Names, attendance, dietary requirements, allergies, and preparation or accessibility information supplied by you, your host, or your guests. Please share only what is needed to plan the experience, and obtain permission before supplying someone else’s information.</li>
+        <li><strong>Guest responses and dietary needs.</strong> Names, attendance and optional dietary, allergy or accessibility information. Give only your own sensitive information through the private consent form. Other adults should submit their own guest response; a host’s booking does not give permission to collect another adult’s health information.</li>
         <li><strong>Accounts.</strong> Your sign-in identifier, name, email and verification status, chosen account details, linked bookings, saved menus, preferences, and support or privacy requests. Auth0 manages sign-in; Google provides identity information when you choose Google sign-in.</li>
         <li><strong>Gift cards and payments.</strong> Purchaser and recipient details, the gift message and delivery date, amount, balance, redemptions, payment references, receipts, and refund information. Card details are entered through Stripe’s checkout; our booking forms do not collect your full card number or security code.</li>
         <li><strong>Reviews, referrals, and rewards.</strong> Reviews and the display name you choose, permission to publish, referral codes and attribution, qualifying booking activity, and any associated credit.</li>
@@ -52,6 +53,15 @@ export function PrivacyPolicy() {
       <p>We use this information to respond to you, assess availability, plan and provide your experience, accommodate requirements we have agreed with you, manage accounts and gift cards, process payments and refunds, send operational messages, administer reviews and referrals, and resolve questions or disputes.</p>
       <p>Allergy and dietary information is used for event planning and preparation. It is not a general marketing profile. Providing a requirement does not mean it has been accepted; please confirm any essential accommodation directly with Sergio.</p>
       <p>We also use technical information, request identifiers, and security or transaction records to protect private links, prevent abuse and fraud, keep the service working, and meet applicable recordkeeping obligations.</p>
+    </> },
+    { id: 'lawful-use-and-consent', title: 'Our reasons for using information', body: <>
+      <p>We use the information necessary to discuss or perform your requested booking, provide your account and process your payment on the basis of our contract or steps you ask us to take before a contract. We assess limited security, fraud prevention, guest coordination, suppression and claim-related uses for necessity and our legitimate interests, with safeguards for the people affected.</p>
+      <p>Newsletter signup, publication of a review and optional sensitive event information use separate consent. We do not require marketing consent to make a booking. A specific legal duty or justified claim-related purpose may require limited records; this does not authorize keeping unrelated planning details.</p>
+    </> },
+    { id: 'sensitive-information', title: 'Your sensitive event information', body: <>
+      <p>Allergies and some dietary or accessibility details can reveal health or religious information. You choose whether to provide them. Our form asks for your explicit consent to use your own details for planning and preparation, separately from your RSVP, booking and any email choice. Leave them blank if you prefer to discuss an adjustment privately with Sergio.</p>
+      <p>You can withdraw this consent without canceling your RSVP or booking. Untick the choice and update your private response without the details, or contact <a href={`mailto:${PRIVACY_EMAIL}?subject=Withdraw%20sensitive%20event%20information`}>{PRIVACY_EMAIL}</a>. We stop using the withdrawn details for that purpose and remove them unless a specific lawful reason requires a limited record. An essential accommodation still needs to be expressly agreed with Sergio.</p>
+      <p>Share only necessary adjustments, not diagnoses or another adult’s private information. For a child or a person needing a representative, contact Sergio to arrange an appropriate guardian or authorized-representative process.</p>
     </> },
     { id: 'people-and-providers', title: 'Who receives information', body: <>
       <p>Access is limited to the people and services needed for the purpose involved:</p>
@@ -67,7 +77,7 @@ export function PrivacyPolicy() {
     </> },
     { id: 'browser-storage', title: 'Cookies and saved drafts', body: <>
       <p>The website and sign-in services use cookies and browser storage for sign-in, security, appearance preferences, referral attribution, private-link access, and continuity between steps.</p>
-      <p><strong>An unfinished booking can be saved on your device.</strong> That draft may include the contact details, dietary requirements, allergies, and other answers you entered. Use “Start fresh” when offered to remove a saved draft, or clear this site’s data in your browser. A completed submission also clears its local booking draft.</p>
+      <p><strong>An unfinished booking can be saved on your device.</strong> A draft can contain personal contact and planning information. Use “Start fresh” when offered to remove a saved draft, or clear this site’s data in your browser. A completed submission also clears its local booking draft.</p>
       <p>Clearing cookies or site storage can remove drafts and preferences and require you to sign in again. It does not delete a booking or other record already submitted to us.</p>
       <p>The site does not currently install a separate advertising or marketing-analytics script. Hosting, sign-in, payment, and email providers can still receive technical information such as IP address, browser information, request times, and security or delivery events. Email-service settings can also affect whether opens or link clicks are recorded.</p>
     </> },
@@ -76,13 +86,28 @@ export function PrivacyPolicy() {
       <p>Use the unsubscribe link in a letter, or contact us, to stop future seasonal letters. You do not need to sign in to use the letter’s unsubscribe link. Booking confirmations, receipts, security messages, and other communications needed for your arrangements are separate from newsletter marketing.</p>
     </> },
     { id: 'retention-and-security', title: 'Retention and security', body: <>
-      <p>We keep information for the purpose it was collected and for relevant operational, accounting, legal, security, and dispute-resolution needs. The appropriate period depends on the record: an active booking, an unused gift-card balance, a payment record, and a newsletter unsubscribe record have different purposes.</p>
-      <p>Account closure or a deletion request does not automatically remove records needed for an existing arrangement, an outstanding balance, legal recordkeeping, or honoring an unsubscribe. We will explain relevant exceptions when responding to your request. Our service providers may have their own retention requirements.</p>
+      <p>Our policy separates short-lived planning information from the small set of records needed for financial accuracy and claims. Earlier valid erasure or consent withdrawal can apply; an active arrangement or a specific documented obligation can change the handling of a particular record.</p>
+      <ul>
+        <li><strong>Unconverted inquiries:</strong> {PRIVACY_RETENTION.inquiryDays} days after our last substantive contact, unless you ask for a later follow-up.</li>
+        <li><strong>Sensitive event and guest preparation details:</strong> {PRIVACY_RETENTION.sensitiveEventDays} days after the event, or earlier after cancellation when no longer needed. A specific incident or legal claim may require a limited, restricted record.</li>
+        <li><strong>Core written booking terms:</strong> a minimized record for {PRIVACY_RETENTION.coreContractYears} years after the event or final resolution for contract-related claims. This does not mean keeping every dietary note or planning draft for five years.</li>
+        <li><strong>Financial records:</strong> the minimum payment, refund, receipt and ledger evidence for {PRIVACY_RETENTION.financialYears} years from the relevant final financial or tax-record trigger. An unresolved payment, audit or specific claim may require a documented hold. This is our retention policy, not a claim that tax law requires every customer record for seven years.</li>
+        <li><strong>Accounts and saved preferences:</strong> while actively used, with a review after {PRIVACY_RETENTION.inactivityMonths} months of inactivity and {PRIVACY_RETENTION.inactivityNoticeDays} days’ notice before removing an unused account. Existing bookings and stored value preserve only the records they actually need.</li>
+        <li><strong>Rights requests:</strong> working copies for {PRIVACY_RETENTION.rightsWorkingDays} days after final resolution, then a minimal decision and delivery audit for {PRIVACY_RETENTION.rightsAuditYears} years. Download copies expire after {PRIVACY_RETENTION.exportDays} days; expiry does not remove your right to ask for access.</li>
+        <li><strong>Operational and security logs:</strong> up to {PRIVACY_RETENTION.operationalLogDays} days, except a limited incident or claim record. Provider-controlled records can have their own applicable periods, which we address in your response.</li>
+      </ul>
+      <p>Purchased gift value does not expire because an account closes; necessary balance and redemption evidence remains while value is outstanding. Newsletter sending stops when you withdraw. We keep only necessary consent, withdrawal and suppression evidence so deletion does not accidentally subscribe you again. Public reviews are removed when their publication consent is withdrawn.</p>
+      <p>A preservation hold keeps information needed to answer an open access request, including relevant earlier copies. Restricted backup copies are removed as their actual backup cycle permits, with removal or restriction reapplied before restored information is used. We explain the particular records retained and their reasons rather than promising instant erasure from every provider or backup.</p>
       <p>We use access controls and other reasonable safeguards to protect information. No website, device, or email system can guarantee absolute security.</p>
     </> },
     { id: 'privacy-requests', title: 'Your requests and choices', body: <>
-      <p>You can ask us about the information we hold, request a copy or correction, ask to close an account or delete information, or raise an objection or concern about its use. Depending on where you live, you may have additional rights under applicable privacy law.</p>
+      <p>You can request access and a copy of your personal information, correct inaccurate or incomplete information, request erasure, ask for restriction where its conditions apply, object to relevant processing, withdraw consent, or request qualifying data portability. We offer this rights process to our customers without requiring an account.</p>
+      <p>If you already have an account, <a data-native-navigation href={href('/dashboard/?view=settings')}>Settings &amp; profile</a> brings these choices together. You can also use the contact below without signing in or creating an account.</p>
+      <p>An access response covers your actual information in relevant account, booking, internal planning, correspondence, financial and provider records, together with how we use it. It is broader than the dashboard. We protect other people’s information and usable access credentials and explain specific lawful restrictions.</p>
+      <p>Qualifying portability covers data you provided that is processed automatically on consent or contract. It is a narrower, reusable machine-readable dataset; you may ask for direct transfer where technically feasible. Completed account exports are available as verified JSON and a readable copy. If you cannot use an account or the file needs another delivery method, we arrange a proportionate identity check and secure alternative.</p>
       <p>Email <a href={`mailto:${PRIVACY_EMAIL}?subject=Privacy%20request`}>{PRIVACY_EMAIL}</a> with enough information to identify the request. We may need to verify your identity and clarify its scope before releasing or changing records. Please do not email a password, full payment-card number, or private access code.</p>
+      <p>We respond without undue delay and within one calendar month of receipt. If complexity or the number of requests makes a lawful extension necessary, we notify you with reasons within that original month; the extension is at most two additional months. Asking for clarification does not automatically restart the deadline.</p>
+      <p>Requests are normally free. If a request is refused or limited, we explain the reasons and your right to complain to the competent data-protection authority and seek a judicial remedy. A fee or refusal for a manifestly unfounded or excessive request requires a specific justification.</p>
       <p>We will consider applicable rights and explain if information must be retained or part of a request cannot be fulfilled. A privacy request is not, by itself, a cancellation of a booking or a request for a payment refund; please tell Sergio separately if you need either.</p>
     </> },
     { id: 'children-and-updates', title: 'Children and policy updates', body: <>

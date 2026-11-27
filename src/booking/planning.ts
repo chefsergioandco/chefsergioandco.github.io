@@ -1,3 +1,4 @@
+import { sensitiveDataConsent } from '../privacy/policy'
 import type { BookingRequest, Kind, Night, PlanningConfig, PlanningRequest, Where } from './types'
 
 export const DRAFT_KEY = 'booking-draft:v2'
@@ -22,6 +23,7 @@ export type PlanningState = {
   foodIdeas: string
   dietary: string[]
   allergies: string
+  sensitiveConsent?: boolean
   notes: string
   nightId?: string
   seats: number
@@ -35,7 +37,7 @@ export type PlanningState = {
 export const EMPTY: PlanningState = {
   occasion: '', dateMode: 'exact', dateFrom: '', dateTo: '', partyBandId: '', headcountMode: 'approximate',
   where: 'home', place: '', kitchen: '', budgetMode: 'guidance', budgetMin: '', budgetMax: '', budgetUnit: 'total',
-  foodIdeas: '', dietary: [], allergies: '', notes: '', seats: 2, name: '', email: '', phone: '', contactBy: 'email', physicalInvitations: false, gift: '',
+  foodIdeas: '', dietary: [], allergies: '', sensitiveConsent: false, notes: '', seats: 2, name: '', email: '', phone: '', contactBy: 'email', physicalInvitations: false, gift: '',
 }
 export const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value
 export const todayET = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -84,7 +86,7 @@ export function planningRequest(s: PlanningState): BookingRequest {
   const table = s.kind === 'table'
   return {
     kind: s.kind!, name: s.name.trim(), email: s.email.trim(), phone: s.phone.trim(), contactBy: s.contactBy,
-    dietary: s.dietary, notes: s.notes.trim(), gift: s.gift || undefined,
+    dietary: s.sensitiveConsent ? s.dietary : [], allergies: s.sensitiveConsent ? s.allergies.trim() : '', sensitiveDataConsent: sensitiveDataConsent(s.sensitiveConsent === true), notes: s.notes.trim(), gift: s.gift || undefined,
     ...(table ? { nightId: s.nightId, seats: s.seats, planning: undefined } : {
       ...(s.dateMode === 'exact' ? { date: s.date, time: s.time } : {}),
       flexible: s.dateMode !== 'exact', guests: s.headcountMode === 'exact' ? s.guests : undefined,
@@ -95,11 +97,11 @@ export function planningRequest(s: PlanningState): BookingRequest {
         kitchen: s.kitchen.trim(), budgetMode: s.budgetMode,
         budgetMin: s.budgetMode === 'range' ? Number(s.budgetMin) : null,
         budgetMax: s.budgetMode === 'range' ? Number(s.budgetMax) : null,
-        budgetUnit: s.budgetUnit, foodIdeas: s.foodIdeas.trim(), allergies: s.allergies.trim(), physicalInvitations: s.physicalInvitations,
+        budgetUnit: s.budgetUnit, foodIdeas: s.foodIdeas.trim(), allergies: s.sensitiveConsent ? s.allergies.trim() : '', physicalInvitations: s.physicalInvitations,
       },
     }),
     // Table guests' allergy reports remain requirements for Sergio to review, not promises of accommodation.
-    ...(table && s.allergies.trim() ? { notes: [s.notes.trim(), `Allergies to review: ${s.allergies.trim()}`].filter(Boolean).join('\n\n') } : {}),
+
   }
 }
 export type SavedDraft = { version: 2; savedAt: string; step: number; s: PlanningState }
@@ -138,4 +140,9 @@ export function migrateLegacyDraft(value: any): SavedDraft | null {
     },
   }
   return validDraft(converted) ? converted : null
+}
+
+/** Device drafts contain resumable logistics, never sensitive/free-form answers or a gift capability. */
+export function privateDraftState(state: PlanningState): PlanningState {
+  return {...state,dietary:[],allergies:'',sensitiveConsent:false,occasion:'',kitchen:'',foodIdeas:'',notes:'',place:'',gift:''}
 }
