@@ -20,7 +20,7 @@ function svg(size, mode = 'adaptive', touch = false) {
   const color = mode === 'dark' ? '#fff' : '#000'
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-3.2 -40.2 150.4 150.4" width="${size}" height="${size}" role="img" aria-label="Chef Sergio and Co.">
 <title>Chef Sergio and Co.</title>
-${touch ? '<rect x="-3.2" y="-40.2" width="150.4" height="150.4" fill="#FCFAF5"/>' : ''}
+${touch ? '<rect x="-3.2" y="-40.2" width="150.4" height="150.4" fill="#fefefd"/>' : ''}
 <style>path{fill:${color}}${mode === 'adaptive' ? '@media(prefers-color-scheme:dark){path{fill:#fff}}' : ''}</style>
 ${paths.map(path => `<path d="${path}"/>`).join('\n')}
 </svg>

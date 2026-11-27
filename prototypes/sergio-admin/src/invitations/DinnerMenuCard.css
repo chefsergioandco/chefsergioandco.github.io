@@ -1,7 +1,7 @@
 @font-face{font-family:'Invitation Garamond';src:url('/invitations/eb-garamond-core-wght.woff2') format('woff2');font-style:normal;font-weight:400 500;font-display:swap}
 @font-face{font-family:'Invitation Garamond Italic';src:url('/invitations/eb-garamond-core-italic-wght.woff2') format('woff2');font-style:italic;font-weight:400 500;font-display:swap}
 @font-face{font-family:'Invitation Archivo';src:url('/invitations/archivo-core-wght.woff2') format('woff2');font-style:normal;font-weight:400 500;font-display:swap}
-.dinner-menu-card{--menu-paper:#fcfaf5;--menu-ink:#2d2b27;--menu-rouge:#8e352f;width:100%;margin:0;color:var(--menu-ink)}
+.dinner-menu-card{--menu-paper:#fefefd;--menu-ink:#2d2b27;--menu-rouge:#8e352f;width:100%;margin:0;color:var(--menu-ink)}
 .dinner-menu-card *{box-sizing:border-box}
 .dinner-menu-stage{width:100%;padding:16px 18px 22px;perspective:1400px;touch-action:pan-y pinch-zoom}
 .dinner-menu-paper{position:relative;isolation:isolate;width:min(100%,360px);aspect-ratio:5/8;margin:auto;background:var(--menu-paper);box-shadow:0 0 .45px #5d514d77,2px 5px 11px #2d2b2714,10px 15px 32px #2d2b2710;color-scheme:light;transform-origin:50% 50%;user-select:none;-webkit-user-select:none;touch-action:pan-y pinch-zoom;cursor:grab}

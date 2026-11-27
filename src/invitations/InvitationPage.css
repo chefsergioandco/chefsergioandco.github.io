@@ -1,4 +1,4 @@
-.invitation-page{--invite-paper:#fcfaf5;--invite-ink:#2d2b27;--invite-rouge:#8e352f;--invite-rule:#e6e1d8;background:var(--invite-paper);color:var(--invite-ink);min-height:100vh;overflow-wrap:anywhere;font-family:Archivo,Arial,sans-serif}
+.invitation-page{--invite-paper:#fefefd;--invite-ink:#2d2b27;--invite-rouge:#8e352f;--invite-rule:#e4e4e1;background:var(--invite-paper);color:var(--invite-ink);min-height:100vh;overflow-wrap:anywhere;font-family:Archivo,Arial,sans-serif}
 .invitation-page *{box-sizing:border-box}
 .invitation-page a{color:inherit;text-underline-offset:.3em}
 .invitation-page :is(button,a){touch-action:manipulation}
@@ -72,6 +72,6 @@
 .invitation-after-eyebrow{margin:0;font-family:var(--f-display,'EB Garamond',serif);font-style:italic;color:rgb(var(--c-ink-soft))}
 .invitation-after h2{margin:.35rem 0 .75rem;font-family:var(--f-display,'EB Garamond',serif);font-size:1.75rem;line-height:1.2;font-weight:400}
 .invitation-after p{line-height:1.6}
-.invitation-after-action{display:inline-flex;align-items:center;min-height:44px;margin-top:1rem;padding:.75rem 1.25rem;background:rgb(var(--c-cta));color:#fff;text-decoration:none;font-family:var(--f-ui,Archivo,sans-serif);font-size:.9375rem}
-.invitation-after-action:focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:3px}
+.invitation-after-action{display:inline-flex;align-items:center;min-height:44px;margin-top:1rem;padding:.75rem 1.25rem;background:oklch(var(--c-cta-fill));color:#fff;text-decoration:none;font-family:var(--f-ui,Archivo,sans-serif);font-size:.9375rem}
+.invitation-after-action:focus-visible{outline:2px solid oklch(var(--c-cta));outline-offset:3px}
 @media print{.invitation-after{display:none}}

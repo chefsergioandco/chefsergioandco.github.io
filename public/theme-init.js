@@ -2,7 +2,7 @@
 // no choice follows the system (prefers-color-scheme in styles.css). Kept separate
 // from favicon-theme.js, which follows the browser chrome and therefore the system.
 (function () {
-  var colors = { light: '#FCFAF5', dark: '#191714' }
+  var colors = { light: '#fefefd', dark: '#191714' }
   var metas = document.querySelectorAll('meta[name="theme-color"]')
   var index
   // The admin workspace is always light, so its browser bar is too.

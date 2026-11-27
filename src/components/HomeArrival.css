@@ -10,8 +10,8 @@
  * animates the card's inner stage, so hydration and the card's own opacity variable never restart it. */
 @keyframes home-arrival-enter{from{opacity:0;transform:translateY(26px) scale(.955);filter:blur(2px)}60%{filter:blur(0)}}
 :is(.home-arrival-opening[data-opening-active=true],html[data-home-arrival-boot=pending] .home-arrival-opening) .home-arrival-card>*{animation:home-arrival-enter 1.05s cubic-bezier(.16,.84,.3,1) backwards;transform-origin:50% 60%}
-.home-arrival-skip{position:fixed;left:1rem;top:1rem;max-width:calc(100% - 2rem);min-height:44px;padding:.75rem 1rem;background:rgb(var(--c-canvas));color:rgb(var(--c-ink));border:1px solid rgb(var(--c-cta));font:400 1rem/1.5 var(--f-ui,Archivo,sans-serif);transform:translateY(-200%);pointer-events:auto;z-index:70}
-.home-arrival-skip:focus{transform:none;outline:2px solid rgb(var(--c-cta));outline-offset:3px}
+.home-arrival-skip{position:fixed;left:1rem;top:1rem;max-width:calc(100% - 2rem);min-height:44px;padding:.75rem 1rem;background:rgb(var(--c-canvas));color:rgb(var(--c-ink));border:1px solid oklch(var(--c-cta));font:400 1rem/1.5 var(--f-ui,Archivo,sans-serif);transform:translateY(-200%);pointer-events:auto;z-index:70}
+.home-arrival-skip:focus{transform:none;outline:2px solid oklch(var(--c-cta));outline-offset:3px}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [aria-label='Prototype notice']{visibility:hidden}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-depth,:is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) .home-depth>main{transform-style:flat}
 :is(.home-arrival[data-arrival-active=true],html[data-home-arrival-boot=pending] .home-arrival) [aria-label='Prototype notice']{visibility:hidden}

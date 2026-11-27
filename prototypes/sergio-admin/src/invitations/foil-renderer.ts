@@ -150,12 +150,12 @@ export function cottonPaper(width = 1400, height = 1000): HTMLCanvasElement {
   const random = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296 }
   for (let y = 0; y < paper.height; y++) for (let x = 0; x < paper.width; x++) {
     const offset = (y * paper.width + x) * 4, variation = (random() - .5) * 3.7 + Math.sin(x * .017 + y * .013) * .28 + Math.sin(x * .006 - y * .011) * .35
-    pixels[offset] = 250 + variation; pixels[offset + 1] = 248 + variation; pixels[offset + 2] = 242 + variation; pixels[offset + 3] = 255
+    pixels[offset] = 254 + variation; pixels[offset + 1] = 254 + variation; pixels[offset + 2] = 253 + variation; pixels[offset + 3] = 255
   }
   context.putImageData(image, 0, 0); context.lineCap = 'round'
   for (let index = 0; index < Math.round(10000 * width * height / 1400000); index++) {
     const x = random() * paper.width, y = random() * paper.height, length = random() * 5 + 1, angle = random() * Math.PI * 2
-    context.strokeStyle = index % 3 ? 'rgba(123,111,88,.025)' : 'rgba(255,255,255,.13)'; context.lineWidth = .3 + random() * .5
+    context.strokeStyle = index % 3 ? 'rgba(123,123,121,.025)' : 'rgba(255,255,255,.13)'; context.lineWidth = .3 + random() * .5
     context.beginPath(); context.moveTo(x, y); context.quadraticCurveTo(x + Math.cos(angle) * length * .5, y + Math.sin(angle) * length * .4, x + Math.cos(angle) * length, y + Math.sin(angle) * length); context.stroke()
   }
   cachedPapers.set(key, paper)

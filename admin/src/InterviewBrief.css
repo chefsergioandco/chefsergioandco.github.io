@@ -1,9 +1,9 @@
-.interview-brief{border:1px solid #ded8cb;border-radius:8px;background:#fffdf8;margin:22px 0 28px;overflow:hidden;color:#333c30}
-.interview-brief-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:24px 26px;background:#f2f3eb;border-bottom:1px solid #dedfd1}
+.interview-brief{border:1px solid #ded8cb;border-radius:8px;background:var(--canvas);margin:22px 0 28px;overflow:hidden;color:#333c30}
+.interview-brief-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:24px 26px;background:var(--paper);border-bottom:1px solid #dedfd1}
 .interview-brief-header .eyebrow{font-size:11px;letter-spacing:.13em;margin:0 0 8px;color:#647252}
 .interview-brief-header h2{font-family:'EB Garamond',Garamond,Georgia,serif;font-weight:500;font-size:31px;line-height:1.1;margin:0 0 8px}
 .interview-brief-header p{font-size:14px;line-height:1.6;max-width:570px;margin:0;color:#69705f}
-.interview-count{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:8px 11px;background:#fffdf8;border:1px solid #d5dac9;border-radius:20px;font-size:13px;font-weight:500;color:#526342}
+.interview-count{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:8px 11px;background:var(--canvas);border:1px solid #d5dac9;border-radius:20px;font-size:13px;font-weight:500;color:#526342}
 .interview-body{padding:24px 26px;display:grid;gap:22px}
 .interview-snapshot{border-bottom:1px solid #e5e0d5;padding:0 0 18px}
 .interview-snapshot summary{cursor:pointer;font-size:14px;font-weight:600;line-height:1.5;padding:4px 0}
@@ -12,7 +12,7 @@
 .interview-snapshot dt{font-size:12px;color:#7b7d70;margin:0 0 4px}
 .interview-snapshot dd{font-size:14px;line-height:1.6;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:#454e3e}
 .interview-topics{display:grid;gap:10px}
-.interview-topic{border:1px solid #e4dfd4;border-radius:6px;background:#fffefa}
+.interview-topic{border:1px solid #e4dfd4;border-radius:6px;background:var(--canvas)}
 .interview-topic[open]{background:#fff}
 .interview-topic summary{display:flex;align-items:center;gap:12px;padding:15px 17px;cursor:pointer;list-style:none}
 .interview-topic summary::-webkit-details-marker{display:none}
@@ -27,10 +27,10 @@
 .interview-topic-fields{border-top:1px solid #ece7dc;padding:17px;display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:15px}
 .interview-topic-fields .field,.interview-form-grid .field,.interview-panel>.field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:14px;line-height:1.5}
 .interview-topic-fields .field.full{grid-column:1/-1}
-.interview-brief input,.interview-brief select,.interview-brief textarea{box-sizing:border-box;width:100%;min-height:44px;border:1px solid #d7d8cc;border-radius:4px;background:#fffefa;color:#333c30;font:inherit;font-size:16px;padding:10px 12px;line-height:1.5}
+.interview-brief input,.interview-brief select,.interview-brief textarea{box-sizing:border-box;width:100%;min-height:44px;border:1px solid #d7d8cc;border-radius:4px;background:var(--canvas);color:#333c30;font:inherit;font-size:16px;padding:10px 12px;line-height:1.5}
 .interview-brief textarea{resize:vertical;min-height:82px}
 .interview-brief input:focus-visible,.interview-brief select:focus-visible,.interview-brief textarea:focus-visible,.interview-brief summary:focus-visible{outline:2px solid #79865c;outline-offset:3px}
-.interview-brief input:disabled,.interview-brief textarea:disabled,.interview-brief select:disabled{background:#f4f2ec;color:#82867a}
+.interview-brief input:disabled,.interview-brief textarea:disabled,.interview-brief select:disabled{background:var(--paper);color:#82867a}
 .interview-brief small{font-size:13px;line-height:1.5;color:#777e6b}
 .interview-custom-form{display:flex;align-items:flex-end;gap:10px}
 .interview-custom-form .field{flex:1;display:flex;flex-direction:column;gap:7px;font-size:14px}
@@ -49,14 +49,14 @@
 .interview-facts>div{border:1px solid #e3dfd3;border-radius:5px;padding:12px}
 .interview-facts dt{font-size:12px;line-height:1.5;color:#7d8370;margin:0 0 5px}
 .interview-facts dd{margin:0;font-size:15px;line-height:1.5;color:#49543d;overflow-wrap:anywhere}
-.interview-info{font-size:13px;line-height:1.6;color:#667253;background:#f1f3e9;border:1px solid #dce2ce;border-radius:5px;padding:12px 14px;margin:0}
+.interview-info{font-size:13px;line-height:1.6;color:#667253;background:var(--paper);border:1px solid #dce2ce;border-radius:5px;padding:12px 14px;margin:0}
 .interview-error{font-size:14px;line-height:1.6;color:#8a3930;background:#fbeee9;border:1px solid #ebcfc4;border-radius:5px;padding:12px 14px;margin:0}
 .interview-invitation-history{font-size:13px;line-height:1.6;color:#6a735e;margin:0}
 .interview-brief .button{font-size:14px}
 @media(max-width:640px){.interview-brief-header{padding:20px;display:block}.interview-brief-header h2{font-size:29px}.interview-count{margin-top:14px}.interview-body{padding:20px;gap:20px}.interview-snapshot dl,.interview-form-grid,.interview-facts{grid-template-columns:1fr}.interview-topic summary{padding:14px 12px;gap:8px;flex-wrap:wrap}.interview-topic-title{flex-basis:calc(100% - 24px)}.interview-topic summary>svg{order:2;margin-left:0}.interview-status{order:3}.interview-topic-fields{grid-template-columns:1fr;padding:14px}.interview-custom-form{display:block}.interview-custom-form .button{margin-top:10px;width:100%}.interview-save-row{align-items:stretch;flex-direction:column}.interview-save-row .button{width:100%}.interview-panel-actions>.button{width:100%;justify-content:center}.interview-form-grid .full{grid-column:auto}.interview-body .interview-facts{gap:8px}}
 @media(prefers-reduced-motion:reduce){.interview-topic summary>svg{transition:none}}
 .interview-guest-responses{display:grid;gap:10px;margin:15px 0}
-.interview-guest-responses article{border:1px solid #e3dfd3;border-radius:5px;padding:15px;background:#fbfaf5}
+.interview-guest-responses article{border:1px solid #e3dfd3;border-radius:5px;padding:15px;background:var(--paper)}
 .interview-guest-responses article>div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
 .interview-guest-responses strong{font-size:15px;font-weight:600}.interview-guest-responses article>div>span{font-size:13px;color:#6b7c54}
 .interview-guest-responses p{font-size:14px;line-height:1.6;margin:7px 0;white-space:pre-wrap;overflow-wrap:anywhere}

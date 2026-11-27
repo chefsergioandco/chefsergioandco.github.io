@@ -24,9 +24,9 @@
 .plating-steps h3 { margin: 0; font-size: clamp(1.5rem, 2.1vw, 1.875rem); line-height: 1.1; }
 .plating-steps h3 button { display: block; padding: 0; min-height: 52px; background: transparent; border: 0; color: inherit; text-align: left; font: inherit; letter-spacing: inherit; transition: color .2s; }
 .plating-steps p { font: 400 1.1875rem/1.45 var(--f-body); margin: 14px 0 0; max-width: 26ch; }
-.home-plating[data-enhanced='true'] .plating-steps > li[data-active='true']::before { background: rgb(var(--c-cta)); }
-.home-plating[data-enhanced='true'] .plating-steps > li[data-active='true'] h3 { color: rgb(var(--c-cta)); }
-.plating-steps button:hover { color: rgb(var(--c-cta)); }
+.home-plating[data-enhanced='true'] .plating-steps > li[data-active='true']::before { background: oklch(var(--c-cta-fill)); }
+.home-plating[data-enhanced='true'] .plating-steps > li[data-active='true'] h3 { color: oklch(var(--c-cta)); }
+.plating-steps button:hover { color: oklch(var(--c-cta)); }
 .plating-mobile-stops { display: none; }
 .home-plating[data-pinned='true'] { height: calc(var(--plating-frame-height) + var(--plating-travel)); }
 .home-plating[data-pinned='true'] .plating-frame { position: sticky; top: var(--plating-top); }
@@ -53,8 +53,8 @@
   .home-plating[data-enhanced='true'] .plating-mobile-stops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 80%; margin: 0 0 22px; }
   .plating-mobile-stops button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; background: transparent; border: 0; border-radius: 0; color: rgb(var(--c-ink)); font: 400 .875rem/1.4 var(--f-ui); padding: 12px 2px 7px; min-height: 58px; }
   .plating-mobile-stops button::before { content: ''; position: absolute; top: 0; width: 1px; height: 8px; left: 50%; background: rgb(var(--c-rule)); }
-  .plating-mobile-stops button[aria-current='step'] { color: rgb(var(--c-cta)); }
-  .plating-mobile-stops button[aria-current='step']::before { background: rgb(var(--c-cta)); }
+  .plating-mobile-stops button[aria-current='step'] { color: oklch(var(--c-cta)); }
+  .plating-mobile-stops button[aria-current='step']::before { background: oklch(var(--c-cta-fill)); }
   .home-plating[data-enhanced='true'] .plating-steps { gap: 0; }
   .home-plating[data-enhanced='true'] .plating-steps > li { grid-column: 1; grid-row: 1; visibility: hidden; min-height: 142px; }
   .home-plating[data-enhanced='true'] .plating-steps > li[data-active='true'] { visibility: visible; }
@@ -80,8 +80,8 @@
 .home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-mobile-stops { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: calc(var(--plating-art-width) * .8); max-width: 80%; margin: 0 0 12px; }
 .home-plating[data-compact-layout='true'] .plating-mobile-stops button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; background: transparent; border: 0; color: rgb(var(--c-ink)); font: 400 .875rem/1.4 var(--f-ui); padding: 12px 2px 7px; min-height: 58px; }
 .home-plating[data-compact-layout='true'] .plating-mobile-stops button::before { content: ''; position: absolute; top: 0; width: 1px; height: 8px; left: 50%; background: rgb(var(--c-rule)); }
-.home-plating[data-compact-layout='true'] .plating-mobile-stops button[aria-current='step'] { color: rgb(var(--c-cta)); }
-.home-plating[data-compact-layout='true'] .plating-mobile-stops button[aria-current='step']::before { background: rgb(var(--c-cta)); }
+.home-plating[data-compact-layout='true'] .plating-mobile-stops button[aria-current='step'] { color: oklch(var(--c-cta)); }
+.home-plating[data-compact-layout='true'] .plating-mobile-stops button[aria-current='step']::before { background: oklch(var(--c-cta-fill)); }
 .home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-steps { grid-template-columns: 1fr; gap: 0; width: 100%; }
 .home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-steps > li { grid-column: 1; grid-row: 1; visibility: hidden; min-height: 104px; padding: 0; }
 .home-plating[data-compact-layout='true'][data-enhanced='true'] .plating-steps > li[data-active='true'] { visibility: visible; }

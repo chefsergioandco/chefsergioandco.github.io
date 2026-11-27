@@ -1,7 +1,7 @@
 @font-face{font-family:'Invitation Garamond';src:url('/invitations/eb-garamond-core-wght.woff2') format('woff2');font-style:normal;font-weight:400 500;font-display:swap}
 @font-face{font-family:'Invitation Garamond Italic';src:url('/invitations/eb-garamond-core-italic-wght.woff2') format('woff2');font-style:italic;font-weight:400 500;font-display:swap}
 @font-face{font-family:'Invitation Archivo';src:url('/invitations/archivo-core-wght.woff2') format('woff2');font-style:normal;font-weight:400 500;font-display:swap}
-.invitation-card{--invitation-paper:#fcfaf5;--invitation-ink:#2d2b27;--invitation-rouge:#8e352f;width:100%;min-width:0;margin:0;color:var(--invitation-ink)}
+.invitation-card{--invitation-paper:#fefefd;--invitation-ink:#2d2b27;--invitation-rouge:#8e352f;width:100%;min-width:0;margin:0;color:var(--invitation-ink)}
 .invitation-card *{box-sizing:border-box}
 .invitation-card .invitation-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .invitation-card-stage{position:relative;isolation:isolate;width:100%;height:var(--invitation-stage-h);min-height:12rem;overflow:hidden;perspective:1600px;perspective-origin:50% 44%;touch-action:pan-y pinch-zoom}

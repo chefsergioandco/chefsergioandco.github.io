@@ -1,16 +1,16 @@
 .legal-page{max-width:1120px;margin:0 auto;padding:clamp(38px,6vw,88px) clamp(22px,5vw,56px) clamp(60px,8vw,110px);color:rgb(var(--c-ink))}
 .legal-intro{max-width:760px;padding-bottom:clamp(28px,4vw,46px);border-bottom:1px solid rgb(var(--c-rule))}
-.legal-eyebrow{margin:0 0 15px;color:rgb(var(--c-cta));font:italic 400 1.125rem/1.5 var(--f-display)}
+.legal-eyebrow{margin:0 0 15px;color:oklch(var(--c-cta));font:italic 400 1.125rem/1.5 var(--f-display)}
 .legal-intro h1{margin:0 0 22px;font:400 clamp(2.75rem,6vw,4.5rem)/1.03 var(--f-display);letter-spacing:-.025em;text-wrap:balance}
 .legal-lead{max-width:620px;margin:0 0 22px;font:400 clamp(1.2rem,2.2vw,1.5rem)/1.55 var(--f-body)}
 .legal-updated{display:flex;flex-wrap:wrap;column-gap:7px;row-gap:5px;margin:0;color:rgb(var(--c-ink-soft));font:400 .8125rem/1.6 var(--f-ui)}
-.legal-updated a,.legal-body a{color:rgb(var(--c-cta));text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}
+.legal-updated a,.legal-body a{color:oklch(var(--c-cta));text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;overflow-wrap:anywhere}
 .legal-reading{display:grid;grid-template-columns:185px minmax(0,1fr);gap:clamp(30px,5vw,70px);align-items:start;padding-top:clamp(30px,4vw,46px)}
 .legal-contents{position:sticky;top:112px;font:400 .8125rem/1.6 var(--f-ui)}
 .legal-contents>p{margin:0 0 15px;color:rgb(var(--c-ink-soft));font-size:.75rem}
 .legal-contents ol,.legal-mobile-contents ol{padding:0;margin:0;list-style:none;display:grid;gap:12px}
 .legal-contents a,.legal-mobile-contents a{color:rgb(var(--c-ink));text-decoration:none;text-underline-offset:4px}
-.legal-contents a:hover,.legal-mobile-contents a:hover{text-decoration:underline;color:rgb(var(--c-cta))}
+.legal-contents a:hover,.legal-mobile-contents a:hover{text-decoration:underline;color:oklch(var(--c-cta))}
 .legal-mobile-contents{display:none}
 .legal-body{min-width:0;max-width:710px;font:400 1rem/1.85 var(--f-ui)}
 .legal-body>section{scroll-margin-top:108px;padding:0 0 34px;margin:0 0 34px;border-bottom:1px solid rgb(var(--c-rule))}
@@ -20,6 +20,6 @@
 .legal-body ul{display:grid;gap:15px;padding-left:21px;margin:0 0 20px;list-style:disc}
 .legal-body li{padding-left:3px}.legal-body strong{font-weight:600}
 .legal-contact{display:flex;flex-direction:column;gap:5px;margin:24px 0;font:inherit;font-style:normal;overflow-wrap:anywhere}
-.legal-page :is(a,summary):focus-visible{outline:2px solid rgb(var(--c-cta));outline-offset:5px}
-@media(max-width:760px){.legal-reading{display:block;padding-top:22px}.legal-contents{display:none}.legal-mobile-contents{display:block;margin:0 0 31px;padding:0 0 16px;border-bottom:1px solid rgb(var(--c-rule));font:400 .875rem/1.7 var(--f-ui)}.legal-mobile-contents summary{cursor:pointer;padding:6px 0;color:rgb(var(--c-cta))}.legal-mobile-contents ol{padding-top:14px;gap:10px}.legal-body{font-size:1rem;line-height:1.85}.legal-body>section{scroll-margin-top:92px;padding-bottom:27px;margin-bottom:27px}.legal-body h2{font-size:1.8rem}.legal-intro h1{margin-bottom:18px}.legal-updated{font-size:.75rem}.legal-page{padding-top:35px}}
+.legal-page :is(a,summary):focus-visible{outline:2px solid oklch(var(--c-cta));outline-offset:5px}
+@media(max-width:760px){.legal-reading{display:block;padding-top:22px}.legal-contents{display:none}.legal-mobile-contents{display:block;margin:0 0 31px;padding:0 0 16px;border-bottom:1px solid rgb(var(--c-rule));font:400 .875rem/1.7 var(--f-ui)}.legal-mobile-contents summary{cursor:pointer;padding:6px 0;color:oklch(var(--c-cta))}.legal-mobile-contents ol{padding-top:14px;gap:10px}.legal-body{font-size:1rem;line-height:1.85}.legal-body>section{scroll-margin-top:92px;padding-bottom:27px;margin-bottom:27px}.legal-body h2{font-size:1.8rem}.legal-intro h1{margin-bottom:18px}.legal-updated{font-size:.75rem}.legal-page{padding-top:35px}}
 @media print{.legal-page{padding:0;max-width:none;color:#000}.legal-contents,.legal-mobile-contents{display:none}.legal-reading{display:block}.legal-body{max-width:none;font-size:10pt;line-height:1.5}.legal-body>section{break-inside:avoid;border-color:#ccc}.legal-body a{color:#000}.legal-intro{max-width:none}}
