@@ -117,6 +117,23 @@ try {
  assert.equal(await fixture.evaluate(() => window.__sdkOptions.useRefreshTokens), false)
  assert.equal(writes.length, 0)
  pass('fixture callback restores local query/hash through one SDK singleton without auto-claiming')
+ const exactGuests=booking.guests
+ booking.guests=0;booking.planning.partyBandLabel='7–12 guests'
+ extraBookings=[{...booking,id:'CS-unknown-party',date:'1999-01-01',occasion:'Party size not yet known',planning:null,nextAction:null}]
+ await refreshDetails(fixture)
+ assert.match(await fixture.$eval('.ev-upcoming',node=>node.textContent),/7–12 guests · estimated/)
+ assert.match(await fixture.$eval('.ev-history-row',node=>node.textContent),/Party size to clarify/)
+ assert(!(await fixture.$eval('main',node=>node.textContent)).includes('0 guests'))
+ delete booking.planning.partyBandLabel;await refreshDetails(fixture)
+ assert.match(await fixture.$eval('.ev-upcoming',node=>node.textContent),/Party size to clarify/)
+ booking.guests=exactGuests;booking.planning.partyBandLabel='7–12 guests'
+ extraBookings=[{...booking,id:'CS-estimated-party',date:'1999-01-01',occasion:'An estimated party',guests:0,planning:{partyBandLabel:'7–12 guests'}}]
+ await refreshDetails(fixture)
+ assert.match(await fixture.$eval('.ev-upcoming',node=>node.textContent),/6 guests/)
+ assert(!(await fixture.$eval('.ev-upcoming',node=>node.textContent)).includes('estimated'))
+ assert.match(await fixture.$eval('.ev-history-row',node=>node.textContent),/7–12 guests · estimated/)
+ delete booking.planning.partyBandLabel;extraBookings=[];await refreshDetails(fixture)
+ pass('estimated and unknown party sizes render truthfully in upcoming cards and history; exact counts take precedence')
  await fixture.screenshot({ path: directory + '/fixture-evenings-desktop.png', fullPage: true })
  for(const label of ['Saved menus','Settings & profile','Your evenings']) {
   await tab(fixture,label)

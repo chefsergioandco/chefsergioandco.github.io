@@ -20,10 +20,11 @@ export function PrepareDetails({ bookingRef }: { bookingRef: string }) {
   const [occasion, setOccasion] = useState(''), [dietary, setDietary] = useState<string[]>([]), [allergies, setAllergies] = useState('')
   const [foodIdeas, setFoodIdeas] = useState(''), [kitchen, setKitchen] = useState(''), [notes, setNotes] = useState('')
   const [budgetMode, setBudgetMode] = useState<'guidance' | 'range'>('guidance'), [budgetMin, setBudgetMin] = useState(''), [budgetMax, setBudgetMax] = useState(''), [budgetUnit, setBudgetUnit] = useState<'total' | 'per_person'>('total')
+  const [budgetSelected, setBudgetSelected] = useState(false)
   const [busy, setBusy] = useState(false), [acknowledgment, setAcknowledgment] = useState<{ result: DetailsResult; input: string } | null>(null), [error, setError] = useState('')
   const min = Number(budgetMin), max = Number(budgetMax)
   const rangeValid = budgetMode === 'guidance' || Number.isInteger(min) && Number.isInteger(max) && min >= 1 && max >= min
-  const empty = !occasion.trim() && !dietary.length && !allergies.trim() && !foodIdeas.trim() && !kitchen.trim() && !notes.trim() && budgetMode === 'guidance'
+  const empty = !occasion.trim() && !dietary.length && !allergies.trim() && !foodIdeas.trim() && !kitchen.trim() && !notes.trim() && !budgetSelected
 
   function detailsInput(): GuestDetails {
     return {
@@ -31,7 +32,8 @@ export function PrepareDetails({ bookingRef }: { bookingRef: string }) {
       ...(sensitiveConsent && (dietary.length || allergies.trim()) ? { sensitiveDataConsent: sensitiveDataConsent(true) } : {}),
       ...(occasion.trim() ? { occasion: occasion.trim() } : {}), ...(sensitiveConsent && dietary.length ? { dietary } : {}), ...(sensitiveConsent && allergies.trim() ? { allergies: allergies.trim() } : {}),
       ...(foodIdeas.trim() ? { foodIdeas: foodIdeas.trim() } : {}), ...(kitchen.trim() ? { kitchen: kitchen.trim() } : {}), ...(notes.trim() ? { notes: notes.trim() } : {}),
-      ...(budgetMode === 'range' ? { budgetMode, budgetMin: min, budgetMax: max, budgetUnit } : {}),
+      // The displayed default is not a request to replace a saved spending answer.
+      ...(budgetSelected ? budgetMode === 'range' ? { budgetMode, budgetMin: min, budgetMax: max, budgetUnit } : { budgetMode } : {}),
     }
   }
   const input = JSON.stringify(detailsInput()), matchesAcknowledgment = acknowledgment?.input === input
@@ -79,8 +81,8 @@ export function PrepareDetails({ bookingRef }: { bookingRef: string }) {
       <div className="booking-field quick-field"><label htmlFor="d-food">What would you love to eat?</label><textarea id="d-food" className="booking-input" rows={2} maxLength={3000} value={foodIdeas} onChange={event => setFoodIdeas(event.target.value)} placeholder="A dish, an ingredient, a style of cooking"/></div>
       <div className="booking-field quick-field"><label htmlFor="d-kitchen">About the kitchen</label><textarea id="d-kitchen" className="booking-input" rows={2} maxLength={3000} value={kitchen} onChange={event => setKitchen(event.target.value)} placeholder="Gas or induction, oven, counter space"/></div>
       <div className="quick-group"><p className="quick-label" id="d-budget-label">Spending</p><div className="quick-chips" role="radiogroup" aria-labelledby="d-budget-label">
-        <button type="button" className="quick-chip" role="radio" aria-checked={budgetMode === 'guidance'} onClick={() => setBudgetMode('guidance')}><span className="quick-chip-main">I’d like Sergio’s guidance</span></button>
-        <button type="button" className="quick-chip" role="radio" aria-checked={budgetMode === 'range'} onClick={() => setBudgetMode('range')}><span className="quick-chip-main">I have a range in mind</span></button>
+        <button type="button" className="quick-chip" role="radio" aria-checked={budgetMode === 'guidance'} onClick={() => { setBudgetMode('guidance'); setBudgetSelected(true) }}><span className="quick-chip-main">I’d like Sergio’s guidance</span></button>
+        <button type="button" className="quick-chip" role="radio" aria-checked={budgetMode === 'range'} onClick={() => { setBudgetMode('range'); setBudgetSelected(true) }}><span className="quick-chip-main">I have a range in mind</span></button>
       </div></div>
       {budgetMode === 'range' && <div className="quick-contact">
         <div className="booking-field quick-field"><label htmlFor="d-min">From ($)</label><input id="d-min" className="booking-input" type="number" inputMode="numeric" min={1} step={1} value={budgetMin} onChange={event => setBudgetMin(event.target.value)}/></div>
