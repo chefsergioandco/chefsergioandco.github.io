@@ -2,7 +2,7 @@
 // Runs the real browser API and calendar formatter through their external contracts.
 // Only configuration and browser/network surfaces are supplied by this harness.
 import assert from 'node:assert/strict'
-import { webcrypto } from 'node:crypto'
+import { createHash, webcrypto } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 
@@ -395,73 +395,48 @@ try {
     assert.equal(unknownCovered.ref, result.ref)
   })
 
-  const detailsApi = (await actualModule('src/booking/api.ts', 'https://details.example.test')).api
+  const detailsModule = await actualModule('src/booking/api.ts', 'https://details.example.test'), detailsApi = detailsModule.api
   const preparation = { occasion: 'Private family occasion', kitchen: 'Private kitchen description', budgetMode: 'guidance' }
-  let firstDetailsId, detailsReply = body => ({ ...receipt, detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'recorded', kitchen: 'requires_review', budget: 'unchanged' } } })
-  const detailKeys = () => [...pendingMemory.keys()].filter(key => key.startsWith('booking-pending:v1:https%3A%2F%2Fdetails.example.test:details:'))
-  globalThis.fetch = async (url, options) => {
-    const entry = observed(url, options); writeBoundary(entry)
-    firstDetailsId ??= entry.body.requestId
-    assert.equal(entry.body.requestId, firstDetailsId)
-    return Response.json(detailsReply(entry.body))
-  }
-  const goodDetailsReply = detailsReply
+  const intent = () => ({ bookingId: receipt.ref, requestId: crypto.randomUUID(), expectedRevision: 0, expectedWorkspaceRevision: 38 })
+  const fingerprint = body => createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(body).sort(([a],[b]) => a.localeCompare(b))))).digest('hex')
+  const preparationAck = body => ({ version: 1, bookingId: receipt.ref, requestId: body.requestId, requestHash: fingerprint(body), operation: 'save', state: 'recorded', revision: body.expectedRevision + 1, workspaceRevision: body.expectedWorkspaceRevision + 1, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'accepted', kitchen: 'pending_review', budget: 'unchanged' }, entryIds: {} })
+  const goodDetailsReply = body => ({ ...receipt, preparationAction: preparationAck(body), detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'recorded', kitchen: 'requires_review', budget: 'unchanged' } } })
+  let detailsReply = goodDetailsReply
+  const firstIntent = intent(), detailKeys = () => [...pendingMemory.keys()].filter(key => key.startsWith('booking-pending:v1:https%3A%2F%2Fdetails.example.test:details:'))
+  globalThis.fetch = async (url, options) => { const entry = observed(url, options); writeBoundary(entry); assert.equal(entry.body.requestId, firstIntent.requestId); return Response.json(detailsReply(entry.body)) }
+  const beforeMissing = calls.length
+  await assert.rejects(detailsApi.details(receipt.ref, preparation), /Reload/)
+  check('unversioned preparation never sends a new mutation', () => assert.equal(calls.length, beforeMissing))
   const invalidReplies = [
     () => receipt,
     body => ({ ...goodDetailsReply(body), ref: 'another-booking' }),
-    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, version: 2 } }),
-    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, requestId: crypto.randomUUID() } }),
-    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { occasion: 'recorded', budget: 'unchanged' } } }),
-    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { ...goodDetailsReply(body).detailsResult.outcomes, internalNotes: 'recorded' } } }),
-    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { occasion: 'recorded', kitchen: 'agreed', budget: 'unchanged' } } }),
-    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, recordedAt: 'not-a-date' } }),
+    body => ({ ...goodDetailsReply(body), preparationAction: undefined }),
+    body => ({ ...goodDetailsReply(body), preparationAction: { ...preparationAck(body), bookingId: 'another-booking' } }),
+    body => ({ ...goodDetailsReply(body), preparationAction: { ...preparationAck(body), requestHash: 'e'.repeat(64) } }),
+    body => ({ ...goodDetailsReply(body), preparationAction: { ...preparationAck(body), requestId: crypto.randomUUID() } }),
+    body => ({ ...goodDetailsReply(body), detailsResult: { ...goodDetailsReply(body).detailsResult, version: 2 } }),
+    body => ({ ...goodDetailsReply(body), detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { occasion: 'recorded', budget: 'unchanged' } } }),
+    body => ({ ...goodDetailsReply(body), detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { ...goodDetailsReply(body).detailsResult.outcomes, internalNotes: 'recorded' } } }),
   ]
-  for (const invalid of invalidReplies) {
-    detailsReply = invalid
-    await assert.rejects(detailsApi.details(receipt.ref, preparation), /could not be confirmed/)
-    assert.equal(detailKeys().length, 1)
-  }
-  check('preparation acknowledgment rejects legacy, wrong-action and incomplete field results while preserving one retry identity', () => {
-    assert.equal(calls.at(-1).body.requestId, firstDetailsId)
-    assert(!JSON.stringify([...pendingMemory]).includes(preparation.occasion))
-    assert(!JSON.stringify([...pendingMemory]).includes(preparation.kitchen))
-  })
+  for (const invalid of invalidReplies) { detailsReply = invalid; await assert.rejects(detailsApi.details(receipt.ref, preparation, firstIntent), /could not be confirmed/); assert.equal(detailKeys().length, 0) }
+  check('preparation rejects wrong booking, hash, nonce, legacy and incomplete acknowledgment without persisting body digests', () => { assert.equal(calls.at(-1).body.requestId, firstIntent.requestId); assert(!JSON.stringify([...pendingMemory]).includes(preparation.occasion)); assert(!JSON.stringify([...pendingMemory]).includes(preparation.kitchen)) })
   detailsReply = goodDetailsReply
-  const acknowledged = await detailsApi.details(receipt.ref, preparation)
-  check('a verified preparation result covers grouped spending and separates recorded, unchanged and unapplied fields', () => {
-    assert.deepEqual(acknowledged.detailsResult.outcomes, { occasion: 'recorded', kitchen: 'requires_review', budget: 'unchanged' })
-    assert.equal(detailKeys().length, 0)
-    assert.equal(calls.at(-1).body.accessToken, 'action-private-token')
-  })
-  const completedDetailsId = firstDetailsId
-  firstDetailsId = undefined
-  await detailsApi.details(receipt.ref, preparation)
-  check('a later intentional preparation submission receives a new identity after a confirmed result', () => {
-    assert.notEqual(calls.at(-1).body.requestId, completedDetailsId)
-    assert.equal(detailKeys().length, 0)
-  })
-  firstDetailsId = undefined
-  detailsReply = body => ({ ...receipt, detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'unverified' } } })
-  const legacyOutcome = await detailsApi.details(receipt.ref, { occasion: 'Earlier private submission', kitchen: undefined })
-  check('an unverified legacy outcome remains retryable and undefined fields omitted from JSON need no acknowledgment', () => {
-    assert.equal(legacyOutcome.detailsResult.outcomes.occasion, 'unverified')
-    assert.equal(detailKeys().length, 1)
-  })
+  const acknowledged = await detailsApi.details(receipt.ref, preparation, firstIntent)
+  check('exact preparation ACK separates pending review from accepted host answers and carries both CAS versions', () => { assert.equal(acknowledged.preparationAction.outcomes.kitchen, 'pending_review'); assert.deepEqual(acknowledged.detailsResult.outcomes, { occasion: 'recorded', kitchen: 'requires_review', budget: 'unchanged' }); assert.equal(calls.at(-1).body.expectedWorkspaceRevision, 38); assert.equal(calls.at(-1).body.accessToken, 'action-private-token'); assert(!Object.hasOwn(calls.at(-1).body, 'bookingId')) })
+  const secondIntent = intent()
+  globalThis.fetch = async (url, options) => { const entry = observed(url, options); writeBoundary(entry); return Response.json(goodDetailsReply(entry.body)) }
+  await detailsApi.details(receipt.ref, preparation, secondIntent)
+  check('a separately reviewed new preparation intent has a new explicit identity', () => assert.notEqual(calls.at(-1).body.requestId, firstIntent.requestId))
   let lostDetails = true, committedDetails
-  globalThis.fetch = async (url, options) => {
-    const entry = observed(url, options); writeBoundary(entry)
-    committedDetails ??= { ...receipt, detailsResult: { version: 1, requestId: entry.body.requestId, recordedAt: '2026-11-27T20:01:00.000Z', outcomes: { notes: 'recorded' } } }
-    assert.equal(entry.body.requestId, committedDetails.detailsResult.requestId)
-    if (lostDetails) { lostDetails = false; throw new TypeError('Reply lost after commitment') }
-    return Response.json(committedDetails)
-  }
-  await assert.rejects(detailsApi.details(receipt.ref, { notes: 'Private arrival note' }), /not been confirmed/)
-  const recoveredDetails = await detailsApi.details(receipt.ref, { notes: 'Private arrival note' })
-  check('lost preparation replies recover the exact committed acknowledgment without placing answers or proof in the URL', () => {
-    assert.deepEqual(recoveredDetails, committedDetails)
-    assert.equal(calls.at(-1).url, 'https://details.example.test/api/booking/details')
-    assert(!JSON.stringify([...pendingMemory]).includes('Private arrival note'))
-  })
+  const retryIntent = intent()
+  globalThis.fetch = async (url, options) => { const entry = observed(url, options); writeBoundary(entry); committedDetails ??= goodDetailsReply(entry.body); assert.equal(entry.body.requestId, retryIntent.requestId); if (lostDetails) { lostDetails = false; throw new TypeError('Reply lost after commitment') }; return Response.json(committedDetails) }
+  await assert.rejects(detailsApi.details(receipt.ref, preparation, retryIntent), /not been confirmed/)
+  const recoveredDetails = await detailsApi.details(receipt.ref, preparation, retryIntent)
+  check('same-page preparation retry uses exact caller-owned intent without answers or proof in URL/storage', () => { assert.deepEqual(recoveredDetails, committedDetails); assert.equal(calls.at(-1).url, 'https://details.example.test/api/booking/details'); assert.equal(detailKeys().length, 0) })
+  const metadata = { version: 1, bookingId: receipt.ref, revision: 1, workspaceRevision: 39, canContribute: true, canWithdraw: true, operation: 'save', actionResult: committedDetails.preparationAction, legacyResult: null }
+  globalThis.fetch = async (url, options) => { const entry = observed(url, options); writeBoundary(entry); return Response.json(metadata) }
+  const journal = await detailsModule.receiptPreparation(receipt.ref, retryIntent.requestId)
+  check('public preparation recovery reads value-free authorized journal metadata', () => { assert.equal(journal.actionResult.requestId, retryIntent.requestId); assert.equal(calls.at(-1).url, 'https://details.example.test/api/booking/details-result'); assert(!Object.hasOwn(journal, 'fields')) })
 
   const { ics } = await actualModule('src/booking/format.ts')
   check('unconfirmed, held and cancelled requests do not become calendar appointments', () => {

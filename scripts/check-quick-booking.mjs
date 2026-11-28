@@ -3,7 +3,7 @@
 // checkout) that the request it builds passes the real booking gateway's validation.
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
-import { webcrypto } from 'node:crypto'
+import { createHash, webcrypto } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 
@@ -113,8 +113,8 @@ await check('events and holds without payment never ask for checkout; bad elapse
   assert.equal('checkoutRequestId' in calls.at(-1).body, false); assert.equal('elapsedMs' in calls.at(-1).body, false)
 })
 await check('guest details go to the booking’s private receipt with its access token in the body only', async () => {
-  reply = body => ({ ref, status: 'requested', kind: 'dinner', detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'recorded', dietary: 'recorded' } } })
-  await api.details(ref, { occasion: 'Birthday', dietary: ['Gluten-free'] })
+  reply = body => ({ ref, status: 'requested', kind: 'dinner', preparationAction: { version: 1, bookingId: ref, requestId: body.requestId, requestHash: createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(body).sort(([a],[b])=>a.localeCompare(b))))).digest('hex'), operation: 'save', state: 'recorded', revision: 1, workspaceRevision: 39, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'accepted', dietary: 'accepted' }, entryIds: {} }, detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'recorded', dietary: 'recorded' } } })
+  await api.details(ref, { occasion: 'Birthday', dietary: ['Gluten-free'] }, { bookingId: ref, requestId: crypto.randomUUID(), expectedRevision: 0, expectedWorkspaceRevision: 38 })
   const last = calls.at(-1)
   assert.equal(last.url, 'https://api.example.test/api/booking/details'); assert.equal(last.body.ref, ref); assert.equal(last.body.accessToken, accessToken)
   assert.deepEqual(last.body.details, { occasion: 'Birthday', dietary: ['Gluten-free'] }); assert.match(last.body.requestId, /^[0-9a-f-]{36}$/)

@@ -1,6 +1,9 @@
 import { booking } from '../content/booking'
 import { BookingError, type BookingReceipt, type CheckoutResult, type DetailsReceipt, type PublicBookingApi, type PublicHoldResult, type PlanningConfig } from './types'
 import { isDetailsResult } from './details-result'
+import { isPreparationAck, isPreparationId, isPreparationUuid, type PreparationAck } from '../preparation/types'
+import { preparationRequestHash } from '../preparation/recovery'
+import type { DetailsIntent, DetailsResult, GuestDetails } from './types'
 
 // A failed or missing live service never creates a browser-only booking.
 export const IS_MOCK = false
@@ -54,7 +57,7 @@ async function call<T>(path: string, body?: unknown, allowNull = false): Promise
   if (!response.ok) {
     const error = data?.error ?? data
     const code = ['unavailable', 'seats-gone', 'invalid', 'network'].includes(error?.code) ? error.code : 'network'
-    throw new BookingError(code, error?.message || 'Your request could not be confirmed. Please retry or call Sergio.')
+    throw Object.assign(new BookingError(code, error?.message || 'Your request could not be confirmed. Please retry or call Sergio.'), { status: response.status })
   }
   if (data === null && !allowNull) throw new BookingError('network', 'The service returned an incomplete response. Please retry before assuming your request was received.')
   return data as T
@@ -91,18 +94,11 @@ export const api: PublicBookingApi = {
     }
     return result
   },
-  async details(ref, details) {
-    const accessToken = receiptAccess(ref)
-    if (!ref || !accessToken) throw new BookingError('invalid', 'Open your complete private booking link first.')
-    const payload = { ref, accessToken, details }, attempt = await requestId('details', payload)
-    const result = await call<DetailsReceipt | null>('/api/booking/details', { ...payload, requestId: attempt.value })
-    if (!result || result.ref !== ref || !isDetailsResult(result.detailsResult, attempt.value, details)) throw new BookingError('network', 'The result for these details could not be confirmed. Your answers are still here; retry the same submission or call Sergio.')
-    if (!Object.values(result.detailsResult.outcomes).includes('unverified')) {
-      completeAttempt(attempt)
-      // A later intentional update (including adding details after Remove)
-      // gets a fresh identity. Only uncertain submissions retain their retry ID.
-      if (attempts.get(attempt.key) === attempt.value) attempts.delete(attempt.key)
-    }
+  async details(ref, details, intent) {
+    if (!intent) throw new BookingError('invalid', 'Reload the preparation form before sending details. No new details were sent.')
+    const payload = receiptDetailsInput(ref, details, intent)
+    const result = await call<DetailsReceipt | null>('/api/booking/details', payload)
+    if (!result || result.ref !== ref || !isDetailsResult(result.detailsResult, intent.requestId, details) || !isPreparationAck(result.preparationAction, { ...intent, operation: 'save', requestHash: await preparationRequestHash(payload) })) throw new BookingError('network', 'The exact saved result could not be confirmed. Check the original request before entering another change.')
     return result
   },
   async booking(ref) {
@@ -148,4 +144,39 @@ export const api: PublicBookingApi = {
     if (result?.ok !== true) throw new BookingError('network', 'The waitlist acknowledgment was incomplete. Retry to recover the same request, or call Sergio.')
     completeAttempt(attempt)
   },
+}
+
+/** Value-free preparation journal. Receipt capability stays in the existing private-link transport. */
+export type ReceiptPreparationMetadata = { version: 1; bookingId: string; revision: number; workspaceRevision: number; canContribute: boolean; canWithdraw: boolean; operation: 'save'; actionResult: PreparationAck | null; legacyResult: DetailsResult | null }
+export function receiptDetailsInput(ref: string, details: GuestDetails, intent: DetailsIntent) {
+  const accessToken = receiptAccess(ref)
+  if (!ref || !accessToken || !isPreparationId(intent.bookingId) || !isPreparationUuid(intent.requestId)) throw new BookingError('invalid', 'Open your complete private booking link and reload the preparation form first.')
+  return { ref, accessToken, requestId: intent.requestId, expectedRevision: intent.expectedRevision, expectedWorkspaceRevision: intent.expectedWorkspaceRevision, details }
+}
+function validReceiptPreparation(value: unknown, requestId?: string): value is ReceiptPreparationMetadata {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const v = value as ReceiptPreparationMetadata
+  if (Object.keys(v).some(k => !['version','bookingId','revision','workspaceRevision','canContribute','canWithdraw','operation','actionResult','legacyResult'].includes(k)) || v.version !== 1 || typeof v.bookingId !== 'string' || !v.bookingId || !Number.isSafeInteger(v.revision) || v.revision < 0 || !Number.isSafeInteger(v.workspaceRevision) || v.workspaceRevision < 0 || typeof v.canContribute !== 'boolean' || typeof v.canWithdraw !== 'boolean' || v.operation !== 'save') return false
+  if (v.actionResult !== null && (!requestId || !isPreparationAck(v.actionResult, { bookingId: v.bookingId, requestId, operation: 'save' }) || v.actionResult.revision > v.revision || v.actionResult.workspaceRevision > v.workspaceRevision)) return false
+  if (v.legacyResult !== null) { const old = v.legacyResult; if (!requestId || old.requestId !== requestId || old.version !== 1 || Object.keys(old).some(k => !['version','requestId','recordedAt','outcomes'].includes(k)) || typeof old.recordedAt !== 'string' || !Number.isFinite(Date.parse(old.recordedAt)) || !old.outcomes || Object.keys(old.outcomes).some(k => !['occasion','kitchen','foodIdeas','dietary','allergies','notes','budget','physicalInvitations','sensitiveDataConsent'].includes(k)) || Object.values(old.outcomes).some(o => !['recorded','unchanged','requires_review','unverified'].includes(o))) return false }
+  return true
+}
+export async function receiptPreparation(ref: string, requestId?: string, abandon = false): Promise<ReceiptPreparationMetadata> {
+  const accessToken = receiptAccess(ref)
+  if (!ref || !accessToken || abandon && !isPreparationUuid(requestId)) throw new BookingError('invalid', 'Open your complete private booking link first.')
+  const result = await call<unknown>('/api/booking/details-' + (abandon ? 'abandon' : 'result'), { ref, accessToken, ...(requestId ? { requestId } : {}) })
+  if (!validReceiptPreparation(result, requestId)) throw new BookingError('network', 'The earlier preparation result could not be verified. Check it again before starting another request.')
+  return result
+}
+/** Adopt only an exact old details payload in memory. Unrelated financial attempt keys are never touched. */
+export async function legacyDetailsAttempt(ref: string, details: GuestDetails): Promise<{ requestId: string; clear: () => void } | null> {
+  const accessToken = receiptAccess(ref), origin = new URL(serviceBase()).origin
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ ref, accessToken, details })))
+  const hash = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('')
+  const key = `booking-pending:v1:${encodeURIComponent(origin)}:details:${hash}`
+  let value: string | null
+  try { value = localStorage.getItem(key) || attempts.get(key) || null } catch { value = attempts.get(key) || null }
+  if (!isPreparationUuid(value)) return null
+  const requestId = value
+  return { requestId, clear: () => { try { if (localStorage.getItem(key) === requestId) localStorage.removeItem(key) } catch {} if (attempts.get(key) === requestId) attempts.delete(key) } }
 }

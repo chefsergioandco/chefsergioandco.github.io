@@ -4,6 +4,7 @@ import { useAdmin } from './store'
 import { Badge, Icon, Modal } from './ui'
 import './Bookings.css'
 import InterviewBrief from './InterviewBrief'
+import PreparationAttention from './PreparationAttention'
 import {BillingPanel} from './Billing'
 import {VenueDetails,DietaryDetails} from './GuestDetails'
 import { calendarClosedReason, occupiesDate, scheduleConflictReason } from './calendar-policy'
@@ -231,6 +232,7 @@ export default function Bookings({ initialId, initialStatus = 'all', initialScop
   return <section className={'bookings' + (embedded ? ' bookings-embedded' : '')} aria-labelledby={embedded ? undefined : 'bookings-title'} aria-label={embedded ? 'Bookings' : undefined}>
     <div className={embedded ? 'booking-embedded-toolbar' : 'booking-page-heading'}>{!embedded && <div><p className="eyebrow">Your guests, thoughtfully looked after</p><h1 id="bookings-title">Bookings</h1><p className="muted">Every request and every evening, in one place.</p></div>}
       <button className="button" onClick={() => { setDraft(blankDraft()); setShowPayments(false); setErrors({}); setSelectedId(null); setDialog('create') }}><Icon name="plus" size={18} />Add a booking</button></div>
+    <PreparationAttention open={openBooking}/>
     <div className="booking-status-tabs" aria-label="Filter by booking status">
       {statusOptions.map((tab) => <button key={tab.id} aria-pressed={status === tab.id} onClick={() => setStatus(tab.id)}>{scope === 'upcoming' && tab.id === 'all' ? 'All upcoming' : tab.label}<span>{tab.id === 'all' ? scopedBookings.length : scopedBookings.filter((item) => item.status === tab.id).length}</span></button>)}
     </div>
@@ -249,7 +251,7 @@ export default function Bookings({ initialId, initialStatus = 'all', initialScop
         <div className="booking-detail-top"><div><span className="booking-detail-date">{longDate(booking.date)}</span><span className="booking-cell-secondary">{booking.time ? `${timeLabel(booking.time)} · ` : ''}{guestCountLabel(booking)}</span></div><BookingBadge booking={booking} /></div>
         {errors.action && <p className="booking-action-error" role="alert">{errors.action}</p>}
         {!isPublishedSeat && <InterviewBrief booking={booking}/>}
-        <div className="booking-detail-columns"><div className="booking-detail-main"><section className="booking-detail-section"><h3>Occasion</h3><p>{booking.occasion || 'Not specified'}</p></section><VenueDetails bookingId={booking.id}/>
+        <div className="booking-detail-columns"><div className="booking-detail-main"><section className="booking-detail-section"><h3>{hasPrivatePlanning ? 'Earlier booking occasion' : 'Occasion'}</h3><p>{booking.occasion || 'Not specified'}</p></section><VenueDetails bookingId={booking.id}/>
           <DietaryDetails bookingId={booking.id}/>
           <section className="booking-detail-section"><div className="booking-notes-heading"><div><h3>Internal notes</h3><p className="muted">For you and your team.</p></div><button className="button secondary booking-save-note" disabled={pending || notes === booking.notes} onClick={saveNotes}>Save notes</button></div><label className="booking-sr-only" htmlFor="booking-internal-notes">Internal notes</label><textarea id="booking-internal-notes" rows={5} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Menu plans, arrival details, things to remember…" /></section>
         </div><aside className="booking-detail-aside"><section className="booking-detail-section"><h3>Guest contact</h3><a className="booking-contact-link" href={`mailto:${booking.email}`}>{booking.email}</a><span className="booking-contact-link">{booking.phone ? <a href={`tel:${booking.phone.replace(/[^+\d]/g, '')}`}>{booking.phone}</a> : 'No phone supplied'}</span></section>

@@ -89,6 +89,7 @@ export function planningRequest(s: PlanningState): BookingRequest {
     kind: s.kind!, name: s.name.trim(), email: s.email.trim(), phone: s.phone.trim(), contactBy: s.contactBy,
     dietary: s.sensitiveConsent ? s.dietary : [], allergies: s.sensitiveConsent ? s.allergies.trim() : '', sensitiveDataConsent: sensitiveDataConsent(s.sensitiveConsent === true), notes: s.notes.trim(), gift: s.gift || undefined,
     ...(table ? { nightId: s.nightId, seats: s.seats, planning: undefined } : {
+      preparationMeta: { version: 1, source: 'full', budgetExplicit: true },
       ...(s.dateMode === 'exact' ? { date: s.date, time: s.time } : {}),
       flexible: s.dateMode !== 'exact', guests: s.headcountMode === 'exact' ? s.guests : undefined,
       where: s.where, place: s.where === 'his' ? undefined : s.place.trim(), occasion: s.occasion.trim(),

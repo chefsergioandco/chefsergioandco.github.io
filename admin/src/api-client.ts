@@ -51,7 +51,7 @@ async function unauthorized(config: Configuration, status: 401 | 403) {
   try { await config.onUnauthorized?.(status) } catch { /* The response still reaches the workspace. */ }
 }
 
-export async function adminFetch(path: string, init: RequestInit = {}): Promise<Response> {
+export async function adminFetch(path: string, init: RequestInit = {}, expectedActor?: string): Promise<Response> {
   const headers = new Headers(init.headers)
   const config = configuration
   if (config) {
@@ -66,6 +66,12 @@ export async function adminFetch(path: string, init: RequestInit = {}): Promise<
       await unauthorized(config, 401)
       throw new AdminApiError('Your sign-in session could not be verified. Sign in again to continue.', 401)
     }
+    if (expectedActor) {
+      const check = await fetch(endpoint('/api/auth/session', config), { signal: init.signal, credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer', headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } })
+      const session = await check.json().catch(() => null)
+      if (!check.ok) { if (check.status === 401 || check.status === 403) await unauthorized(config, check.status); throw new AdminApiError('Your current workspace account could not be checked. Refresh access before continuing.', check.status) }
+      if (session?.authenticated !== true || session.identity?.sub !== expectedActor || session.identity?.isAdmin !== true || session.identity?.email_verified !== true) { await unauthorized(config, 403); throw new AdminApiError('Your workspace account changed. Refresh access before reviewing private details.', 403) }
+    }
     headers.set('Authorization', 'Bearer ' + token)
     headers.delete('X-CSRF-Token')
     // Never follow a provider/API redirect with a bearer credential.
@@ -74,13 +80,14 @@ export async function adminFetch(path: string, init: RequestInit = {}): Promise<
     return response
   }
   const method = (init.method || 'GET').toUpperCase()
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+  if (expectedActor || !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const session = await fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store', signal: init.signal })
     const data = await session.json().catch(() => null)
     if (!session.ok) throw new AdminApiError(data?.error?.message || 'Your sign-in session needs attention. Sign in again to continue.', session.status)
+    if (expectedActor && data?.user?.id !== expectedActor) throw new AdminApiError('Your workspace account changed. Refresh access before reviewing private details.', 403)
     const csrfToken = data?.csrfToken
-    if (typeof csrfToken !== 'string' || !csrfToken) throw new AdminApiError('Your sign-in session could not be verified. Refresh the dashboard and try again.', 403)
-    headers.set('X-CSRF-Token', csrfToken)
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method) && (typeof csrfToken !== 'string' || !csrfToken)) throw new AdminApiError('Your sign-in session could not be verified. Refresh the dashboard and try again.', 403)
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) headers.set('X-CSRF-Token', csrfToken)
   }
   return fetch(path, { ...init, credentials: 'same-origin', headers })
 }

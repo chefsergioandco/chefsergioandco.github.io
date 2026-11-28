@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { Booking } from './model'
 import { dateLabel, money, timeLabel } from './model'
 import type { BookingPlanning, InterviewTopic } from './planning'
@@ -7,6 +7,7 @@ import { adminFetch, useAdmin } from './store'
 import { Icon } from './ui'
 import { localInterview, interviewInstant } from './interview-time'
 import './InterviewBrief.css'
+import PreparationReview from './PreparationReview'
 
 type GuestResponse = {id:string;name:string;email:string;attending:boolean|string;dietary:string;allergies:string;updatedAt:string}
 const statuses = [{ value: 'unknown', label: 'Unknown' }, { value: 'tentative', label: 'Tentative' }, { value: 'agreed', label: 'Agreed' }] as const
@@ -43,8 +44,11 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
   const responseSequence=useRef(0)
   const [error, setError] = useState('')
   const [active, setActive] = useState('')
+  const [legacyHealthHidden, setLegacyHealthHidden] = useState(false)
+  const clearLegacyHealth = useCallback(() => { setLegacyHealthHidden(true); setTopics(current => current.map(topic => topic.id === 'dietary' ? { ...topic, supplied: '', answer: '', notes: '' } : topic)) }, [])
+  const [preparationState, setPreparationState] = useState<{hasPending:boolean;agreementReview:boolean}|null>(null)
   useEffect(() => {
-    setTopics(initialTopics(booking)); setFollowUp(booking.planning?.followUp ?? '')
+    setLegacyHealthHidden(false); setTopics(initialTopics(booking)); setFollowUp(booking.planning?.followUp ?? '')
     setDepositApproval({ amount: '', reason: '' })
     setAgreed({ date: booking.planning?.agreed.date ?? '', time: booking.planning?.agreed.time ?? '', guests: booking.planning?.agreed.guests?.toString() ?? '', ceiling: booking.planning?.spendingCeiling?.toString() ?? '' })
     setScheduledAt(localInterview(booking.planning?.interview.scheduledAt ?? null)); setMeetUrl(booking.planning?.interview.meetUrl ?? '')
@@ -116,15 +120,16 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
   const depositStatus = plan?.deposit.status === 'paid' ? 'Deposit paid' : plan?.deposit.status === 'refunded' ? 'Deposit refunded' : plan?.deposit.status === 'refund_pending' ? 'Refund pending' : booking.paid ? 'Receipt recorded' : 'Deposit unpaid'
   const canApproveDeposit = !!plan && plan.deposit.amount === null && plan.deposit.status === 'unpaid' && !plan.deposit.paid && !booking.paid && booking.status === 'requested' && !plan.dateReserved && !booking.nightId && booking.type !== 'Sergio’s Table'
   return <section className="interview-brief" aria-labelledby={`interview-title-${booking.id}`}>
-    <div className="interview-brief-header"><div><p className="eyebrow">THE MENU CONVERSATION</p><h2 id={`interview-title-${booking.id}`}>Interview brief</h2><p>Keep what the host told you. Settle the remaining questions together, then prepare the menu within the agreed ceiling.</p></div><span className="interview-count"><Icon name={unresolved ? 'book' : 'check'} size={15} />{unresolved ? `${unresolved} to clarify` : 'Details agreed'}</span></div>
+    <div className="interview-brief-header"><div><p className="eyebrow">THE MENU CONVERSATION</p><h2 id={`interview-title-${booking.id}`}>Interview brief</h2><p>Keep what the host told you. Settle the remaining questions together, then prepare the menu within the agreed ceiling.</p></div><span className="interview-count"><Icon name={unresolved ? 'book' : 'check'} size={15} />{unresolved ? `${unresolved} to clarify` : preparationState === null ? 'Host answers not yet checked' : preparationState.hasPending || preparationState.agreementReview ? 'Host corrections need attention' : followUp.trim() ? 'Follow-up noted' : 'Interview topics marked agreed'}</span></div>
     <div className="interview-body">
       <dl className="interview-facts"><div><dt>Payment</dt><dd>{depositStatus}{plan?.deposit.amount !== null && plan?.deposit.amount !== undefined ? ` · ${money(plan.deposit.amount)}` : ''}</dd></div><div><dt>Event date</dt><dd>{plan?.dateReserved ? 'Date reserved' : booking.date ? 'Proposed date' : 'Date to be agreed'}</dd></div><div><dt>Spending ceiling</dt><dd>{plan?.spendingCeiling !== null && plan?.spendingCeiling !== undefined ? money(plan.spendingCeiling) : 'To agree during interview'}</dd></div></dl>
-      <details className="interview-snapshot"><summary>Original host brief <span className="muted">Preserved as submitted</span></summary><dl>
+      <PreparationReview bookingId={booking.id} onState={setPreparationState} onHealthRestricted={clearLegacyHealth}/>
+      <details className="interview-snapshot"><summary>Earlier booking brief <span className="muted">Earlier retained copy</span></summary><p className="interview-info">This earlier booking copy may contain merged legacy answers. Use the current saved answers and provenance above for current answers.</p><dl>
         <div><dt>Date</dt><dd>{original ? original.dateMode === 'exact' ? plan?.topics.find(topic => topic.id === 'date')?.supplied || displayDate(booking.date) : original.dateMode === 'flexible' ? [original.dateFrom, original.dateTo].filter(Boolean).map(displayDate).join(' – ') || 'Flexible dates' : 'Help choosing a date' : displayDate(booking.date)}</dd></div>
         <div><dt>Party</dt><dd>{original ? original.headcount ? `${original.headcount} guests · ${original.partyBandLabel}` : `${original.partyBandLabel} · exact count undecided` : booking.guests ? `${booking.guests} guests` : 'Exact count undecided'}</dd></div>
         <div><dt>Location</dt><dd>{plan?.topics.find(topic => topic.id === 'location')?.supplied || booking.location || 'To be discussed'}</dd></div><div><dt>Kitchen</dt><dd>{original?.kitchen || 'To be clarified'}</dd></div>
         <div><dt>Spending range</dt><dd>{original?.budgetMode === 'range' ? `${original.budgetMin !== null ? money(original.budgetMin) : 'Open'} – ${original.budgetMax !== null ? money(original.budgetMax) : 'Open'} ${original.budgetUnit === 'per_person' ? 'per guest' : 'in total'}` : 'The host needs guidance'}</dd></div>
-        <div><dt>Food ideas</dt><dd>{original?.foodIdeas || 'Open to Sergio’s suggestions'}</dd></div><div><dt>Reported dietary needs and allergies</dt><dd>{original?.allergies || booking.dietary || 'Not supplied; discuss with the host'}</dd></div><div><dt>Occasion</dt><dd>{booking.occasion || 'Not supplied'}</dd></div>
+        <div><dt>Food ideas</dt><dd>{original?.foodIdeas || 'Open to Sergio’s suggestions'}</dd></div><div><dt>Reported dietary needs and allergies</dt><dd>{legacyHealthHidden ? 'Earlier personal health answers remain removed or restricted' : original?.allergies || booking.dietary || 'Not supplied; discuss with the host'}</dd></div><div><dt>Occasion</dt><dd>{booking.occasion || 'Not supplied'}</dd></div>
       </dl></details>
       {error && <p className="interview-error" role="alert">{error}</p>}
       {canApproveDeposit && <section className="interview-panel" aria-labelledby={`deposit-approval-${booking.id}`}><h3 id={`deposit-approval-${booking.id}`}>Approve a planning deposit</h3><p>This existing request has no deposit amount yet. Record the amount agreed with the host. Approval keeps this booking and preparation together; it does not charge the host or reserve a date.</p><form onSubmit={approveDeposit} className="interview-form-grid" noValidate><label className="field">Approved deposit ($)<input type="number" min="0.50" max="1000000" step="0.01" inputMode="decimal" value={depositApproval.amount} onChange={event => setDepositApproval({ ...depositApproval, amount: event.target.value })} disabled={locked} required /></label><label className="field">Approval reason<input value={depositApproval.reason} onChange={event => setDepositApproval({ ...depositApproval, reason: event.target.value })} maxLength={2000} disabled={locked} placeholder="Amount agreed with the host" required /></label><div className="interview-panel-actions full"><button className="button secondary" type="submit" disabled={locked || !depositApproval.amount || depositApproval.reason.trim().length < 3}>{active === 'approve_deposit' ? 'Approving…' : 'Approve deposit'}</button><span className="interview-invitation-history">The approved amount is fixed for this request.</span></div></form></section>}
@@ -132,7 +137,7 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
         <div className="interview-topics">{visibleTopics.map(topic => <details className="interview-topic" key={topic.id}>
           <summary><span className="interview-topic-title"><strong>{topic.label}</strong><small>{topic.answer || topic.supplied || 'A question for the interview'}</small></span><span className={`interview-status ${topic.status}`}>{statuses.find(status => status.value === topic.status)?.label}</span><Icon name="down" size={16} /></summary>
           <div className="interview-topic-fields">
-            {topic.supplied && <p className="interview-info" style={{ gridColumn: '1 / -1' }}>Host supplied: {topic.supplied}</p>}
+            {topic.supplied && <p className="interview-info" style={{ gridColumn: '1 / -1' }}>Earlier interview copy (not the current host report): {topic.supplied}</p>}
             <label className="field">Working answer<input value={topic.answer} maxLength={2000} onChange={event => changeTopic(topic.id, { answer: event.target.value })} disabled={locked} placeholder="What you establish together" /></label>
             <label className="field">Status<select value={topic.status} onChange={event => changeTopic(topic.id, { status: event.target.value as InterviewTopic['status'] })} disabled={locked}>{statuses.map(status => <option value={status.value} key={status.value}>{status.label}</option>)}</select></label>
             {topic.id === 'date' && <><label className="field">Agreed event date<input type="date" value={agreed.date} onChange={event => setAgreed({ ...agreed, date: event.target.value })} disabled={locked} /></label><label className="field">Agreed start time<input type="time" value={agreed.time} onChange={event => setAgreed({ ...agreed, time: event.target.value })} disabled={locked} /></label><small className="full">Saving an agreed date checks current availability. Payment and date reservation remain separate.</small></>}

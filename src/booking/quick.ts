@@ -61,6 +61,7 @@ export function quickBand(s: QuickState, config: PlanningConfig | null) { return
 export function quickRequest(s: QuickState): BookingRequest {
   const exact = s.dateMode === 'exact'
   return {
+    preparationMeta: { version: 1, source: 'quick', budgetExplicit: false },
     kind: s.format!, name: s.name.trim(), email: s.email.trim(), phone: s.phone.trim(), contactBy: s.contactBy,
     dietary: s.dietary, notes: '', gift: s.gift.trim() ? (isGiftCode(s.gift) ? formatGiftCode(s.gift) : s.gift.trim()) : undefined,
     ...(exact ? { date: s.date, time: s.time } : {}),

@@ -29,6 +29,7 @@ export type Night = {
 }
 
 export type BookingRequest = {
+  preparationMeta?: { version: 1; source: 'quick' | 'full'; budgetExplicit: boolean }
   kind: Kind
   date?: string
   time?: string
@@ -113,12 +114,13 @@ export type DetailsField = 'occasion' | 'kitchen' | 'foodIdeas' | 'dietary' | 'a
 export type DetailsOutcome = 'recorded' | 'unchanged' | 'requires_review' | 'unverified'
 /** A receipt for this exact submission, not a projection of current saved answers. */
 export type DetailsResult = { version: 1; requestId: string; recordedAt: string; outcomes: Partial<Record<DetailsField, DetailsOutcome>> }
-export type DetailsReceipt = BookingReceipt & { detailsResult: DetailsResult }
+export type DetailsReceipt = BookingReceipt & { detailsResult: DetailsResult; preparationAction?: import('../preparation/types').PreparationAck }
+export type DetailsIntent = { bookingId: string; requestId: string; expectedRevision: number; expectedWorkspaceRevision: number }
 export interface PublicBookingApi extends Omit<BookingApi, 'booking' | 'hold' | 'waitlist'> {
   config(): Promise<PlanningConfig>
   hold(req: BookingRequest, honeypot?: string, options?: HoldOptions): Promise<PublicHoldResult>
   booking(ref: string): Promise<BookingReceipt | null>
-  details(ref: string, details: GuestDetails): Promise<DetailsReceipt>
+  details(ref: string, details: GuestDetails, intent?: DetailsIntent): Promise<DetailsReceipt>
   cancel(ref: string, reason: string): Promise<BookingReceipt | null>
   scheduleInterview(ref: string, slotId: string): Promise<BookingReceipt | null>
   checkout(ref: string): Promise<CheckoutResult>
