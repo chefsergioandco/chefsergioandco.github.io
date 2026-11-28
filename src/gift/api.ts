@@ -1,23 +1,26 @@
 import { booking } from '../content/booking'
 import { isGiftCode, normalizeGiftCode } from '../../prototypes/sergio-admin/shared/gift-cards/code'
+import type { GiftCardDocument } from '../../prototypes/sergio-admin/shared/gift-cards/artwork'
 
 /**
  * The gift-card service contract (the Worker implements it; see docs/GIFT-CARDS.md):
- *   GET  /api/gift/config    → { ready, amounts }           ready=false until Stripe and the ledger are live
+ *   GET  /api/gift/config    → { ready, amounts, fulfillment }
  *   POST /api/gift/checkout  → { url }                      a Stripe Checkout URL; nothing is issued until it's paid
  *   POST /api/gift/card      { code } → GiftCardStatus      the code is the credential: sent in the body, never a URL
+ *   POST /api/gift/download  { purchaseId, accessToken } → private paid-card document; assembled as a PDF here
  * Like booking requests, a failed or missing service never pretends a card was bought.
  */
-export type GiftConfig = { ready: boolean; amounts: number[] }
-export type GiftPurchase = { amountCents: number; recipientName: string; recipientEmail: string; senderName: string; senderEmail: string; note: string; sendOn: string }
+export type GiftFulfillment = 'download' | 'email'
+export type GiftConfig = { ready: boolean; amounts: number[]; fulfillment: GiftFulfillment | null }
+export type GiftPurchase = { amountCents: number; recipientName: string; senderName: string; senderEmail: string; note: string } & ({ fulfillment: 'download'; recipientEmail?: never; sendOn?: never } | { fulfillment: 'email'; recipientEmail: string; sendOn: string })
 export type GiftCardStatus = { amountCents: number; balanceCents: number; status: 'active' | 'pending' | 'frozen' | 'void'; recipient: string; sender: string; note: string; last4: string }
-export const GIFT_DELIVERY_STATUSES = ['not_issued', 'scheduled', 'disabled', 'preview', 'queued', 'sending', 'sent', 'delivered', 'retry', 'failed', 'bounced', 'complained', 'needs_review', 'suppressed', 'cancelled', 'needs_contact'] as const
+export const GIFT_DELIVERY_STATUSES = ['not_issued', 'scheduled', 'disabled', 'preview', 'queued', 'sending', 'sent', 'delivered', 'retry', 'failed', 'bounced', 'complained', 'needs_review', 'suppressed', 'cancelled', 'needs_contact', 'not_applicable'] as const
 export type GiftDeliveryStatus = typeof GIFT_DELIVERY_STATUSES[number]
 export type GiftPurchaseProof = { purchaseId: string; accessToken: string }
 export type GiftPurchaseStatus = {
   version: 1; purchaseId: string; payment: 'pending' | 'processing' | 'paid' | 'expired' | 'unverified';
   issuance: 'pending' | 'issued' | 'needs_review'; sendOn: string | null; timeZone: 'America/New_York';
-  delivery: { recipient: GiftDeliveryStatus; sender: GiftDeliveryStatus }; checkedAt: string;
+  delivery: { recipient: GiftDeliveryStatus; sender: GiftDeliveryStatus }; checkedAt: string; fulfillment: GiftFulfillment; canDownload: boolean;
 }
 export class GiftError extends Error { constructor(public code: 'invalid' | 'not-found' | 'unavailable' | 'rate_limited' | 'network', message: string) { super(message) } }
 
@@ -47,9 +50,9 @@ async function call<T>(path: string, body?: unknown, signal?: AbortSignal): Prom
 export async function giftConfig(fallbackAmounts: number[]): Promise<GiftConfig> {
   try {
     const result = await call<GiftConfig>('/api/gift/config')
-    const amounts = Array.isArray(result?.amounts) && result.amounts.length > 0 && result.amounts.length <= 32 && result.amounts.every(amount => Number.isSafeInteger(amount) && amount >= 500 && amount <= 10_000_000) ? result.amounts : fallbackAmounts
-    return { ready: result?.ready === true && amounts === result.amounts, amounts }
-  } catch { return { ready: false, amounts: fallbackAmounts } }
+    const valid = Array.isArray(result?.amounts) && result.amounts.length > 0 && result.amounts.length <= 32 && new Set(result.amounts).size === result.amounts.length && result.amounts.every(amount => Number.isSafeInteger(amount) && amount >= 500 && amount <= 10_000_000) && ['download', 'email'].includes(result.fulfillment ?? '')
+    return valid ? { ready: result.ready === true, amounts: result.amounts, fulfillment: result.fulfillment } : { ready: false, amounts: fallbackAmounts, fulfillment: null }
+  } catch { return { ready: false, amounts: fallbackAmounts, fulfillment: null } }
 }
 
 const attemptKey = 'gift-checkout-attempt'
@@ -79,6 +82,7 @@ export function giftPurchaseProof(search: string, hash: string): GiftPurchasePro
   return proof
 }
 export async function startGiftCheckout(purchase: GiftPurchase, honeypot = ''): Promise<string> {
+  if (!['download', 'email'].includes(purchase.fulfillment)) throw new GiftError('invalid', 'Refresh the gift page to confirm how your card will be delivered before payment.')
   // One id per purchase details, so a double click or a retry reuses the same Checkout session.
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(purchase)))
   const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
@@ -97,19 +101,74 @@ export async function startGiftCheckout(purchase: GiftPurchase, honeypot = ''): 
 
 export function isGiftPurchaseStatus(value: unknown, purchaseId: string): value is GiftPurchaseStatus {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
-  const v = value as Record<string, any>, allowed = ['version', 'purchaseId', 'payment', 'issuance', 'sendOn', 'timeZone', 'delivery', 'checkedAt']
+  const v = value as Record<string, any>, allowed = ['version', 'purchaseId', 'payment', 'issuance', 'sendOn', 'timeZone', 'delivery', 'checkedAt', 'fulfillment', 'canDownload']
   if (Object.keys(v).some(key => !allowed.includes(key)) || v.version !== 1 || v.purchaseId !== purchaseId || !uuid(v.purchaseId)) return false
   if (!['pending', 'processing', 'paid', 'expired', 'unverified'].includes(v.payment) || !['pending', 'issued', 'needs_review'].includes(v.issuance) || v.timeZone !== 'America/New_York') return false
+  if (!['download', 'email'].includes(v.fulfillment) || typeof v.canDownload !== 'boolean') return false
   if (v.sendOn !== null && (typeof v.sendOn !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v.sendOn) || !Number.isFinite(Date.parse(v.sendOn + 'T12:00:00Z')) || new Date(v.sendOn + 'T12:00:00Z').toISOString().slice(0, 10) !== v.sendOn)) return false
   if (!v.delivery || typeof v.delivery !== 'object' || Array.isArray(v.delivery) || Object.keys(v.delivery).length !== 2 || !GIFT_DELIVERY_STATUSES.includes(v.delivery.recipient) || !GIFT_DELIVERY_STATUSES.includes(v.delivery.sender)) return false
+  if (v.fulfillment === 'download' ? v.delivery.recipient !== 'not_applicable' || v.delivery.sender !== 'not_applicable' : v.delivery.recipient === 'not_applicable' || v.delivery.sender === 'not_applicable' || v.canDownload) return false
+  if (v.canDownload && (v.payment !== 'paid' || v.issuance !== 'issued')) return false
   return typeof v.checkedAt === 'string' && v.checkedAt.length <= 40 && /(?:Z|[+-]\d\d:\d\d)$/.test(v.checkedAt) && Number.isFinite(Date.parse(v.checkedAt))
 }
 
 export async function giftPurchaseStatus(proof: GiftPurchaseProof, signal?: AbortSignal): Promise<GiftPurchaseStatus> {
   if (!isGiftPurchaseProof(proof)) throw new GiftError('invalid', 'Use the complete private purchase link returned after checkout.')
-  const result = await call<GiftPurchaseStatus>('/api/gift/status', proof, signal)
+  const result = await call<GiftPurchaseStatus>('/api/gift/status', { purchaseId: proof.purchaseId, accessToken: proof.accessToken }, signal)
   if (!isGiftPurchaseStatus(result, proof.purchaseId)) throw new GiftError('network', 'The current purchase result could not be confirmed. Refresh the status or contact Sergio before making another payment.')
   return result
+}
+
+type GiftDownload = { version: 1; purchaseId: string; issuedAt: string; document: GiftCardDocument }
+function isGiftDownload(value: unknown, purchaseId: string): value is GiftDownload {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const v = value as Record<string, any>, d = v.document
+  if (Object.keys(v).some(key => !['version', 'purchaseId', 'issuedAt', 'document'].includes(key)) || v.version !== 1 || v.purchaseId !== purchaseId || typeof v.issuedAt !== 'string' || !/(?:Z|[+-]\d\d:\d\d)$/.test(v.issuedAt) || !Number.isFinite(Date.parse(v.issuedAt)) || !d || typeof d !== 'object' || Array.isArray(d)) return false
+  const text = (input: unknown, max: number) => typeof input === 'string' && input.length <= max && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(input)
+  if (Object.keys(d).some(key => !['amountCents', 'recipient', 'sender', 'note', 'code', 'redeemUrl', 'phone'].includes(key)) || !Number.isSafeInteger(d.amountCents) || d.amountCents < 500 || d.amountCents > 10_000_000 || !text(d.recipient, 60) || !text(d.sender, 60) || !text(d.note, 220) || typeof d.code !== 'string' || !isGiftCode(d.code) || !text(d.redeemUrl, 500) || !text(d.phone, 40) || !/^[0-9+(). \-]+$/.test(d.phone)) return false
+  try { const url = new URL(d.redeemUrl); return url.protocol === 'https:' && !url.username && !url.password && !url.port && !url.search && !url.hash && /\/book\/$/.test(url.pathname) } catch { return false }
+}
+
+/** Only this explicit, proof-bound request returns the card credential. The PDF renderer loads on demand. */
+export async function downloadGiftCard(proof: GiftPurchaseProof, signal?: AbortSignal): Promise<Blob> {
+  if (!isGiftPurchaseProof(proof)) throw new GiftError('invalid', 'Use the complete private purchase link returned after checkout.')
+  const root = base()
+  if (!root) throw new GiftError('unavailable', 'The card download is temporarily unavailable. Keep your private purchase link and try again.')
+  const controller = new AbortController(), abort = () => controller.abort(), maximum = 32 * 1024
+  signal?.addEventListener('abort', abort, { once: true })
+  if (signal?.aborted) controller.abort()
+  const timeout = setTimeout(abort, 20000)
+  try {
+    const response = await fetch(root + '/api/gift/download', { method: 'POST', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Booking-Request': '1' }, body: JSON.stringify({ purchaseId: proof.purchaseId, accessToken: proof.accessToken }) })
+    if (!response.ok) throw new GiftError('unavailable', 'The card download could not be confirmed. Refresh this purchase, or contact Sergio before making another payment.')
+    const length = response.headers.get('Content-Length')
+    if (!/^application\/json(?:\s*;|$)/i.test(response.headers.get('Content-Type') ?? '') || length !== null && (!/^\d+$/.test(length) || Number(length) > maximum)) throw new GiftError('network', 'The card file could not be verified. Keep this link and try the download again.')
+    const reader = response.body?.getReader()
+    if (!reader) throw new GiftError('network', 'The card file could not be verified. Keep this link and try the download again.')
+    const chunks: Uint8Array[] = []; let size = 0
+    try {
+      for (;;) {
+        const next = await reader.read()
+        if (next.done) break
+        size += next.value.byteLength
+        if (size > maximum) { await reader.cancel(); throw new GiftError('network', 'The card file could not be verified. Keep this link and try the download again.') }
+        chunks.push(next.value)
+      }
+    } finally { reader.releaseLock() }
+    const bytes = new Uint8Array(size); let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
+    const document: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+    if (!isGiftDownload(document, proof.purchaseId)) throw new GiftError('network', 'The card file could not be verified. Keep this link and try the download again.')
+    if (controller.signal.aborted) throw new Error('Download cancelled')
+    const { buildGiftPDF } = await import('../../prototypes/sergio-admin/shared/gift-cards/pdf')
+    if (controller.signal.aborted) throw new Error('Download cancelled')
+    const pdf = await buildGiftPDF(document.document, document.issuedAt)
+    if (controller.signal.aborted) throw new Error('Download cancelled')
+    return new Blob([pdf], { type: 'application/pdf' })
+  } catch (error) {
+    if (error instanceof GiftError) throw error
+    throw new GiftError('network', 'The card download could not be completed. Keep this purchase link and try again; another payment is not needed.')
+  } finally { clearTimeout(timeout); signal?.removeEventListener('abort', abort) }
 }
 
 export async function giftCardStatus(code: string): Promise<GiftCardStatus> {

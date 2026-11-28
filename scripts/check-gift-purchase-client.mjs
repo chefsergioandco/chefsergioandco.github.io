@@ -25,9 +25,9 @@ async function client(entry = 'src/gift/api.ts') {
   const result = await build({ absWorkingDir: root, entryPoints: [entry], bundle: true, write: false, platform: 'browser', format: 'esm', target: 'es2022', logLevel: 'silent', define: definitions, plugins: [plugin] })
   return import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text + `\n//# sourceURL=gift-client-fixture-${++moduleId}.mjs`).toString('base64'))
 }
-const purchase = { amountCents: 10000, recipientName: 'Fixture recipient', recipientEmail: 'recipient@example.test', senderName: 'Fixture sender', senderEmail: 'sender@example.test', note: 'Synthetic gift test', sendOn: '2099-12-12' }
+const purchase = { fulfillment: 'email', amountCents: 10000, recipientName: 'Fixture recipient', recipientEmail: 'recipient@example.test', senderName: 'Fixture sender', senderEmail: 'sender@example.test', note: 'Synthetic gift test', sendOn: '2099-12-12' }
 const accessToken = 'g'.repeat(43), purchaseId = crypto.randomUUID(), otherId = crypto.randomUUID()
-const status = { version: 1, purchaseId, payment: 'paid', issuance: 'issued', sendOn: purchase.sendOn, timeZone: 'America/New_York', delivery: { recipient: 'scheduled', sender: 'sent' }, checkedAt: '2026-11-28T02:00:00.000Z' }
+const status = { version: 1, purchaseId, payment: 'paid', issuance: 'issued', sendOn: purchase.sendOn, timeZone: 'America/New_York', delivery: { recipient: 'scheduled', sender: 'sent' }, checkedAt: '2026-11-28T02:00:00.000Z', fulfillment: 'email', canDownload: false }
 const storage = { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, String(value)), removeItem: key => memory.delete(key) }
 function boundary(url, options) {
   calls.push({ url: String(url), body: options.body ? JSON.parse(options.body) : undefined })
@@ -50,10 +50,22 @@ try {
   await check('missing or malformed service configuration cannot open gift sales', async () => {
     for (const value of [{ ready: true, amounts: [] }, { ready: true, amounts: ['10000'] }, { ready: true, amounts: [1] }, { ready: true, amounts: [10000001] }]) {
       globalThis.fetch = async (url, options) => { boundary(url, options); return Response.json(value) }
-      assert.deepEqual(await api.giftConfig([10000]), { ready: false, amounts: [10000] })
+      assert.deepEqual(await api.giftConfig([10000]), { ready: false, amounts: [10000], fulfillment: null })
     }
     globalThis.fetch = async () => { throw Error('Local unavailable transport') }
     assert.equal((await api.giftConfig([10000])).ready, false)
+  })
+  await check('sales require explicit verified fulfillment and preserve the configured denominations', async () => {
+    for (const fulfillment of ['download', 'email']) {
+      const configured = { ready: true, amounts: [10000, 15000, 25000, 50000], fulfillment }
+      globalThis.fetch = async (url, options) => { boundary(url, options); return Response.json(configured) }
+      assert.deepEqual(await api.giftConfig([10000]), configured)
+    }
+    for (const patch of [{}, { fulfillment: 'unknown' }, { fulfillment: 'download', amounts: [10000, 10000] }]) {
+      globalThis.fetch = async () => Response.json({ ready: true, amounts: [10000], ...patch })
+      assert.equal((await api.giftConfig([10000])).ready, false)
+    }
+    await assert.rejects(api.startGiftCheckout({ ...purchase, fulfillment: undefined }), error => error.code === 'invalid')
   })
   await check('lost checkout response and blocked storage retain one same-page purchase intent', async () => {
     globalThis.sessionStorage = { getItem() { throw Error('blocked') }, setItem() { throw Error('blocked') } }
@@ -97,10 +109,33 @@ try {
     globalThis.fetch = async (url, options) => { const entry = boundary(url, options); assert.deepEqual(entry.body, { purchaseId, accessToken }); return Response.json(status) }
     assert.deepEqual(await api.giftPurchaseStatus({ purchaseId, accessToken }), status)
     assert.equal(calls.at(-1).url, origin + '/api/gift/status')
-    for (const patch of [{ purchaseId: otherId }, { version: 2 }, { payment: 'success' }, { issuance: 'mailed' }, { sendOn: '2026-02-31' }, { delivery: { recipient: 'sent', sender: 'not_a_state' } }, { code: 'FORBIDDEN_CODE' }, { senderEmail: 'private@example.test' }]) {
+    for (const patch of [{ purchaseId: otherId }, { version: 2 }, { payment: 'success' }, { issuance: 'mailed' }, { sendOn: '2026-02-31' }, { delivery: { recipient: 'sent', sender: 'not_a_state' } }, { code: 'FORBIDDEN_CODE' }, { senderEmail: 'private@example.test' }, { fulfillment: undefined }, { canDownload: true }, { fulfillment: 'download', canDownload: true }]) {
       globalThis.fetch = async () => Response.json({ ...status, ...patch })
       await assert.rejects(api.giftPurchaseStatus({ purchaseId, accessToken }), error => error.code === 'network')
     }
+  })
+  await check('download status cannot claim email delivery or offer a card before paid issuance', async () => {
+    const current = { ...status, fulfillment: 'download', canDownload: true, delivery: { recipient: 'not_applicable', sender: 'not_applicable' } }
+    globalThis.fetch = async () => Response.json(current)
+    assert.deepEqual(await api.giftPurchaseStatus({ purchaseId, accessToken }), current)
+    for (const patch of [{ payment: 'pending' }, { issuance: 'pending' }, { fulfillment: 'email' }]) {
+      globalThis.fetch = async () => Response.json({ ...current, ...patch })
+      await assert.rejects(api.giftPurchaseStatus({ purchaseId, accessToken }), error => error.code === 'network')
+    }
+  })
+  await check('explicit download keeps proof in POST and builds the canonical two-page PDF from a bounded, purchase-bound document', async () => {
+    const { generateGiftCode } = await client('prototypes/sergio-admin/shared/gift-cards/code.ts'), code = generateGiftCode(bytes => { bytes.fill(7); return bytes })
+    const document = { version: 1, purchaseId, issuedAt: '2026-11-28T02:00:00.000Z', document: { amountCents: 10000, recipient: 'Fixture recipient', sender: 'Fixture sender', note: 'Synthetic gift test', code, redeemUrl: 'https://chefsergioandco.github.io/book/', phone: '(407) 757-3009' } }
+    globalThis.fetch = async (url, options) => { const entry = boundary(url, options); assert.equal(entry.url, origin + '/api/gift/download'); assert.deepEqual(entry.body, { purchaseId, accessToken }); assert.equal(options.headers.Accept, 'application/json'); return Response.json(document) }
+    const file = await api.downloadGiftCard({ purchaseId, accessToken }); assert.equal(file.type, 'application/pdf')
+    const { PDFDocument } = await import('pdf-lib'), pdf = await PDFDocument.load(await file.arrayBuffer()); assert.equal(pdf.getPageCount(), 2); assert.deepEqual(pdf.getPages().map(page => page.getSize()), [{ width: 360, height: 252 }, { width: 360, height: 252 }])
+    assert.deepEqual(new Uint8Array(await file.arrayBuffer()), new Uint8Array(await (await api.downloadGiftCard({ purchaseId, accessToken })).arrayBuffer()))
+    for (const response of [Response.json({}), Response.json({ ...document, purchaseId: otherId }), Response.json({ ...document, code }), Response.json({ ...document, document: { ...document.document, code: 'invalid' } }), new Response('{}', { headers: { 'Content-Type': 'application/pdf' } }), new Response(JSON.stringify(document), { headers: { 'Content-Type': 'application/json', 'Content-Length': String(33 * 1024) } }), new Response('{}', { status: 409, headers: { 'Content-Type': 'application/json' } })]) {
+      globalThis.fetch = async () => response
+      await assert.rejects(api.downloadGiftCard({ purchaseId, accessToken }), error => ['network', 'unavailable'].includes(error.code))
+    }
+    globalThis.fetch = async () => { throw Error('Local dropped download') }
+    await assert.rejects(api.downloadGiftCard({ purchaseId, accessToken }), error => error.message.includes('another payment is not needed'))
   })
   await check('an aborted status read cannot remain an outstanding request or claim payment success', async () => {
     globalThis.fetch = async (_url, options) => new Promise((_resolve, reject) => { if (options.signal.aborted) return reject(Error('aborted')); options.signal.addEventListener('abort', () => reject(Error('aborted')), { once: true }) })

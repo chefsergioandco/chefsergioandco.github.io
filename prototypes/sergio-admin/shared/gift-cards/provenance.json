@@ -1,0 +1,31 @@
+{
+  "sourceRoot": "/Users/seb/chef/work/connection-completion",
+  "files": [
+    {
+      "source": "prototypes/sergio-admin/shared/gift-cards/artwork.ts",
+      "backend": "admin/shared/gift-cards/artwork.ts",
+      "sha256": "44265f56146e75e5867076e9be96cf6ad5b16bcbdd5c7fd7b0017196fd709add"
+    },
+    {
+      "source": "prototypes/sergio-admin/shared/gift-cards/code.ts",
+      "backend": "admin/shared/gift-cards/code.ts",
+      "sha256": "eceddb21f2324e12d5ecb05cb9c7d0f1f59005668fe904dee43be923d480e444"
+    },
+    {
+      "source": "prototypes/sergio-admin/shared/gift-cards/metrics.ts",
+      "backend": "admin/shared/gift-cards/metrics.ts",
+      "sha256": "5f7c5d672a85afba0eed654d4e6eadb92626dfa308a4038a4e70b0944cdef3b7"
+    },
+    {
+      "source": "public/invitations/eb-garamond-core-italic-wght.woff2",
+      "backend": "admin/public/fonts/eb-garamond-core-italic-wght.woff2",
+      "sha256": "b2c03dc964b316e9e70eac67086fa7082a0b4a1cf5753be93df855eb6debe1f2"
+    },
+    {
+      "source": "public/invitations/logo-primary-ink.svg",
+      "backend": "admin/public/brand/gift-logo-primary-ink.svg",
+      "sha256": "a3e8581f4d5e60e0f1738e58d74becb55365747cd7e1d600ddb00ee86392cf93"
+    }
+  ],
+  "note": "Exact deployed-frontend gift artwork, metrics and code; no redesign. Font/logotype copies are retained for reproduction."
+}

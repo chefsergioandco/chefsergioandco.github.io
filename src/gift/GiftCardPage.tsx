@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { formatAmount } from '../../prototypes/sergio-admin/shared/gift-cards/artwork'
 import { formatGiftCode, isGiftCode, normalizeGiftCode } from '../../prototypes/sergio-admin/shared/gift-cards/code'
 import { CtaButton, CtaLink } from '../components/CallToAction'
 import { href } from '../components/ui'
 import { site } from '../content/site'
 import { GiftCard } from './GiftCard'
-import { giftCardStatus, giftPurchaseProof, giftPurchaseStatus, GiftError, type GiftCardStatus, type GiftDeliveryStatus, type GiftPurchaseProof, type GiftPurchaseStatus } from './api'
+import { downloadGiftCard, giftCardStatus, giftPurchaseProof, giftPurchaseStatus, GiftError, type GiftCardStatus, type GiftDeliveryStatus, type GiftPurchaseProof, type GiftPurchaseStatus } from './api'
 import './GiftPage.css'
 
 type View = { kind: 'idle' } | { kind: 'loading' } | { kind: 'found'; code: string; card: GiftCardStatus } | { kind: 'error'; message: string }
@@ -73,7 +73,7 @@ const deliveryLabels: Record<GiftDeliveryStatus, string> = {
   not_issued: 'Waiting for the card', scheduled: 'Scheduled', disabled: 'Email setup needs attention', preview: 'Delivery not confirmed',
   queued: 'Waiting to send', sending: 'Sending', sent: 'Sent · delivery not yet confirmed', delivered: 'Delivered', retry: 'Waiting to retry',
   failed: 'Could not send', bounced: 'Email could not be delivered', complained: 'Delivery stopped', needs_review: 'Needs Sergio’s attention',
-  suppressed: 'Delivery stopped', cancelled: 'Sending cancelled', needs_contact: 'Contact details need review',
+  suppressed: 'Delivery stopped', cancelled: 'Sending cancelled', needs_contact: 'Contact details need review', not_applicable: 'You give the card yourself',
 }
 const paymentLabels: Record<GiftPurchaseStatus['payment'], string> = { pending: 'Awaiting payment', processing: 'Payment processing', paid: 'Payment confirmed', expired: 'Checkout expired', unverified: 'Payment not yet verified' }
 const attentionStatuses: GiftDeliveryStatus[] = ['disabled', 'preview', 'failed', 'bounced', 'complained', 'needs_review', 'suppressed', 'cancelled', 'needs_contact']
@@ -82,6 +82,12 @@ type PurchaseView = { kind: 'checking' } | { kind: 'missing' } | { kind: 'error'
 /** The return URL is context, not proof of payment. Only this purchase's protected status can confirm a result. */
 export function GiftThanks() {
   const [proof, setProof] = useState<GiftPurchaseProof | null>(null), [view, setView] = useState<PurchaseView>({ kind: 'checking' }), [refresh, setRefresh] = useState(0)
+  const [file, setFile] = useState<{ kind: 'idle' | 'loading' | 'saved' | 'error'; message?: string }>({ kind: 'idle' })
+  const downloadController = useRef<AbortController | null>(null), downloadSequence = useRef(0)
+  useEffect(() => {
+    downloadController.current?.abort(); downloadSequence.current += 1; setFile({ kind: 'idle' })
+    return () => { downloadController.current?.abort(); downloadSequence.current += 1 }
+  }, [proof?.purchaseId, proof?.accessToken])
   useEffect(() => {
     const read = () => { setView({ kind: 'checking' }); setProof(giftPurchaseProof(location.search, location.hash)); setRefresh(value => value + 1) }
     read()
@@ -98,13 +104,29 @@ export function GiftThanks() {
     return () => controller.abort()
   }, [proof, refresh])
   const status = view.kind === 'current' ? view.value : null
-  const needsAttention = status && (status.issuance === 'needs_review' || attentionStatuses.includes(status.delivery.recipient) || attentionStatuses.includes(status.delivery.sender))
+  const download = status?.fulfillment === 'download'
+  const needsAttention = status && (status.issuance === 'needs_review' || status.fulfillment === 'email' && (attentionStatuses.includes(status.delivery.recipient) || attentionStatuses.includes(status.delivery.sender)))
   const sendDay = status?.sendOn ? new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(status.sendOn + 'T12:00:00Z')) : null
+  const saveCard = async () => {
+    if (!proof || !status?.canDownload || file.kind === 'loading') return
+    const controller = new AbortController(), sequence = ++downloadSequence.current
+    downloadController.current?.abort(); downloadController.current = controller; setFile({ kind: 'loading' })
+    try {
+      const blob = await downloadGiftCard(proof, controller.signal)
+      if (controller.signal.aborted || sequence !== downloadSequence.current) return
+      const url = URL.createObjectURL(blob), anchor = document.createElement('a')
+      try { anchor.href = url; anchor.download = 'Chef-Sergio-Gift-Card.pdf'; document.body.append(anchor); anchor.click() }
+      finally { anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 30000) }
+      setFile({ kind: 'saved' })
+    } catch (error) {
+      if (!controller.signal.aborted && sequence === downloadSequence.current) setFile({ kind: 'error', message: error instanceof Error ? error.message : 'The download could not be confirmed. Keep this link and try again.' })
+    }
+  }
   return <div className="gift-page wrap">
     <header className="gift-intro">
       <p className="font-display text-lg italic text-ink-muted">an evening to give</p>
       <h1 className="mt-2 text-4xl sm:text-5xl">Your gift purchase.</h1>
-      <p className="mt-5 max-w-prose text-lg text-ink-muted">Payment, your card and its emails are checked separately here.</p>
+      <p className="mt-5 max-w-prose text-lg text-ink-muted">Check your payment and get the current result for this gift.</p>
     </header>
     <section className="gift-purchase-status" aria-label="Gift purchase status" aria-busy={view.kind === 'checking'}>
       {view.kind === 'checking' && <p role="status">Checking the current purchase result…</p>}
@@ -112,18 +134,23 @@ export function GiftThanks() {
       {view.kind === 'error' && <p className="gift-error" role="alert">{view.message} Please check this purchase before starting another payment.</p>}
       {status && <>
         <h2 className="text-2xl" role="status">{paymentLabels[status.payment]}</h2>
-        <p className="mt-3">{status.payment === 'paid' ? status.issuance === 'issued' ? 'Your gift card has been issued. The email results are shown below.' : 'Payment is recorded, but the card has not been confirmed as issued. Sergio needs to check it.' : status.payment === 'processing' ? 'Your payment is still processing. Please keep this link and check again; do not start another payment.' : status.payment === 'expired' ? 'This checkout has expired. No completed payment is recorded for this purchase.' : status.payment === 'unverified' ? 'The payment result needs checking. Please refresh or contact Sergio before making another payment.' : 'No completed payment has been confirmed yet. If you have finished checkout, refresh the status before trying another payment.'}</p>
+        <p className="mt-3">{status.payment === 'paid' ? status.issuance === 'issued' ? download ? status.canDownload ? 'Your gift card is ready. Download it below, then print it or share the file with the person it is for.' : 'Your card has been issued, but its download needs Sergio’s attention. Keep this purchase reference and contact him.' : 'Your gift card has been issued. The email results are shown below.' : 'Payment is recorded, but the card has not been confirmed as issued. Sergio needs to check it.' : status.payment === 'processing' ? 'Your payment is still processing. Please keep this link and check again; do not start another payment.' : status.payment === 'expired' ? 'This checkout has expired. No completed payment is recorded for this purchase.' : status.payment === 'unverified' ? 'The payment result needs checking. Please refresh or contact Sergio before making another payment.' : 'No completed payment has been confirmed yet. If you have finished checkout, refresh the status before trying another payment.'}</p>
         <dl className="gift-purchase-facts">
           <div><dt>Gift card</dt><dd>{status.issuance === 'issued' ? 'Issued' : status.issuance === 'needs_review' ? 'Needs Sergio’s review' : 'Not yet issued'}</dd></div>
-          <div><dt>Recipient email</dt><dd>{deliveryLabels[status.delivery.recipient]}{sendDay && <span>Chosen day: {sendDay} · Orlando time</span>}</dd></div>
-          <div><dt>Your receipt and card copy</dt><dd>{deliveryLabels[status.delivery.sender]}<span>Sent after payment and card issuance</span></dd></div>
+          {download ? <div><dt>Delivery</dt><dd>Download and share<span>No card email is sent to you or the recipient.</span></dd></div> : <>
+            <div><dt>Recipient email</dt><dd>{deliveryLabels[status.delivery.recipient]}{sendDay && <span>Chosen day: {sendDay} · Orlando time</span>}</dd></div>
+            <div><dt>Your receipt and card copy</dt><dd>{deliveryLabels[status.delivery.sender]}<span>Sent after payment and card issuance</span></dd></div>
+          </>}
         </dl>
+        {download && status.canDownload && <div className="gift-download"><CtaButton emphasis="primary" type="button" disabled={file.kind === 'loading'} aria-busy={file.kind === 'loading'} onClick={() => void saveCard()}>{file.kind === 'loading' ? 'Preparing your card…' : 'Download your gift card'}</CtaButton><p className="gift-hint">PDF · front and back. The gift code is on the back; share this file only with its intended recipient.</p></div>}
+        {file.kind === 'saved' && <p className="gift-hint" role="status">Your card file is ready for your browser to save. Keep the PDF and share or print it when you are ready.</p>}
+        {file.kind === 'error' && <p className="gift-error" role="alert">{file.message}</p>}
         {needsAttention && <p className="gift-error">Part of this gift needs attention. Call Sergio and give him the purchase reference below.</p>}
-        <p className="gift-hint">Checked {new Date(status.checkedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/New_York' })} Eastern. “Sent” and “Delivered” are separate email results.</p>
+        <p className="gift-hint">Checked {new Date(status.checkedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/New_York' })} Eastern.{!download && ' “Sent” and “Delivered” are separate email results.'}</p>
       </>}
       {proof && <p className="gift-purchase-reference">Purchase reference <span>{proof.purchaseId}</span></p>}
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">{proof && <CtaButton emphasis="secondary" type="button" disabled={view.kind === 'checking'} onClick={() => setRefresh(value => value + 1)}>Refresh status</CtaButton>}<a className="link" href={site.phoneHref}>Call Sergio, {site.phone}</a></div>
-      <p className="gift-hint mt-5">Keep this purchase link private. The gift code is sent in the card emails and is never displayed on this status page.</p>
+      <p className="gift-hint mt-5">Keep this purchase link private.{download ? ' Save the complete link so you can return and download your card again. Give the PDF to the recipient rather than this purchase link.' : status?.fulfillment === 'email' ? ' The gift code is sent in the card emails and is never displayed on this status page.' : ' Return using this same link to check the payment and card result.'}</p>
     </section>
     <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">{status?.payment === 'paid' && status.issuance === 'issued' && <CtaLink emphasis="secondary" href={href('/gift/')}>Give another</CtaLink>}<a className="link text-sm" href={href('/')}>Back to the home page</a></div>
   </div>

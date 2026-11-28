@@ -48,4 +48,6 @@
 .gift-purchase-facts dd > span { display: block; margin-top: .25rem; font-size: .875rem; color: rgb(var(--c-ink-muted)); }
 .gift-purchase-reference { font-size: .875rem; color: rgb(var(--c-ink-muted)); }
 .gift-purchase-reference span { display: block; color: rgb(var(--c-ink)); overflow-wrap: anywhere; }
+.gift-delivery-note { display: grid; gap: .75rem; padding-block: 1rem; border-block: 1px solid rgb(var(--c-rule)); }
+.gift-download { display: grid; justify-items: start; gap: .75rem; margin-block: 1.5rem; }
 @media (max-width: 480px) { .gift-purchase-facts > div { grid-template-columns: minmax(0, 1fr); gap: .25rem; } }

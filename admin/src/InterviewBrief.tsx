@@ -36,6 +36,7 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
   const [menu, setMenu] = useState({ text: plan?.menu.text ?? '', price: plan?.menu.price?.toString() ?? '' })
   const [invitation, setInvitation] = useState({ url: plan?.eventInvitation.url ?? '', reference: '', physical: plan?.eventInvitation.physical ?? false })
   const [refund, setRefund] = useState({ retainedFee: plan?.cancellation.retainedFee?.toString() ?? '0', reason: '' })
+  const [depositApproval, setDepositApproval] = useState({ amount: '', reason: '' })
   const [responses,setResponses]=useState<GuestResponse[]|null>(null)
   const [responsesLoading,setResponsesLoading]=useState(false)
   const [responsesError,setResponsesError]=useState('')
@@ -44,6 +45,7 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
   const [active, setActive] = useState('')
   useEffect(() => {
     setTopics(initialTopics(booking)); setFollowUp(booking.planning?.followUp ?? '')
+    setDepositApproval({ amount: '', reason: '' })
     setAgreed({ date: booking.planning?.agreed.date ?? '', time: booking.planning?.agreed.time ?? '', guests: booking.planning?.agreed.guests?.toString() ?? '', ceiling: booking.planning?.spendingCeiling?.toString() ?? '' })
     setScheduledAt(localInterview(booking.planning?.interview.scheduledAt ?? null)); setMeetUrl(booking.planning?.interview.meetUrl ?? '')
     setMenu({ text: booking.planning?.menu.text ?? '', price: booking.planning?.menu.price?.toString() ?? '' }); setQuestion(''); setSentReference(''); setSentConfirmed(false); setInvitation({url:booking.planning?.eventInvitation.url ?? '',reference:'',physical:booking.planning?.eventInvitation.physical ?? false}); setRefund({retainedFee:booking.planning?.cancellation.retainedFee?.toString() ?? '0',reason:''}); setError(''); setResponses(null); setResponsesError(''); setResponsesLoading(false); responseSequence.current += 1
@@ -84,6 +86,13 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
     if (!instant) { setError('Choose the interview date and time in Eastern time.'); return }
     await run('schedule_interview', { scheduledAt: instant, meetUrl: meetUrl.trim() }, 'Interview arrangements saved. No invitation was sent.')
   }
+  const approveDeposit = async (event: FormEvent) => {
+    event.preventDefault()
+    const value = Number(depositApproval.amount)
+    if (!Number.isFinite(value) || value < .50 || value > 1000000 || Math.abs(Math.round(value * 100) - value * 100) > .00001) { setError('Enter a deposit of at least $0.50, with up to two decimal places.'); return }
+    if (depositApproval.reason.trim().length < 3) { setError('Record the reason for this deposit approval.'); return }
+    await run('approve_deposit', { depositAmount: value, reason: depositApproval.reason.trim() }, 'Planning deposit approved. No charge or date reservation was made.')
+  }
   const addQuestion = () => {
     if (!question.trim()) return
     setTopics(current => [...current, { id: 'custom-' + crypto.randomUUID(), label: question.trim(), supplied: '', status: 'unknown', answer: '', notes: '', updatedAt: null, updatedBy: '' }]); setQuestion('')
@@ -105,6 +114,7 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
   }
   const original = plan?.original
   const depositStatus = plan?.deposit.status === 'paid' ? 'Deposit paid' : plan?.deposit.status === 'refunded' ? 'Deposit refunded' : plan?.deposit.status === 'refund_pending' ? 'Refund pending' : booking.paid ? 'Receipt recorded' : 'Deposit unpaid'
+  const canApproveDeposit = !!plan && plan.deposit.amount === null && plan.deposit.status === 'unpaid' && !plan.deposit.paid && !booking.paid && booking.status === 'requested' && !plan.dateReserved && !booking.nightId && booking.type !== 'Sergio’s Table'
   return <section className="interview-brief" aria-labelledby={`interview-title-${booking.id}`}>
     <div className="interview-brief-header"><div><p className="eyebrow">THE MENU CONVERSATION</p><h2 id={`interview-title-${booking.id}`}>Interview brief</h2><p>Keep what the host told you. Settle the remaining questions together, then prepare the menu within the agreed ceiling.</p></div><span className="interview-count"><Icon name={unresolved ? 'book' : 'check'} size={15} />{unresolved ? `${unresolved} to clarify` : 'Details agreed'}</span></div>
     <div className="interview-body">
@@ -117,6 +127,7 @@ export default function InterviewBrief({ booking }: { booking: Booking }) {
         <div><dt>Food ideas</dt><dd>{original?.foodIdeas || 'Open to Sergio’s suggestions'}</dd></div><div><dt>Reported dietary needs and allergies</dt><dd>{original?.allergies || booking.dietary || 'Not supplied; discuss with the host'}</dd></div><div><dt>Occasion</dt><dd>{booking.occasion || 'Not supplied'}</dd></div>
       </dl></details>
       {error && <p className="interview-error" role="alert">{error}</p>}
+      {canApproveDeposit && <section className="interview-panel" aria-labelledby={`deposit-approval-${booking.id}`}><h3 id={`deposit-approval-${booking.id}`}>Approve a planning deposit</h3><p>This existing request has no deposit amount yet. Record the amount agreed with the host. Approval keeps this booking and preparation together; it does not charge the host or reserve a date.</p><form onSubmit={approveDeposit} className="interview-form-grid" noValidate><label className="field">Approved deposit ($)<input type="number" min="0.50" max="1000000" step="0.01" inputMode="decimal" value={depositApproval.amount} onChange={event => setDepositApproval({ ...depositApproval, amount: event.target.value })} disabled={locked} required /></label><label className="field">Approval reason<input value={depositApproval.reason} onChange={event => setDepositApproval({ ...depositApproval, reason: event.target.value })} maxLength={2000} disabled={locked} placeholder="Amount agreed with the host" required /></label><div className="interview-panel-actions full"><button className="button secondary" type="submit" disabled={locked || !depositApproval.amount || depositApproval.reason.trim().length < 3}>{active === 'approve_deposit' ? 'Approving…' : 'Approve deposit'}</button><span className="interview-invitation-history">The approved amount is fixed for this request.</span></div></form></section>}
       <form onSubmit={saveBrief} className="interview-panel" style={{ borderTop: 0, paddingTop: 0 }} noValidate>
         <div className="interview-topics">{visibleTopics.map(topic => <details className="interview-topic" key={topic.id}>
           <summary><span className="interview-topic-title"><strong>{topic.label}</strong><small>{topic.answer || topic.supplied || 'A question for the interview'}</small></span><span className={`interview-status ${topic.status}`}>{statuses.find(status => status.value === topic.status)?.label}</span><Icon name="down" size={16} /></summary>

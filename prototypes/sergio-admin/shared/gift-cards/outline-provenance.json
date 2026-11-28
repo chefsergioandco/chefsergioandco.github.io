@@ -1,0 +1,22 @@
+{
+  "eb-garamond-core-wght.woff2": {
+    "sha256": "d8e58ddf114bce6de12a9608693364e9de63d0a1b9cc64dd5dd7d5b59fcbd714",
+    "weight": 400,
+    "glyphCount": 170
+  },
+  "eb-garamond-core-italic-wght.woff2": {
+    "sha256": "b2c03dc964b316e9e70eac67086fa7082a0b4a1cf5753be93df855eb6debe1f2",
+    "weight": 400,
+    "glyphCount": 170
+  },
+  "archivo-core-wght.woff2": {
+    "sha256": "867f39c86cdf854c1a7a579b006de2c60f1ce96a844c67265cf392eda0a94566",
+    "weight": 400,
+    "glyphCount": 173
+  },
+  "eb-garamond-receipt-medium.ttf": {
+    "sha256": "1b57b79a59a5a72b924e97862202e28a7aa39ff56921c33e2ed4ca393a809e66",
+    "weight": 500,
+    "glyphCount": 95
+  }
+}

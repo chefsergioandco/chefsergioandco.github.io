@@ -1,5 +1,5 @@
 import { adminFetch, AdminApiError } from './api-client'
-import { isGiftActionResult, isGiftPurchaseId, isGiftsResponse, type GiftAction, type GiftActionResult, type GiftsResponse } from './gift-types'
+import { isGiftActionResult, isGiftPurchaseId, isGiftsResponse, isGiftSettingsAction, isGiftSettingsResponse, isGiftSettingsResult, type GiftAction, type GiftActionResult, type GiftsResponse, type GiftSettingsAction, type GiftSettingsResponse, type GiftSettingsResult } from './gift-types'
 
 export class GiftApiError extends Error {
   constructor(message: string, public status = 0, public code = 'unverified') { super(message); this.name = 'GiftApiError' }
@@ -10,7 +10,7 @@ const messages: Record<string, string> = {
   gift_delivery_state: 'This delivery cannot be safely retried in its current state. Refresh its recorded result.',
   idempotency_conflict: 'This saved action needs reconciliation. Refresh the purchase before doing anything else.',
 }
-async function request(path: string, body: GiftAction | undefined, signal?: AbortSignal): Promise<unknown> {
+async function request(path: string, body: GiftAction | GiftSettingsAction | undefined, signal?: AbortSignal): Promise<unknown> {
   const controller = new AbortController(), abort = () => controller.abort()
   signal?.addEventListener('abort', abort, { once: true })
   if (signal?.aborted) controller.abort()
@@ -44,5 +44,16 @@ export async function queueGiftAction(input: GiftAction, signal?: AbortSignal): 
   if (!isGiftPurchaseId(input.requestId) || !isGiftPurchaseId(input.purchaseId) || !['queue_due', 'retry_delivery', 'reconcile_purchase'].includes(input.action) || input.action === 'retry_delivery' && !input.messageId || input.action !== 'retry_delivery' && input.messageId !== undefined) throw new GiftApiError('This gift action is invalid. Refresh the purchase before trying again.', 400, 'invalid_request')
   const data = await request('/api/gifts/action', input, signal)
   if (!isGiftActionResult(data, input)) throw new GiftApiError('The gift action could not be confirmed. Retry the same action; its saved request will be reused.')
+  return data
+}
+export async function readGiftSettings(signal?: AbortSignal): Promise<GiftSettingsResponse> {
+  const data = await request('/api/gifts/settings', undefined, signal)
+  if (!isGiftSettingsResponse(data)) throw new GiftApiError('Gift amount settings were incomplete. Refresh before making changes.')
+  return data
+}
+export async function saveGiftSettings(input: GiftSettingsAction, signal?: AbortSignal): Promise<GiftSettingsResult> {
+  if (!isGiftSettingsAction(input)) throw new GiftApiError('Review the gift amounts before saving.', 400, 'invalid_request')
+  const data = await request('/api/gifts/settings', input, signal)
+  if (!isGiftSettingsResult(data, input)) throw new GiftApiError('The gift amount change could not be confirmed. Retry the same saved change.')
   return data
 }
