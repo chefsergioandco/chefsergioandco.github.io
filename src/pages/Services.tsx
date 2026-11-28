@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { BookingForm } from '../components/BookingForm'
-import { QuickBooking } from '../components/QuickBooking'
+import { BookingEntry } from '../components/BookingEntry'
 import { Faq, FAQ } from '../components/Faq'
 import { DinnerMenuCard } from '../invitations/DinnerMenuCard'
 import { SAMPLE_DINNER_MENU } from '../invitations/menu-sample'
@@ -76,7 +76,7 @@ export function PrivateDining() {
         alt="Reference: guests at a dinner table mid-meal"
         cta="Plan a dinner"
         ctaHref="/book/?type=dinner"
-        booking={<QuickBooking format="dinner" />}
+        booking={<BookingEntry format="dinner" />}
         price={<FromPrice k="dinnerFromPerGuest" />}
       />
       <Included
@@ -185,7 +185,7 @@ export function Catering() {
         alt="Reference: a table set with linens, glassware and a centerpiece"
         cta="Request a proposal"
         ctaHref="/book/?type=event"
-        booking={<QuickBooking format="event" />}
+        booking={<BookingEntry format="event" />}
         price={<FromPrice k="eventFromPerGuest" />}
       />
       <Included
@@ -278,15 +278,7 @@ export function SergiosTable() {
   )
 }
 
-/** Seat requests for a published night (and saved step-by-step drafts) keep their own flow; everything else is one screen. */
-function BookChooser() {
-  const [steps, setSteps] = useState(false)
-  useEffect(() => {
-    const query = new URLSearchParams(location.search)
-    setSteps(query.get('type') === 'table' || query.has('night') || query.has('resume'))
-  }, [])
-  return steps ? <BookingForm /> : <QuickBooking />
-}
+function BookChooser() { return <BookingEntry/> }
 
 export function Book() {
   return (

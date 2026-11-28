@@ -107,7 +107,7 @@ export type BookingReceipt = {
 export type CheckoutResult = { url: string; expiresAt?: string; paid?: never } | { paid: true; ref: string; requestId: string; url?: never }
 export type PublicHoldResult = HoldResult & { next: 'done'; accessToken: string; checkout?: CheckoutResult; checkoutError?: { code: string; message: string } }
 /** Options for a hold: open the deposit checkout in the same round trip, and report the guest's page-load-to-submit time. */
-export type HoldOptions = { checkout?: boolean; elapsedMs?: number }
+export type HoldOptions = { checkout?: boolean; elapsedMs?: number; /** Opaque ordinary-draft version, kept in memory only and never sent to the service. */ draftId?: string; ownerId?: string }
 /** Menu-conversation answers a guest can add after the deposit. Sergio's agreed topics are never overwritten. */
 export type GuestDetails = { sensitiveDataConsent?: SensitiveDataConsent; occasion?: string; kitchen?: string; foodIdeas?: string; dietary?: string[]; allergies?: string; notes?: string; budgetMode?: 'range' | 'guidance'; budgetMin?: number; budgetMax?: number; budgetUnit?: 'total' | 'per_person'; physicalInvitations?: boolean }
 export type DetailsField = 'occasion' | 'kitchen' | 'foodIdeas' | 'dietary' | 'allergies' | 'notes' | 'budget' | 'physicalInvitations' | 'sensitiveDataConsent'

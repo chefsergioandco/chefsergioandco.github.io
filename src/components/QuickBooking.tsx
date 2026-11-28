@@ -43,8 +43,8 @@ function Input({ id, label, error, hint, ...props }: { id: string; label: string
  * The one-screen booking. On a product page the format is set by the page; on /book/ the party size decides which
  * formats are offered. Everything for the menu conversation is asked after the deposit, on the booking page.
  */
-export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
-  const [s, setState] = useState<QuickState>({ ...QUICK_EMPTY, format: fixed })
+export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetails, onReceived, getDraftIdentity, registerRecovery }: { format?: FormatKey; initialState?: QuickState; onDraft?: (state: QuickState) => void; onMoreDetails?: (state: QuickState) => void; onReceived?: () => void; getDraftIdentity?: () => string | undefined; registerRecovery?: (handler: (result: PublicHoldResult) => Promise<void>, ownerId: string) => () => void }) {
+  const [s, setState] = useState<QuickState>({ ...QUICK_EMPTY, format: fixed, ...initialState })
   const [config, setConfig] = useState<PlanningConfig | null>(null), [configError, setConfigError] = useState(''), [configRetry, setConfigRetry] = useState(0)
   const [months, setMonths] = useState<(Availability | null)[]>([null, null]), [availabilityError, setAvailabilityError] = useState(''), [availabilityRetry, setAvailabilityRetry] = useState(0)
   const [otherDate, setOtherDate] = useState(false), [calMonth, setCalMonth] = useState(() => todayET().slice(0, 7)), [calAvail, setCalAvail] = useState<Availability | null>(null)
@@ -54,7 +54,13 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   const [friendCode, setFriendCode] = useState<FriendCode | null>(null), [friend, setFriend] = useState<FriendInvite | null>(null), [friendNotice, setFriendNotice] = useState('')
   const [savedRequest, setSavedRequest] = useState<PublicHoldResult | null>(null), [friendFailure, setFriendFailure] = useState('')
   const inFlight = useRef(false)
+  const active = useRef(true), ownerId = useRef(crypto.randomUUID()), submittedPath = useRef('')
+  const currentForm = () => active.current && (!submittedPath.current || submittedPath.current === location.pathname + location.search)
+  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
   const set = (patch: Partial<QuickState>) => { setState(previous => ({ ...previous, ...patch })); setErrors({}) }
+  const latestDraft = useRef(onDraft); latestDraft.current = onDraft
+  useEffect(() => { latestDraft.current?.(s) }, [s])
+  useEffect(() => { const hide = () => { active.current = false; setState(previous => ({ ...previous, dietary: [], place: '', gift: '' })) }; window.addEventListener('pagehide', hide); return () => window.removeEventListener('pagehide', hide) }, [])
   const today = todayET(), band = quickBand(s, config), format = s.format
   const kindForDates: FormatKey = format ?? 'dinner'
   const loadedDays = [...(months[0]?.days ?? []), ...(months[1]?.days ?? []), ...(calAvail?.days ?? [])]
@@ -76,6 +82,7 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   // Prefill from the address: ?guests, ?date, ?where, ?type (on /book/ only) and a gift code from #gift= (an older
   // ?gift= link still works, but the code is taken out of the address so it isn't bookmarked or shared).
   useEffect(() => {
+    if (initialState) return
     const query = new URLSearchParams(location.search), patch: Partial<QuickState> = {}
     const type = query.get('type') as FormatKey | null
     if (!fixed && type && type in site.formats) patch.format = type
@@ -139,16 +146,18 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   }
   const canPay = !!config?.paymentReady && band?.deposit != null && config.planningFee != null
   async function openSavedBooking(result: PublicHoldResult) {
+    if (!currentForm()) return
     setBusy(true)
     try {
       if (canPay && !result.checkout?.paid) {
         if (result.checkout?.url) { window.location.assign(result.checkout.url); return }
         // An older booking service answers without a checkout: open it the usual way.
         if (!result.checkoutError) {
-          try { const checkout = await api.checkout(result.ref); if (!checkout.paid) { window.location.assign(checkout.url); return } }
+          try { const checkout = await api.checkout(result.ref); if (!currentForm()) return; if (!checkout.paid) { window.location.assign(checkout.url); return } }
           catch (failure) { try { sessionStorage.setItem('booking-pay-error:' + result.ref, failure instanceof Error ? failure.message : 'Checkout could not be opened. Your request is saved.') } catch { /* The receipt still offers payment. */ } }
         } else try { sessionStorage.setItem('booking-pay-error:' + result.ref, result.checkoutError.message) } catch { /* The receipt still offers payment. */ }
       }
+      if (!currentForm()) return
       const destination = new URL(result.url, window.location.href)
       if (destination.origin === window.location.origin && destination.pathname === href('/book/done/')) { navigateAccount(destination.pathname + destination.search + destination.hash); window.scrollTo(0, 0) }
       else window.location.assign(result.url)
@@ -158,6 +167,7 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     }
   }
   async function connectFriend(result: PublicHoldResult) {
+    if (!currentForm()) return
     const pending = friendCode ?? pendingFriendCode()
     if (pending) {
       try { await attachFriend(result.ref, result.accessToken, pending); forgetFriendCode(pending.code); setFriendFailure('') }
@@ -167,7 +177,7 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
         return
       }
     }
-    await openSavedBooking(result)
+    if (currentForm()) await openSavedBooking(result)
   }
   async function submit() {
     if (inFlight.current) return
@@ -175,17 +185,22 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     setErrors(found)
     const first = Object.keys(found)[0]
     if (first) { reveal(first); track('booking_error', { step: 'quick', field: first }); return }
-    inFlight.current = true; setBusy(true); setSubmissionError('')
+    submittedPath.current = location.pathname + location.search; inFlight.current = true; setBusy(true); setSubmissionError('')
     try {
-      const result = await api.hold(quickRequest(s), honeypot, { checkout: canPay, elapsedMs: Math.round(performance.now()) })
+      const result = await api.hold(quickRequest(s), honeypot, { checkout: canPay, elapsedMs: Math.round(performance.now()), draftId: getDraftIdentity?.(), ownerId: ownerId.current })
+      if (!currentForm()) return
+      onReceived?.()
       track('booking_submitted', { kind: s.format ?? '', quick: 'yes' })
       await connectFriend(result)
     } catch (failure) {
+      if (!currentForm()) return
       inFlight.current = false; setBusy(false)
       setSubmissionError(failure instanceof Error ? failure.message : 'Your request could not be confirmed. Your answers are still here.')
       if (failure instanceof BookingError && failure.code === 'unavailable') { set({ date: undefined, time: undefined }); setAvailabilityRetry(value => value + 1) }
     }
   }
+
+  useEffect(() => registerRecovery?.(async result => { if (!currentForm()) return; onReceived?.(); await connectFriend(result) }, ownerId.current))
 
   const fits = band ? formatsFor(band, fixed ?? s.format) : []
   const showFormats = !fixed ? !!band && fits.length > 1 : !!band && !formatFits(fixed, band) && fits.length > 1
@@ -198,7 +213,7 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     <p className="booking-help">Need help? <a className="link" href={site.phoneHref}>Call Sergio</a> with your booking reference.</p>
   </section>
 
-  return <form className="quick-booking" noValidate onSubmit={event => { event.preventDefault(); void submit() }} aria-label="Book with Sergio">
+  return <div><form className="quick-booking" noValidate onSubmit={event => { event.preventDefault(); void submit() }} aria-label="Book with Sergio">
     <div aria-hidden="true" className="booking-honeypot"><label>Website<input name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={event => setHoneypot(event.target.value)}/></label></div>
     {configError && <div className="booking-notice" role="alert" id="f-config" tabIndex={-1}><p>{configError}</p><button type="button" className="link" onClick={() => setConfigRetry(value => value + 1)}>Reload booking settings</button></div>}
     {friend && <p className="booking-friend" role="status"><Icon name="gift" size={18}/><span><strong>Invited by {friend.name}{friend.name.endsWith('.') ? '' : '.'}</strong> Eligible first bookings can receive {money(friend.welcome)} off the final bill. We’ll confirm eligibility when you send your request.</span></p>}
@@ -256,5 +271,5 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     {submissionError && <p className="booking-notice booking-notice--error" role="alert">{submissionError} Your answers are still here. You can also <a className="link" href={site.phoneHref}>call Sergio</a>.</p>}
     <CtaButton type="submit" emphasis="primary" className="quick-submit" disabled={busy || !config} aria-busy={busy || undefined}>{action}</CtaButton>
     <p className="booking-help">More than 24 guests, or a private cooking class for your group? <a className="link" href={site.phoneHref}>Ask Sergio at {site.phone}</a>.{site.features.sergiosTable && !fixed ? <> Joining a published evening? <a className="link" href={href('/sergios-table/')}>Sergio’s table</a>.</> : null}</p>
-  </form>
+  </form>{onMoreDetails && <p className="booking-more-details"><button type="button" className="link" disabled={busy} onClick={() => onMoreDetails(s)}>Add more detail before sending</button><span className="booking-small"> Your current date and contact choices carry across in this tab.</span></p>}</div>
 }

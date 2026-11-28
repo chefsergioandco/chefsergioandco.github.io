@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const savedGlobals = Object.fromEntries(['fetch', 'window', 'sessionStorage', 'localStorage', 'setTimeout', 'clearTimeout'].map(key => [key, globalThis[key]]))
+const savedGlobals = Object.fromEntries(['fetch', 'window', 'sessionStorage', 'localStorage', 'setTimeout', 'clearTimeout', 'navigator'].map(key => [key, globalThis[key]]))
 if (!globalThis.crypto) globalThis.crypto = webcrypto
 let checks = 0
 function check(name, assertion) { assertion(); checks++; process.stdout.write(`PASS ${name}\n`) }
@@ -15,7 +15,7 @@ let moduleId = 0
 async function actualModule(path, apiBase) {
   const output = await build({
     absWorkingDir: root, entryPoints: [path], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022',
-    define: { 'import.meta.env': '{}' },
+    define: { 'import.meta.env': '{}', __SITE_MODE__: JSON.stringify('prototype'), __LOOK__: JSON.stringify('c'), __PLATING_SEQUENCE_AVAILABLE__: 'false' },
     plugins: apiBase === undefined ? [] : [{ name: 'test-runtime-configuration', setup(builder) {
       builder.onLoad({ filter: /content\/booking\.ts$/ }, () => ({ contents: `export const booking = {apiBase:${JSON.stringify(apiBase)}}`, loader: 'ts' }))
     } }],
@@ -24,14 +24,18 @@ async function actualModule(path, apiBase) {
 }
 const receipt = { ref: 'CS-contract-check', status: 'requested', kind: 'dinner', date: '2026-12-20', time: '18:00', guests: 2, amount: null, amountWhen: 'after-quote', createdAt: '2026-11-23T16:00:00Z' }
 const request = { kind: 'dinner', date: receipt.date, time: receipt.time, guests: receipt.guests, name: 'Contract check', email: 'check@example.test', phone: '4075550100', contactBy: 'email' }
-const result = { ref: receipt.ref, next: 'done', url: `https://pages.example.test/book/done/?ref=${receipt.ref}#access=contract-token`, accessToken: 'contract-token' }
+const receiptToken = 'contract-token'.padEnd(43, 'x')
+const result = { ref: receipt.ref, next: 'done', url: `https://pages.example.test/book/done/?ref=${receipt.ref}#access=${receiptToken}`, accessToken: receiptToken }
 const memory = new Map()
 const pendingMemory = new Map()
 const calls = []
 function browser(hash = '') {
-  globalThis.window = { location: { hash } }
-  globalThis.sessionStorage = { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, String(value)) }
-  globalThis.localStorage = { getItem: key => pendingMemory.get(key) ?? null, setItem: (key, value) => pendingMemory.set(key, String(value)), removeItem: key => pendingMemory.delete(key) }
+  const target = new EventTarget()
+  globalThis.window = { location: { hash, origin: 'https://pages.example.test' }, addEventListener: target.addEventListener.bind(target), dispatchEvent: target.dispatchEvent.bind(target) }
+  globalThis.sessionStorage = { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, String(value)), removeItem: key => memory.delete(key) }
+  globalThis.localStorage = { getItem: key => pendingMemory.get(key) ?? null, setItem: (key, value) => pendingMemory.set(key, String(value)), removeItem: key => pendingMemory.delete(key), get length() { return pendingMemory.size }, key: index => [...pendingMemory.keys()][index] ?? null }
+  const locks = new Set()
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { locks: { async request(name, _options, callback) { if (locks.has(name)) return callback(null); locks.add(name); try { return await callback({ name }) } finally { locks.delete(name) } } } } })
 }
 function observed(url, options) {
   const entry = { url: String(url), options, body: options.body ? JSON.parse(options.body) : undefined }
@@ -50,7 +54,7 @@ function writeBoundary(entry) {
 
 try {
   browser()
-  const { api } = await actualModule('src/booking/api.ts', 'https://api.example.test')
+  const { api, bookingIntake } = await actualModule('src/booking/api.ts', 'https://api.example.test')
   const committed = new Map()
   let loseFirstResponse = true
   globalThis.fetch = async (url, options) => {
@@ -62,21 +66,22 @@ try {
   }
   await assert.rejects(api.hold(request), error => error.code === 'network')
   const retry = await api.hold(request)
-  await api.hold(request)
-  check('lost-reply retry and repeated submission reuse one server mutation', () => {
+  await assert.rejects(api.hold(request), error => error.code === 'network')
+  check('lost-reply exact retry uses one mutation and received tombstone prevents another blind submission', () => {
     assert.equal(committed.size, 1)
     assert.equal(calls[0].body.requestId, calls[1].body.requestId)
-    assert.equal(calls[1].body.requestId, calls[2].body.requestId)
+    assert.equal(calls.length, 2)
     assert.match(calls[0].body.requestId, /^[0-9a-f-]{36}$/i)
     assert.deepEqual(calls[0].body.request, request)
     assert.equal(calls[0].body.honeypot, '')
     assert.deepEqual(retry, result)
   })
+  await bookingIntake.startDifferent()
   await api.hold({ ...request, date: '2026-12-21' }, 'filled-by-bot')
   check('a different request gets a new mutation ID and carries its honeypot', () => {
     assert.equal(committed.size, 2)
-    assert.notEqual(calls[3].body.requestId, calls[0].body.requestId)
-    assert.equal(calls[3].body.honeypot, 'filled-by-bot')
+    assert.notEqual(calls[2].body.requestId, calls[0].body.requestId)
+    assert.equal(calls[2].body.honeypot, 'filled-by-bot')
   })
 
   const priorCount = calls.length
@@ -87,8 +92,8 @@ try {
     const entry = calls[priorCount]
     writeBoundary(entry)
     assert.equal(entry.url, 'https://api.example.test/api/booking/status')
-    assert.deepEqual(entry.body, { ref: receipt.ref, accessToken: 'contract-token' })
-    assert(!entry.url.includes('contract-token'))
+    assert.deepEqual(entry.body, { ref: receipt.ref, accessToken: receiptToken })
+    assert(!entry.url.includes(receiptToken))
   })
   browser('#access=fragment-token')
   await api.booking('CS-fragment-check')
@@ -119,7 +124,7 @@ try {
   })
 
   const reloadBase = 'https://reload.example.test'
-  const beforeReload = (await actualModule('src/booking/api.ts', reloadBase)).api
+  const beforeReloadModule = await actualModule('src/booking/api.ts', reloadBase), beforeReload = beforeReloadModule.api
   const reloadCommits = new Map()
   let loseReloadResponse = true
   globalThis.fetch = async (url, options) => {
@@ -130,25 +135,30 @@ try {
   }
   await assert.rejects(beforeReload.hold(request), error => error.code === 'network')
   const reloadId = calls.at(-1).body.requestId
-  const pendingKey = [...pendingMemory.keys()].find(key => pendingMemory.get(key) === reloadId)
+  const pendingKey = [...pendingMemory.keys()].find(key => { try { return JSON.parse(pendingMemory.get(key)).requestId === reloadId } catch { return false } })
   const persisted = JSON.stringify([pendingKey, pendingMemory.get(pendingKey)])
   const afterReload = (await actualModule('src/booking/api.ts', reloadBase)).api
-  await afterReload.hold(request)
-  check('a fresh module recovers a lost-reply request without persisting guest details', () => {
+  const beforeReloadRetry = calls.length
+  await assert.rejects(afterReload.hold(request), error => error.code === 'network')
+  check('reload blocks a lost-reply replacement without storing the original answers or a body digest', () => {
     assert.equal(reloadCommits.size, 1)
     assert.equal(calls.at(-1).body.requestId, reloadId)
-    assert.match(pendingKey, /^booking-pending:v1:https%3A%2F%2Freload\.example\.test:request:[a-f0-9]{64}$/)
+    assert.equal(calls.length, beforeReloadRetry)
+    assert.match(pendingKey, /^booking-intake-pending:v1:https%3A%2F%2Freload\.example\.test$/)
     assert(!persisted.includes(request.name))
     assert(!persisted.includes(request.email))
     assert(!persisted.includes(request.phone))
-    assert.equal(pendingMemory.has(pendingKey), false)
+    assert.equal(pendingMemory.has(pendingKey), true)
   })
-  const newIntent = (await actualModule('src/booking/api.ts', reloadBase)).api
+  await beforeReload.hold(request)
+  const newIntentModule = await actualModule('src/booking/api.ts', reloadBase), newIntent = newIntentModule.api
+  await assert.rejects(newIntent.hold(request), error => error.code === 'network')
+  await newIntentModule.bookingIntake.startDifferent()
   await newIntent.hold(request)
-  check('a completed request clears pending metadata so a fresh module can start a new intent', () => {
+  check('a verified receipt permits a deliberate different plan, never an automatic new submission', () => {
     assert.notEqual(calls.at(-1).body.requestId, reloadId)
     assert.equal(reloadCommits.size, 2)
-    assert.equal(pendingMemory.has(pendingKey), false)
+    assert.equal(JSON.parse(pendingMemory.get(pendingKey)).phase, 'received')
   })
 
   globalThis.fetch = async (url, options) => { observed(url, options); throw new TypeError('Keep both attempts pending') }
@@ -159,12 +169,13 @@ try {
   await assert.rejects(right.hold(request))
   const rightId = calls.at(-1).body.requestId
   const freshLeft = (await actualModule('src/booking/api.ts', 'https://left.example.test')).api
+  const beforeFreshLeft = calls.length
   await assert.rejects(freshLeft.hold(request))
-  check('pending identities are isolated by API origin and recover only their own request', () => {
+  check('pending identities are isolated by API origin and a fresh module cannot reconstruct either body', () => {
     assert.notEqual(leftId, rightId)
-    assert.equal(calls.at(-1).body.requestId, leftId)
-    assert([...pendingMemory.keys()].some(key => key.includes(encodeURIComponent('https://left.example.test') + ':request:')))
-    assert([...pendingMemory.keys()].some(key => key.includes(encodeURIComponent('https://right.example.test') + ':request:')))
+    assert.equal(calls.length, beforeFreshLeft)
+    assert(pendingMemory.has('booking-intake-pending:v1:' + encodeURIComponent('https://left.example.test')))
+    assert(pendingMemory.has('booking-intake-pending:v1:' + encodeURIComponent('https://right.example.test')))
   })
 
   const normalStorage = globalThis.localStorage
@@ -178,9 +189,9 @@ try {
       return Response.json(result)
     }
     await assert.rejects(blockedStorage.hold(request), error => error.code === 'network')
-    const firstId = calls.at(-1).body.requestId
-    await blockedStorage.hold(request)
-    check('blocked browser storage preserves safe same-page retry behavior', () => assert.equal(calls.at(-1).body.requestId, firstId))
+    const previous = calls.length
+    await assert.rejects(blockedStorage.hold(request), error => error.code === 'network')
+    check('blocked browser storage refuses transport rather than claiming durable recovery', () => assert.equal(calls.length, previous))
   } finally { globalThis.localStorage = normalStorage }
 
   const acknowledgmentBase = 'https://acknowledgment.example.test'
@@ -206,15 +217,19 @@ try {
   globalThis.fetch = async (url, options) => { observed(url, options); return Response.json({ ...result, accessToken: '' }) }
   await assert.rejects(incomplete.hold(request), error => error.code === 'network')
   const incompleteId = calls.at(-1).body.requestId
-  const incompleteKey = [...pendingMemory.keys()].find(key => pendingMemory.get(key) === incompleteId)
+  const incompleteKey = [...pendingMemory.keys()].find(key => { try { return JSON.parse(pendingMemory.get(key)).requestId === incompleteId } catch { return false } })
   assert(incompleteKey)
   globalThis.fetch = async (url, options) => { observed(url, options); return Response.json(result) }
-  await (await actualModule('src/booking/api.ts', incompleteBase)).api.hold(request)
-  check('an incomplete booking receipt remains recoverable across reload until valid success', () => {
+  const beforeIncompleteReload = calls.length
+  await assert.rejects((await actualModule('src/booking/api.ts', incompleteBase)).api.hold(request))
+  assert.equal(calls.length, beforeIncompleteReload)
+  await incomplete.hold(request)
+  check('an incomplete receipt retains exact current-tab retry and blocks reconstruction after reload', () => {
     assert.equal(calls.at(-1).body.requestId, incompleteId)
-    assert.equal(pendingMemory.has(incompleteKey), false)
+    assert.equal(JSON.parse(pendingMemory.get(incompleteKey)).phase, 'received')
   })
 
+  await bookingIntake.startDifferent()
   globalThis.fetch = async (url, options) => { observed(url, options); return Response.json({ error: { code: 'seats-gone', message: 'These seats are no longer available.' } }, { status: 409 }) }
   await assert.rejects(api.hold({ ...request, kind: 'table', nightId: 'night-full', seats: 2 }), error => error.code === 'seats-gone' && error.message === 'These seats are no longer available.')
   checks++; process.stdout.write('PASS authoritative availability conflicts reach the form as booking errors\n')
@@ -355,7 +370,7 @@ try {
     assert.equal(calls.at(-1).body.requestId,checkoutId)
     assert(checkout.url.startsWith('https://checkout.stripe.com/'))
   })
-  const coveredApi = (await actualModule('src/booking/api.ts', 'https://covered.example.test')).api
+  const coveredModule = await actualModule('src/booking/api.ts', 'https://covered.example.test'), coveredApi = coveredModule.api
   let firstCoveredRequest, lostCoveredReply = true
   globalThis.fetch = async (url, options) => {
     const entry = observed(url, options); writeBoundary(entry); firstCoveredRequest ??= entry.body.requestId
@@ -389,6 +404,7 @@ try {
     assert.equal(coveredHold.url, result.url)
   })
   globalThis.fetch = async (url, options) => { observed(url, options); return Response.json({ ...result, checkout: { paid: true } }) }
+  await coveredModule.bookingIntake.startDifferent()
   const unknownCovered = await coveredApi.hold({ ...request, gift: 'OTHER-SYNTHETIC-GIFT' }, '', { checkout: true })
   check('an unbound inline paid claim becomes a recoverable checkout error rather than payment success', () => {
     assert.equal(unknownCovered.checkout, undefined); assert.equal(unknownCovered.checkoutError.code, 'invalid_checkout')
@@ -461,6 +477,7 @@ try {
 } finally {
   for (const [key, value] of Object.entries(savedGlobals)) {
     if (value === undefined) delete globalThis[key]
+    else if (key === 'navigator') Object.defineProperty(globalThis, key, { configurable: true, value })
     else globalThis[key] = value
   }
 }

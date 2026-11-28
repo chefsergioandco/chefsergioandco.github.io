@@ -3,6 +3,8 @@ import { BookingError, type BookingReceipt, type CheckoutResult, type DetailsRec
 import { isDetailsResult } from './details-result'
 import { isPreparationAck, isPreparationId, isPreparationUuid, type PreparationAck } from '../preparation/types'
 import { preparationRequestHash } from '../preparation/recovery'
+import { clearMatchingBookingDraft } from './drafts'
+import { claimIntake, clearConfirmedIntake, intakeOwner, exactIntakeRetry, finishIntakeAttempt, knownIntakeResult, readIntake, readKnownIntake, receivedIntake, rejectFirstIntake, startDifferentIntake } from './intake'
 import type { DetailsIntent, DetailsResult, GuestDetails } from './types'
 
 // A failed or missing live service never creates a browser-only booking.
@@ -38,7 +40,7 @@ function completeAttempt(attempt: { key: string; value: string }) {
   } catch { /* A valid server receipt remains valid when storage is unavailable. */ }
 }
 function rememberAccess(ref: string, accessToken: string) {
-  try { sessionStorage.setItem('booking-access:' + ref, accessToken) } catch { /* The URL fragment still grants access for this page. */ }
+  try { sessionStorage.setItem('booking-access:' + ref, accessToken); return sessionStorage.getItem('booking-access:' + ref) === accessToken } catch { return false }
 }
 function receiptAccess(ref: string) {
   if (typeof window === 'undefined') return ''
@@ -57,7 +59,7 @@ async function call<T>(path: string, body?: unknown, allowNull = false): Promise
   if (!response.ok) {
     const error = data?.error ?? data
     const code = ['unavailable', 'seats-gone', 'invalid', 'network'].includes(error?.code) ? error.code : 'network'
-    throw Object.assign(new BookingError(code, error?.message || 'Your request could not be confirmed. Please retry or call Sergio.'), { status: response.status })
+    throw Object.assign(new BookingError(code, error?.message || 'Your request could not be confirmed. Please retry or call Sergio.'), { status: response.status, serverCode: typeof error?.code === 'string' ? error.code : '' })
   }
   if (data === null && !allowNull) throw new BookingError('network', 'The service returned an incomplete response. Please retry before assuming your request was received.')
   return data as T
@@ -70,6 +72,31 @@ function verifiedCheckout(value: unknown, ref: string, requestId: string): value
   if (result.expiresAt !== undefined && (typeof result.expiresAt !== 'string' || !Number.isFinite(Date.parse(result.expiresAt)))) return false
   try { const url = new URL(result.url); return url.protocol === 'https:' && url.hostname === 'checkout.stripe.com' && !url.username && !url.password && !url.port } catch { return false }
 }
+function validHoldReceipt(value: unknown): value is PublicHoldResult {
+  if (!value || typeof value !== 'object') return false
+  const result = value as PublicHoldResult
+  if (!isPreparationId(result.ref) || result.ref.length > 128 || typeof result.accessToken !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(result.accessToken) || result.next !== 'done' || typeof result.url !== 'string') return false
+  try { const url = new URL(result.url), expected = typeof window !== 'undefined' ? window.location.origin : ''; return (!expected || url.origin === expected) && !url.username && !url.password && url.pathname === (import.meta.env.BASE_URL || '/') + 'book/done/' && [...url.searchParams.keys()].length === 1 && url.searchParams.getAll('ref').length === 1 && url.searchParams.get('ref') === result.ref && [...new URLSearchParams(url.hash.slice(1)).keys()].length === 1 && new URLSearchParams(url.hash.slice(1)).getAll('access').length === 1 && new URLSearchParams(url.hash.slice(1)).get('access') === result.accessToken } catch { return false }
+}
+export const bookingIntake = {
+  read: () => readIntake(serviceBase()),
+  owner: () => intakeOwner(serviceBase()),
+  known: () => readKnownIntake(serviceBase()),
+  async retry() { const original = exactIntakeRetry(serviceBase()); if (!original) throw new BookingError('network', 'The original answers are no longer available in this tab. Contact Sergio before sending another request.'); return api.hold(original.request, original.honeypot, original.options) },
+  startDifferent: (observed?: import('./intake').IntakeMarker) => startDifferentIntake(serviceBase(), observed),
+  inMemoryReceipt: () => knownIntakeResult(serviceBase()),
+  async openKnown() {
+    const base = serviceBase(), state = readIntake(base), known = readKnownIntake(base), inMemory = knownIntakeResult(base)
+    if (inMemory && validHoldReceipt(inMemory) && state.kind === 'pending') { const url = new URL(inMemory.url); return url.pathname + url.search + url.hash }
+    if (!known || state.kind !== 'clear' && !(state.kind === 'pending' && known.requestId === state.marker.requestId)) throw new BookingError('network', 'No verified saved booking is available in this tab. Contact Sergio with the submission reference.')
+    let accessToken = ''; try { accessToken = sessionStorage.getItem('booking-access:' + known.ref) || '' } catch {}
+    if (!accessToken) throw new BookingError('network', 'The private booking proof is unavailable in this tab. Contact Sergio with the booking reference. Do not send a second request.')
+    const receipt = await call<BookingReceipt | null>('/api/booking/status', { ref: known.ref, accessToken }, true)
+    if (!receipt || receipt.ref !== known.ref) throw new BookingError('network', 'The saved booking could not be verified. Contact Sergio before starting another request.')
+    if (known.draftId && !clearMatchingBookingDraft(known.draftId)) throw new BookingError('network', 'Your booking was verified, but this browser could not clear its associated draft. Allow storage or contact Sergio before starting again.')
+    const url = new URL((import.meta.env.BASE_URL || '/') + 'book/done/', window.location.origin); url.searchParams.set('ref', known.ref); url.hash = new URLSearchParams({ access: accessToken }).toString(); return url.pathname + url.search + url.hash
+  },
+}
 export const api: PublicBookingApi = {
   async config() {
     const result = await call<PlanningConfig>('/api/planning-config')
@@ -79,20 +106,18 @@ export const api: PublicBookingApi = {
   availability: (kind, month) => call(`/api/availability?type=${encodeURIComponent(kind)}&month=${encodeURIComponent(month)}`),
   nights: () => call('/api/nights'),
   async hold(request, honeypot = '', options = {}) {
-    const attempt = await requestId('request', request)
-    // The checkout ID is derived from the same saved request, so a retried hold reopens the same Stripe session.
-    const checkoutAttempt = options.checkout && request.kind !== 'event' ? await requestId('request-checkout', request) : null
-    const elapsed = Number.isSafeInteger(options.elapsedMs) && options.elapsedMs! >= 0 && options.elapsedMs! <= 3_600_000 ? options.elapsedMs : undefined
-    const result = await call<PublicHoldResult>(request.kind === 'event' ? '/api/request' : '/api/hold', { request, requestId: attempt.value, honeypot, ...(checkoutAttempt ? { checkoutRequestId: checkoutAttempt.value } : {}), ...(elapsed !== undefined ? { elapsedMs: elapsed } : {}) })
-    if (typeof result.ref !== 'string' || !result.ref || typeof result.accessToken !== 'string' || !result.accessToken || result.next !== 'done' || typeof result.url !== 'string' || !result.url) throw new BookingError('network', 'The request receipt was incomplete. Retry to recover the same request, or call Sergio.')
-    rememberAccess(result.ref, result.accessToken)
-    completeAttempt(attempt)
-    // A settled gift payment needs its exact action acknowledgment; redirects stay on the payment provider.
-    if (result.checkout) {
-      if (!checkoutAttempt || !verifiedCheckout(result.checkout, result.ref, checkoutAttempt.value)) return { ...result, checkout: undefined, checkoutError: { code: 'invalid_checkout', message: 'The payment result could not be verified. Your request is saved; check its status before making another payment.' } }
-      completeAttempt(checkoutAttempt)
-    }
-    return result
+    const base = serviceBase()
+    let intent: Awaited<ReturnType<typeof claimIntake>>
+    try { intent = await claimIntake(base, request, honeypot, options) } catch (failure) { throw new BookingError('network', failure instanceof Error ? failure.message : 'An earlier request needs checking before another submission.') }
+    try {
+      intent.dispatched++
+      const result = await call<PublicHoldResult>(intent.marker.operation === 'request' ? '/api/request' : '/api/hold', intent.body)
+      if (!validHoldReceipt(result)) throw new BookingError('network', 'The request receipt was incomplete. Retry the original request, or call Sergio before sending another.')
+      const proofStored = rememberAccess(result.ref, result.accessToken)
+      if (result.checkout && (!intent.marker.checkoutRequestId || !verifiedCheckout(result.checkout, result.ref, intent.marker.checkoutRequestId))) { const safe = { ...result, checkout: undefined, checkoutError: { code: 'invalid_checkout', message: 'The payment result could not be verified. Your request is saved; check its status before making another payment.' } }; await receivedIntake(base, intent, safe, proofStored); return safe }
+      await receivedIntake(base, intent, result, proofStored)
+      return result
+    } catch (failure) { await rejectFirstIntake(base, intent, failure); throw failure } finally { finishIntakeAttempt(base, intent) }
   },
   async details(ref, details, intent) {
     if (!intent) throw new BookingError('invalid', 'Reload the preparation form before sending details. No new details were sent.')

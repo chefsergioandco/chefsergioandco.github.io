@@ -146,5 +146,5 @@ export function migrateLegacyDraft(value: any): SavedDraft | null {
 
 /** Device drafts contain resumable logistics, never sensitive/free-form answers or a gift capability. */
 export function privateDraftState(state: PlanningState): PlanningState {
-  return {...state,dietary:[],allergies:'',sensitiveConsent:false,occasion:'',kitchen:'',foodIdeas:'',notes:'',place:'',gift:''}
+  return { ...EMPTY, ...(state.kind ? { kind: state.kind } : {}), dateMode: state.dateMode, date: state.date, time: state.time, dateFrom: state.dateFrom, dateTo: state.dateTo, partyBandId: state.partyBandId, headcountMode: state.headcountMode, guests: state.guests, where: state.where, budgetMode: state.budgetMode, budgetMin: state.budgetMin, budgetMax: state.budgetMax, budgetUnit: state.budgetUnit, nightId: state.nightId, seats: state.seats, name: state.name, email: state.email, phone: state.phone, contactBy: state.contactBy, physicalInvitations: state.physicalInvitations, dietary: [] }
 }

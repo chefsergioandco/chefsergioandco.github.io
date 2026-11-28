@@ -64,11 +64,11 @@ function printedCard(s: PlanningState, night?: Night): CardData {
   }
 }
 
-export function BookingForm() {
-  const [s, setState] = useState<PlanningState>(EMPTY), [step, setStep] = useState(0), [direction, setDirection] = useState(1)
+export function BookingForm({ initialState, initialStep = 0, onDraft, onReceived, getDraftIdentity, registerRecovery }: { initialState?: PlanningState; initialStep?: number; onDraft?: (state: PlanningState, step: number) => void; onReceived?: () => void; getDraftIdentity?: () => string | undefined; registerRecovery?: (handler: (result: PublicHoldResult) => Promise<void>, ownerId: string) => () => void }) {
+  const [s, setState] = useState<PlanningState>(initialState || EMPTY), [step, setStep] = useState(initialStep), [direction, setDirection] = useState(1)
   const [config, setConfig] = useState<PlanningConfig | null>(null), [configError, setConfigError] = useState(''), [configRetry, setConfigRetry] = useState(0)
   const [avail, setAvail] = useState<Availability | null>(null), [availabilityError, setAvailabilityError] = useState(''), [availabilityRetry, setAvailabilityRetry] = useState(0)
-  const [month, setMonth] = useState(() => todayET().slice(0, 7)), [nights, setNights] = useState<Night[] | null>(null), [nightsError, setNightsError] = useState(''), [nightsRetry, setNightsRetry] = useState(0)
+  const [month, setMonth] = useState(() => initialState?.date && validDate(initialState.date) ? initialState.date.slice(0, 7) : todayET().slice(0, 7)), [nights, setNights] = useState<Night[] | null>(null), [nightsError, setNightsError] = useState(''), [nightsRetry, setNightsRetry] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({}), [submissionError, setSubmissionError] = useState(''), [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<{ id: number; text: string; more: number } | null>(null)
   // A friend's invitation link (?friend=CODE): shown as a welcome, recorded on the booking once it is made.
@@ -86,8 +86,11 @@ export function BookingForm() {
     return () => { current = false }
   }, [])
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 5200); return () => clearTimeout(timer) }, [toast])
-  const [draft, setDraft] = useState<SavedDraft | null>(null), [hydrated, setHydrated] = useState(false), [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false)
+  const [draft, setDraft] = useState<SavedDraft | null>(null), [hydrated, setHydrated] = useState(false), [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(!!initialState?.gift)
   const heading = useRef<HTMLHeadingElement>(null), inFlight = useRef(false), reduced = useReducedMotion()
+  const active = useRef(true), ownerId = useRef(crypto.randomUUID()), submittedPath = useRef('')
+  const currentForm = () => active.current && (!submittedPath.current || submittedPath.current === location.pathname + location.search)
+  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
   // A prerendered form (next-page/) may never be opened: it must not leave a draft to resume.
   const activated = useActivated()
   const set = (patch: Partial<PlanningState>) => { setState(previous => ({ ...previous, ...patch })); setErrors({}) }
@@ -99,15 +102,7 @@ export function BookingForm() {
 
   useEffect(() => {
     const query = new URLSearchParams(location.search), patch: Partial<PlanningState> = {}
-    let saved: SavedDraft | null = null
-    try {
-      const candidate = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null')
-      saved = validDraft(candidate) ? candidate : migrateLegacyDraft(JSON.parse(localStorage.getItem('booking-draft') || 'null'))
-      if(saved) { saved={...saved,s:privateDraftState(saved.s)}; localStorage.setItem(DRAFT_KEY,JSON.stringify(saved)) } else localStorage.removeItem(DRAFT_KEY)
-      localStorage.removeItem('booking-draft')
-    } catch { /* Storage is optional. */ }
-    if (query.get('resume') && saved) { setState(saved.s); setStep(saved.step); if (saved.s.date) setMonth(saved.s.date.slice(0, 7)) }
-    else {
+    if (!initialState) {
       const kind = query.get('type') as Kind
       if (KINDS.some(item => item.key === kind)) patch.kind = kind
       const where = query.get('where'); if (where === 'rental' || where === 'his' && kind === 'dinner') patch.where = where
@@ -125,14 +120,13 @@ export function BookingForm() {
         patch.gift = (isGiftCode(giftCode) ? formatGiftCode(giftCode) : giftCode).slice(0, 100); setGiftOpen(true)
         if (query.has('gift')) { const clean = new URL(window.location.href); clean.searchParams.delete('gift'); history.replaceState(history.state, '', clean.pathname + clean.search) }
       }
-      setState(previous => ({ ...previous, ...patch })); if (patch.kind) setStep(1); else if (saved && !query.toString()) setDraft(saved)
+      setState(previous => ({ ...previous, ...patch })); if (patch.kind) setStep(1)
     }
     setHydrated(true)
   }, [])
-  useEffect(() => {
-    if (!activated || !hydrated || !s.kind || draft) return
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ version: 2, savedAt: new Date().toISOString(), step, s: privateDraftState(s) })) } catch { /* A server receipt never depends on local storage. */ }
-  }, [s, step, hydrated, draft, activated])
+  useEffect(() => { const hide = () => { active.current = false; setState(previous => privateDraftState(previous)) }; window.addEventListener('pagehide', hide); return () => window.removeEventListener('pagehide', hide) }, [])
+  const latestDraft = useRef(onDraft); latestDraft.current = onDraft
+  useEffect(() => { if (activated && hydrated) latestDraft.current?.(s, step) }, [s, step, activated, hydrated])
   useEffect(() => {
     let current = true; setConfigError('')
     api.config().then(value => { if (current) setConfig(value) }, failure => { if (current) setConfigError(failure instanceof Error ? failure.message : 'Booking settings could not be loaded.') })
@@ -190,15 +184,18 @@ export function BookingForm() {
   function go(target: number) { setDirection(target > step ? 1 : -1); setStep(target); setErrors({}); setToast(null); requestAnimationFrame(() => heading.current?.focus()) }
   function next() { if (check(step)) { track('booking_step', { step: String(step + 2), kind: s.kind ?? '' }); go(step + 1) } }
   async function openSavedBooking(result: PublicHoldResult) {
+    if (!currentForm()) return
     setBusy(true)
     try {
-      try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
+
+      if (!currentForm()) return
       const destination = new URL(result.url, window.location.href)
       // Keep the original saved booking and checkout path on invitation retries.
       if (canPay && result.next === 'done' && !result.checkout?.paid) {
-        try { const checkout = await api.checkout(result.ref); if (!checkout.paid) { window.location.assign(checkout.url); return } }
+        try { const checkout = await api.checkout(result.ref); if (!currentForm()) return; if (!checkout.paid) { window.location.assign(checkout.url); return } }
         catch (failure) { try { sessionStorage.setItem('booking-pay-error:' + result.ref, failure instanceof Error ? failure.message : 'Checkout could not be opened. Your request is saved.') } catch { /* The receipt still offers payment. */ } }
       }
+      if (!currentForm()) return
       if (result.next === 'done' && destination.origin === window.location.origin && destination.pathname === href('/book/done/')) {
         navigateAccount(destination.pathname + destination.search + destination.hash)
         window.scrollTo(0, 0)
@@ -209,6 +206,7 @@ export function BookingForm() {
     }
   }
   async function connectFriend(result: PublicHoldResult) {
+    if (!currentForm()) return
     const pending = friendCode ?? pendingFriendCode()
     if (pending && s.kind !== 'table') {
       try { await attachFriend(result.ref, result.accessToken, pending); forgetFriendCode(pending.code); setFriendFailure('') }
@@ -218,18 +216,21 @@ export function BookingForm() {
         return
       }
     }
-    await openSavedBooking(result)
+    if (currentForm()) await openSavedBooking(result)
   }
   async function submit() {
     if (inFlight.current) return
     for (const index of [0, 1, 2, 3]) if (!check(index)) { setDirection(index > step ? 1 : -1); setStep(index); return }
-    inFlight.current = true; setBusy(true); setSubmissionError('')
+    submittedPath.current = location.pathname + location.search; inFlight.current = true; setBusy(true); setSubmissionError('')
     try {
-      const result = await api.hold(planningRequest(s), honeypot)
+      const result = await api.hold(planningRequest(s), honeypot, { draftId: getDraftIdentity?.(), ownerId: ownerId.current })
+      if (!currentForm()) return
+      onReceived?.()
       // The server has confirmed this request even when its optional referral needs recovery.
-      try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
+
       await connectFriend(result)
     } catch (failure) {
+      if (!currentForm()) return
       inFlight.current = false; setBusy(false); setSubmissionError(failure instanceof Error ? failure.message : 'Your request could not be confirmed. Your answers are still here.')
       if (failure instanceof BookingError && ['unavailable', 'seats-gone'].includes(failure.code)) { setAvail(null); setAvailabilityRetry(value => value + 1); setNightsRetry(value => value + 1); go(1) }
     }
@@ -239,6 +240,8 @@ export function BookingForm() {
   const stamp = canPay ? 'Ready for your deposit' : 'Ready to send'
   const action = table ? canPay ? 'Continue to seat payment' : `Request ${s.seats} ${s.seats === 1 ? 'seat' : 'seats'}` : canPay ? `Continue to ${money(band!.deposit!)} deposit` : 'Send your planning request'
   const described = (id: string, hint = false) => [hint && `${id}-hint`, errors[id.replace('f-', '')] && `${id}-err`].filter(Boolean).join(' ') || undefined
+
+  useEffect(() => registerRecovery?.(async result => { if (!currentForm()) return; onReceived?.(); await connectFriend(result) }, ownerId.current))
 
   if (savedRequest) return <section className="booking-layout booking-referral-recovery" aria-label="Your saved booking"><div className="booking-flow">
     <h2>Your request is saved.</h2><p>Reference: <strong>{savedRequest.ref}</strong>. You do not need to send it again.</p>
@@ -250,7 +253,7 @@ export function BookingForm() {
   return <div className="booking-layout">
     <form className="booking-flow" noValidate onSubmit={event => { event.preventDefault(); step === 3 ? void submit() : next() }}>
       <div aria-hidden="true" className="booking-honeypot"><label>Website<input name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={event => setHoneypot(event.target.value)}/></label></div>
-      {draft && <div className="booking-draft" role="status"><div><strong>Your gathering is still here.</strong><p>Continue the details you saved on {new Date(draft.savedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.</p></div><div className="cta-pair"><CtaButton type="button" emphasis="secondary" onClick={() => { setState(draft.s); setStep(draft.step); if (draft.s.date) setMonth(draft.s.date.slice(0, 7)); setDraft(null) }}>Continue it</CtaButton><button type="button" className="link" onClick={() => { try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch {} setDraft(null) }}>Start fresh</button></div></div>}
+
       <div className="booking-step-heading"><p className="booking-eyebrow">{table ? night?.kind === 'class' ? 'A cooking class with Sergio' : 'An evening at Sergio’s table' : 'A gathering shaped around you'}</p><span>Step {step + 1} of 4</span></div>
       <h2 ref={heading} tabIndex={-1} className="booking-step-title">{labels[step]}</h2>
       <ol className="booking-progress" aria-label="Booking progress">{labels.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined} className={index <= step ? 'reached' : ''}><span className="sr-only">{label}{index < step ? ', completed' : ''}</span></li>)}</ol>

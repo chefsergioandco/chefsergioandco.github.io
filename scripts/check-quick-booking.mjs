@@ -14,7 +14,7 @@ const check = async (name, run) => { await run(); checks++; process.stdout.write
 async function load(path, apiBase) {
   const output = await build({
     absWorkingDir: root, entryPoints: [path], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022', logLevel: 'silent',
-    define: { __SITE_MODE__: JSON.stringify('prototype'), __LOOK__: JSON.stringify('c'), __PLATING_SEQUENCE_AVAILABLE__: 'false' },
+    define: { 'import.meta.env': '{}', __SITE_MODE__: JSON.stringify('prototype'), __LOOK__: JSON.stringify('c'), __PLATING_SEQUENCE_AVAILABLE__: 'false' },
     plugins: apiBase === undefined ? [] : [{ name: 'api-base', setup(builder) { builder.onLoad({ filter: /content\/booking\.ts$/ }, () => ({ contents: `export const booking = {apiBase:${JSON.stringify(apiBase)}}`, loader: 'ts' })) } }],
   })
   return import('data:text/javascript;base64,' + Buffer.from(output.outputFiles[0].text).toString('base64'))
@@ -73,10 +73,13 @@ await check('validation names every missing answer, and a format that doesn’t 
 
 // Browser surfaces for the real client API module.
 const session = new Map(), local = new Map(), calls = []
-globalThis.window = { location: { hash: '' } }
-globalThis.sessionStorage = { getItem: key => session.get(key) ?? null, setItem: (key, value) => session.set(key, String(value)) }
-globalThis.localStorage = { getItem: key => local.get(key) ?? null, setItem: (key, value) => local.set(key, String(value)), removeItem: key => local.delete(key) }
-const { api } = await load('src/booking/api.ts', 'https://api.example.test')
+const events = new EventTarget()
+globalThis.window = { location: { hash: '', origin: 'https://pages.example.test' }, addEventListener: events.addEventListener.bind(events), dispatchEvent: events.dispatchEvent.bind(events) }
+globalThis.sessionStorage = { getItem: key => session.get(key) ?? null, setItem: (key, value) => session.set(key, String(value)), removeItem: key => session.delete(key) }
+globalThis.localStorage = { getItem: key => local.get(key) ?? null, setItem: (key, value) => local.set(key, String(value)), removeItem: key => local.delete(key), get length() { return local.size }, key: index => [...local.keys()][index] ?? null }
+const locks = new Set()
+Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { locks: { async request(name, _options, callback) { if (locks.has(name)) return callback(null); locks.add(name); try { return await callback({ name }) } finally { locks.delete(name) } } } } })
+const { api, bookingIntake } = await load('src/booking/api.ts', 'https://api.example.test')
 const ref = 'WEB-quick-contract', accessToken = 'quick-contract-token'.padEnd(43, 'x')
 const saved = { ref, next: 'done', url: `https://pages.example.test/book/done/?ref=${ref}#access=${accessToken}`, accessToken }
 let reply = () => saved, dropFirst = false
@@ -96,19 +99,22 @@ await check('a hold asks for checkout with a stable ID and sends the elapsed tim
   const [lost, retried] = calls.slice(-2).map(call => call.body)
   assert.equal(retried.requestId, lost.requestId); assert.equal(retried.checkoutRequestId, lost.checkoutRequestId)
   assert.match(retried.checkoutRequestId, /^[0-9a-f-]{36}$/); assert.notEqual(retried.checkoutRequestId, retried.requestId)
-  assert.equal(lost.elapsedMs, 17000); assert.equal(retried.elapsedMs, 19000)
+  assert.equal(lost.elapsedMs, 17000); assert.equal(retried.elapsedMs, 17000)
   assert.equal(calls.at(-1).url, 'https://api.example.test/api/hold')
   assert.equal(result.checkout.url, 'https://checkout.stripe.com/c/pay/cs_live_Quick1')
 })
 await check('a checkout link that isn’t the payment provider becomes a checkout error, never a redirect', async () => {
+  await bookingIntake.startDifferent()
   reply = () => ({ ...saved, checkout: { url: 'https://evil.example/pay' } })
   const result = await api.hold({ ...request, email: 'other@example.com' }, '', { checkout: true })
   assert.equal(result.checkout, undefined); assert.equal(result.checkoutError.code, 'invalid_checkout')
 })
 await check('events and holds without payment never ask for checkout; bad elapsed times are not sent', async () => {
+  await bookingIntake.startDifferent()
   reply = () => saved
   await api.hold({ ...request, kind: 'event', email: 'event@example.com' }, '', { checkout: true, elapsedMs: 12000 })
   assert.equal(calls.at(-1).url, 'https://api.example.test/api/request'); assert.equal('checkoutRequestId' in calls.at(-1).body, false); assert.equal(calls.at(-1).body.elapsedMs, 12000)
+  await bookingIntake.startDifferent()
   await api.hold({ ...request, email: 'nopay@example.com' }, '', { elapsedMs: -5 })
   assert.equal('checkoutRequestId' in calls.at(-1).body, false); assert.equal('elapsedMs' in calls.at(-1).body, false)
 })
