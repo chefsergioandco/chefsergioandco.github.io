@@ -12,7 +12,7 @@ import { FooterAccount } from './AccountAccess'
 const experiences = [
   { path: '/privatedining/', label: 'Private dinners', icon: 'utensils-crossed' },
   { path: '/cookingclasses/', label: 'Cooking classes', icon: 'chef-hat' },
-  { path: '/catering/', label: 'Small events', icon: 'party-popper' },
+  { path: '/catering/', label: 'Small event catering', icon: 'party-popper' },
   ...(site.features.sergiosTable ? [{ path: '/sergios-table/', label: "Sergio’s table", icon: 'armchair' } as const] : []),
 ] as const
 

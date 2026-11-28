@@ -29,10 +29,10 @@
   "/catering/": {
     "file": "catering.png",
     "size": 96,
-    "bytes": 17409,
-    "sha256": "e415badd796f40ceb4c5c603d47e6df3a47ad99f15dc55c5e53ddc8f2d6ea2e9",
-    "hash": "8c279d12074f",
-    "text": "Small events for 8 to 24 guests, fully catered.",
+    "bytes": 16364,
+    "sha256": "83032e672c60451d993a8664e72494bdeb72f24f7672bff2e9bbd4f2ca03e300",
+    "hash": "47fd8205e959",
+    "text": "Small event catering for 8 to 24 guests.",
     "photo": null
   },
   "/about/": {

@@ -9,7 +9,7 @@ import './HomeReviews.css'
 type ShownReview = { id: string; quote: string; name: string; detail: string; account: boolean; source?: { label: string; url?: string } }
 type AccountReview = { id: string; quote: string; name: string; service: string; month: string; verified: boolean }
 
-const SERVICES: Record<string, string> = { 'Private dinner': 'Private dinner', 'Cooking class': 'Cooking class', 'Small event': 'Small event', 'Sergio’s Table': 'Sergio’s table' }
+const SERVICES: Record<string, string> = { 'Private dinner': 'Private dinner', 'Cooking class': 'Cooking class', 'Small event': 'Small event catering', 'Sergio’s Table': 'Sergio’s table' }
 const monthYear = (month: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(month + '-15T12:00:00Z')) : ''
 const valid = (item: unknown): item is AccountReview => {
   const review = item as AccountReview

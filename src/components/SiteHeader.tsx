@@ -15,7 +15,7 @@ import { accountHref } from '../content/account'
 const services = [
   { path: '/privatedining/', label: 'Private dinners', description: 'A menu for your table.', format: 'dinner', icon: 'utensils-crossed' },
   { path: '/cookingclasses/', label: 'Cooking classes', description: 'Cook alongside Sergio.', format: 'class', icon: 'chef-hat' },
-  { path: '/catering/', label: 'Small events', description: 'A gathering, thoughtfully catered.', format: 'event', icon: 'party-popper' },
+  { path: '/catering/', label: 'Small event catering', description: 'A gathering, thoughtfully catered.', format: 'event', icon: 'party-popper' },
 ] as const
 
 /** Selected Open house header: a nonmodal overview, with booking always in reach. */

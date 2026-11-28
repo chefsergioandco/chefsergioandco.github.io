@@ -55,7 +55,7 @@ export function HomeHero() {
 const gatherings = [
   { type: 'dinner', title: 'Private dinners', description: 'A menu for your table.', action: 'Plan a dinner' },
   { type: 'class', title: 'Cooking classes', description: 'Cook alongside Sergio.', action: 'Plan a class' },
-  { type: 'event', title: 'Small events', description: 'A gathering, thoughtfully catered.', action: 'Plan an event' },
+  { type: 'event', title: 'Small event catering', description: 'A gathering, thoughtfully catered.', action: 'Plan an event' },
 ] as const
 
 export function HomeHandoff() {

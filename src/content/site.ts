@@ -36,7 +36,7 @@ export const site = {
   formats: {
     dinner: { label: 'Private dinner', min: 2, max: 12 }, // "dinner for two to a gathering of twelve"
     class: { label: 'Cooking class', min: 1, max: 12 }, // range TBD by Sergio
-    event: { label: 'Small event', min: 8, max: 24 }, // "8–24 Guests"
+    event: { label: 'Small event catering', min: 8, max: 24 }, // "8–24 Guests"
   },
 
   // ---- Sergio decides (null = not decided yet) ----

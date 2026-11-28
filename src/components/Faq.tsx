@@ -15,7 +15,7 @@ export const FAQ: Record<string, FaqItem> = {
     q: 'How much does it cost?',
     a: (
       <>
-        Private dinners: <FromPrice k="dinnerFromPerGuest" lower />. Cooking classes: <FromPrice k="classFromPerGuest" lower />. Small events:{' '}
+        Private dinners: <FromPrice k="dinnerFromPerGuest" lower />. Cooking classes: <FromPrice k="classFromPerGuest" lower />. Small event catering:{' '}
         <FromPrice k="eventFromPerGuest" lower />. A planning deposit may be requested before the menu interview. Your final menu and price follow the spending ceiling you agree with Sergio; the deposit is credited toward the event bill.
       </>
     ),

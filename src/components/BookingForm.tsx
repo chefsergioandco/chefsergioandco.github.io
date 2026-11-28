@@ -28,7 +28,7 @@ import './BookingForm.css'
 const KINDS: { key: Kind; title: string; detail: string; icon: IconName; tag: ReactNode }[] = [
   { key: 'dinner', title: 'A private dinner', icon: 'utensils-crossed', tag: <GuestTag format="dinner" />, detail: 'A personal menu, cooked in your kitchen and served at your table.' },
   { key: 'class', title: 'A cooking class', icon: 'chef-hat', tag: <GuestTag format="class" />, detail: 'Cook with Sergio, then gather around what you made.' },
-  { key: 'event', title: 'A small event', icon: 'party-popper', tag: <GuestTag format="event" />, detail: 'Fully catered for a bigger group: staff, tablecloths, dinnerware and glassware in one all-inclusive proposal.' },
+  { key: 'event', title: 'Small event catering', icon: 'party-popper', tag: <GuestTag format="event" />, detail: 'Fully catered for a bigger group: staff, tablecloths, dinnerware and glassware in one all-inclusive proposal.' },
   ...(site.features.sergiosTable ? [{ key: 'table' as const, title: 'Seats at Sergio’s table', icon: 'armchair' as const, tag: <GuestTag>Up to {booking.table.maxSeatsPerBooking} seats</GuestTag>, detail: 'A published evening at Sergio’s home, with its own menu and fellow guests. Priced per seat.' }] : []),
 ]
 const DIETARY = ['Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free']

@@ -179,7 +179,7 @@ export function Catering() {
   return (
     <>
       <PageHero
-        title={`Small events for ${site.formats.event.min} to ${site.formats.event.max} guests, fully catered.`}
+        title={`Small event catering for ${site.formats.event.min} to ${site.formats.event.max} guests.`}
         lead="Menu, staff and a fully set table, arranged so you can host and enjoy the party at the same time."
         slot="catering-table"
         alt="Reference: a table set with linens, glassware and a centerpiece"

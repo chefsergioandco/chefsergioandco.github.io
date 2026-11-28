@@ -2,25 +2,42 @@ import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode }
 import { api } from '../booking/api'
 import { attachFriend, forgetFriendCode, lookupFriend, pendingFriendCode, type FriendCode, type FriendInvite } from '../booking/referral'
 import { navigateAccount } from '../account/navigation'
-import { Calendar } from '../booking/Calendar'
-import { addMonths, clock, longDate, money } from '../booking/format'
+import { Scheduler } from '../booking/Scheduler'
+import { TableNightsLive } from '../booking/StatusPages'
+import { addMonths, money } from '../booking/format'
 import { todayET, validDate } from '../booking/planning'
 import { formatFits, formatsFor, nextOpenDays, preferredTime, quickBand, quickRequest, QUICK_EMPTY, validateQuick, type QuickState } from '../booking/quick'
 import { BookingError, type Availability, type PlanningConfig, type PublicHoldResult } from '../booking/types'
+import { booking } from '../content/booking'
 import { site, type FormatKey } from '../content/site'
 import { formatGiftCode, isGiftCode } from '../../prototypes/sergio-admin/shared/gift-cards/code'
 import { CtaButton } from './CallToAction'
-import { Icon } from './Icons'
+import { GuestTag } from './GuestTag'
+import { Icon, type IconName } from './Icons'
 import { href, track } from './ui'
 import './BookingForm.css'
 import './QuickBooking.css'
 
 const FORMAT_CHOICE: Record<FormatKey, { title: string; detail: string; noun: string }> = {
-  dinner: { title: 'A seated dinner', detail: 'Sergio cooks and serves at your table.', noun: 'a private dinner' },
-  event: { title: 'A catered party', detail: 'Staff, tablecloths, dinnerware and glassware.', noun: 'a small event' },
+  dinner: { title: 'A private dinner', detail: 'Sergio cooks and serves at your table.', noun: 'a private dinner' },
+  event: { title: 'Small event catering', detail: 'Staff, tablecloths, dinnerware and glassware.', noun: 'small event catering' },
   class: { title: 'A cooking class', detail: 'Cook with Sergio, then eat together.', noun: 'a cooking class' },
 }
 const shortDay = (iso: string) => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+
+/**
+ * On /book/ the first answer is what the guest is planning, with the same names, icons and guest ranges as the
+ * header's Experiences menu. A dinner or an event continues in this form exactly as on its own page; classes and
+ * Sergio's table are published dates, so those show the dates to join.
+ */
+type Plan = 'dinner' | 'class' | 'event' | 'table'
+const PLANS: { key: Plan; title: string; description: string; icon: IconName; tag: ReactNode }[] = [
+  { key: 'dinner', title: 'Private dinner', description: 'A menu for your table.', icon: 'utensils-crossed', tag: <GuestTag format="dinner"/> },
+  { key: 'class', title: 'Cooking class', description: 'Cook alongside Sergio.', icon: 'chef-hat', tag: <GuestTag format="class"/> },
+  { key: 'event', title: 'Small event catering', description: 'A gathering, thoughtfully catered.', icon: 'party-popper', tag: <GuestTag format="event"/> },
+  ...(site.features.sergiosTable ? [{ key: 'table' as const, title: 'Sergio’s table', description: 'A seat at an evening he hosts.', icon: 'armchair' as const, tag: <GuestTag>Up to {booking.table.maxSeatsPerBooking} seats</GuestTag> }] : []),
+]
+const planOf = (format?: FormatKey | Plan): 'dinner' | 'event' | undefined => format === 'dinner' || format === 'event' ? format : undefined
 
 function Group({ id, label, error, children, hint }: { id: string; label: string; error?: string; hint?: ReactNode; children: ReactNode }) {
   return <div className="quick-group" id={`wrap-${id}`}>
@@ -46,9 +63,12 @@ function Input({ id, label, error, hint, ...props }: { id: string; label: string
 export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetails, onReceived, getDraftIdentity, registerRecovery }: { format?: FormatKey; initialState?: QuickState; onDraft?: (state: QuickState) => void; onMoreDetails?: (state: QuickState) => void; onReceived?: () => void; getDraftIdentity?: () => string | undefined; registerRecovery?: (handler: (result: PublicHoldResult) => Promise<void>, ownerId: string) => () => void }) {
   const [s, setState] = useState<QuickState>({ ...QUICK_EMPTY, format: fixed, ...initialState })
   const [config, setConfig] = useState<PlanningConfig | null>(null), [configError, setConfigError] = useState(''), [configRetry, setConfigRetry] = useState(0)
-  const [months, setMonths] = useState<(Availability | null)[]>([null, null]), [availabilityError, setAvailabilityError] = useState(''), [availabilityRetry, setAvailabilityRetry] = useState(0)
-  const [otherDate, setOtherDate] = useState(false), [calMonth, setCalMonth] = useState(() => todayET().slice(0, 7)), [calAvail, setCalAvail] = useState<Availability | null>(null)
-  const [calError, setCalError] = useState(''), [calRetry, setCalRetry] = useState(0)
+  const [plan, setPlan] = useState<Plan | undefined>(() => fixed ?? planOf(initialState?.format))
+  // Loaded months of open evenings, keyed by format and month, so moving back and forth doesn't reload them.
+  const [openMonths, setOpenMonths] = useState<Record<string, Availability>>({}), [availabilityError, setAvailabilityError] = useState(''), [availabilityRetry, setAvailabilityRetry] = useState(0)
+  const [shownMonth, setShownMonth] = useState(() => initialState?.dateMode === 'exact' && initialState.date ? initialState.date.slice(0, 7) : todayET().slice(0, 7))
+  // Until the guest moves the calendar, it opens on the month of Sergio's next open evening.
+  const browsed = useRef(!!initialState?.date)
   const [errors, setErrors] = useState<Record<string, string>>({}), [submissionError, setSubmissionError] = useState(''), [busy, setBusy] = useState(false)
   const [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false), [switched, setSwitched] = useState('')
   const [friendCode, setFriendCode] = useState<FriendCode | null>(null), [friend, setFriend] = useState<FriendInvite | null>(null), [friendNotice, setFriendNotice] = useState('')
@@ -63,10 +83,12 @@ export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetai
   useEffect(() => { const hide = () => { active.current = false; setState(previous => ({ ...previous, dietary: [], place: '', gift: '' })) }; window.addEventListener('pagehide', hide); return () => window.removeEventListener('pagehide', hide) }, [])
   const today = todayET(), band = quickBand(s, config), format = s.format
   const kindForDates: FormatKey = format ?? 'dinner'
-  const loadedDays = [...(months[0]?.days ?? []), ...(months[1]?.days ?? []), ...(calAvail?.days ?? [])]
-  const times = loadedDays.find(day => day.date === s.date)?.times ?? []
-  const chips = nextOpenDays(months, today, 6)
-  const availabilityLoaded = !!months[0] && !availabilityError
+  const monthKey = (month: string) => kindForDates + ':' + month
+  const loadedMonths = Object.entries(openMonths).filter(([key]) => key.startsWith(kindForDates + ':')).map(([, value]) => value)
+  const shown = openMonths[monthKey(shownMonth)] ?? null
+  const times = loadedMonths.flatMap(month => month.days).find(day => day.date === s.date)?.times ?? []
+  const soonest = nextOpenDays(loadedMonths, today, 1)[0]?.date
+  const availabilityLoaded = !!openMonths[monthKey(s.date?.slice(0, 7) ?? shownMonth)] && !availabilityError
 
   useEffect(() => {
     let current = true
@@ -85,9 +107,9 @@ export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetai
     if (initialState) return
     const query = new URLSearchParams(location.search), patch: Partial<QuickState> = {}
     const type = query.get('type') as FormatKey | null
-    if (!fixed && type && type in site.formats) patch.format = type
+    if (!fixed && type && type in site.formats) { setPlan(type); patch.format = planOf(type) }
     const where = query.get('where'); if (where === 'rental' || where === 'his') patch.where = where
-    const date = query.get('date'); if (date && validDate(date) && date >= todayET()) { patch.date = date; patch.dateMode = 'exact' }
+    const date = query.get('date'); if (date && validDate(date) && date >= todayET()) { patch.date = date; patch.dateMode = 'exact'; setShownMonth(date.slice(0, 7)); browsed.current = true }
     const giftCode = new URLSearchParams(window.location.hash.slice(1)).get('gift') ?? query.get('gift')
     if (giftCode) {
       patch.gift = (isGiftCode(giftCode) ? formatGiftCode(giftCode) : giftCode).slice(0, 100); setGiftOpen(true)
@@ -107,19 +129,36 @@ export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetai
     const count = Number(s.partyBandId.slice(7)), found = config.partyBands.find(item => count >= item.min && count <= item.max)
     setState(previous => ({ ...previous, partyBandId: found?.id ?? '' }))
   }, [config, s.partyBandId])
-  // The next open evenings: this month and next, loaded as the page opens.
+  // The month on show loads as the page opens; the month after it is fetched quietly so Next is instant.
+  const shownLoaded = !!shown
   useEffect(() => {
+    if (shownLoaded) return
     let current = true; setAvailabilityError('')
-    const first = today.slice(0, 7), second = addMonths(first, 1)
-    Promise.all([api.availability(kindForDates, first), api.availability(kindForDates, second)]).then(values => { if (current) setMonths(values) }, failure => { if (current) setAvailabilityError(failure instanceof Error ? failure.message : 'Open dates could not be loaded.') })
+    const key = kindForDates + ':' + shownMonth
+    api.availability(kindForDates, shownMonth).then(value => { if (current) setOpenMonths(previous => ({ ...previous, [key]: value })) }, failure => { if (current) setAvailabilityError(failure instanceof Error ? failure.message : 'Open dates could not be loaded.') })
     return () => { current = false }
-  }, [kindForDates, availabilityRetry, today])
+  }, [kindForDates, shownMonth, shownLoaded, availabilityRetry])
   useEffect(() => {
-    if (!otherDate) return
-    let current = true; setCalAvail(null); setCalError('')
-    api.availability(kindForDates, calMonth).then(value => { if (current) setCalAvail(value) }, failure => { if (current) setCalError(failure instanceof Error ? failure.message : 'This month could not be loaded. Please try again.') })
+    if (!shownLoaded) return
+    const next = addMonths(shownMonth, 1), key = kindForDates + ':' + next
+    let current = true
+    if (!openMonths[key]) api.availability(kindForDates, next).then(value => { if (current) setOpenMonths(previous => ({ ...previous, [key]: value })) }, () => { /* It loads again when shown. */ })
     return () => { current = false }
-  }, [otherDate, calMonth, kindForDates, calRetry])
+  }, [kindForDates, shownMonth, shownLoaded])
+  // With nothing left open this month (Sergio needs notice), open on the month of his next open evening.
+  useEffect(() => {
+    if (!shown || browsed.current) return
+    browsed.current = true
+    const next = shown.nextOpen?.slice(0, 7)
+    if (!shown.days.some(day => day.date >= today && day.times.length) && next && next > shownMonth) setShownMonth(next)
+  }, [shown, shownMonth, today])
+  function showMonth(month: string) { browsed.current = true; setAvailabilityError(''); setShownMonth(month) }
+  function choosePlan(next: Plan) {
+    setPlan(next); setSwitched('')
+    const formatFor = planOf(next)
+    set({ format: formatFor, where: formatFor !== 'dinner' && s.where === 'his' ? 'home' : s.where })
+    track('booking_plan', { plan: next })
+  }
   // A prefilled date gets its usual start time once the open times are known.
   useEffect(() => { if (s.date && !s.time && times.length) setState(previous => ({ ...previous, time: preferredTime(times) })) }, [s.date, s.time, times.join()])
 
@@ -128,9 +167,11 @@ export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetai
     const fits = chosen ? formatsFor(chosen, fixed ?? s.format) : []
     let next = s.format
     if (chosen && (!next || !formatFits(next, chosen))) {
-      // One fitting format is chosen for the guest; several are left to them.
+      // One fitting format is chosen for the guest; several are left to them. Either way the guest is told.
+      const asked = fixed ?? s.format
       next = fits.length === 1 ? fits[0] : fixed && fits.includes(fixed) ? fixed : undefined
-      setSwitched(fixed && next && next !== fixed ? `For ${chosen.label.toLowerCase()}, Sergio plans ${FORMAT_CHOICE[next].noun}.` : '')
+      setSwitched(asked && next && next !== asked ? `For ${chosen.label.toLowerCase()}, Sergio plans ${FORMAT_CHOICE[next].noun}.` : '')
+      if (!fixed && next) setPlan(next as Plan)
     } else setSwitched('')
     set({ partyBandId: id, format: next, where: next !== 'dinner' && s.where === 'his' ? 'home' : s.where })
   }
@@ -203,7 +244,8 @@ export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetai
   useEffect(() => registerRecovery?.(async result => { if (!currentForm()) return; onReceived?.(); await connectFriend(result) }, ownerId.current))
 
   const fits = band ? formatsFor(band, fixed ?? s.format) : []
-  const showFormats = !fixed ? !!band && fits.length > 1 : !!band && !formatFits(fixed, band) && fits.length > 1
+  // On a product page the page names the format; a party size it can't serve offers the ones that fit.
+  const showFormats = !!fixed && !!band && !formatFits(fixed, band) && fits.length > 1
   const action = busy ? 'Opening your booking…' : canPay ? s.dateMode === 'exact' && s.date ? `Hold ${shortDay(s.date)} · ${money(band!.deposit!)} deposit` : `Continue to ${money(band!.deposit!)} deposit` : 'Send your request'
 
   if (savedRequest) return <section className="quick-booking booking-referral-recovery" aria-label="Your saved booking">
@@ -213,34 +255,48 @@ export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetai
     <p className="booking-help">Need help? <a className="link" href={site.phoneHref}>Call Sergio</a> with your booking reference.</p>
   </section>
 
-  return <div><form className="quick-booking" noValidate onSubmit={event => { event.preventDefault(); void submit() }} aria-label="Book with Sergio">
-    <div aria-hidden="true" className="booking-honeypot"><label>Website<input name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={event => setHoneypot(event.target.value)}/></label></div>
-    {configError && <div className="booking-notice" role="alert" id="f-config" tabIndex={-1}><p>{configError}</p><button type="button" className="link" onClick={() => setConfigRetry(value => value + 1)}>Reload booking settings</button></div>}
+  return <div className="quick-booking-entry">
     {friend && <p className="booking-friend" role="status"><Icon name="gift" size={18}/><span><strong>Invited by {friend.name}{friend.name.endsWith('.') ? '' : '.'}</strong> Eligible first bookings can receive {money(friend.welcome)} off the final bill. We’ll confirm eligibility when you send your request.</span></p>}
     {friendNotice && <p className="booking-small" role="status">{friendNotice}</p>}
+    {!fixed && <div className="quick-group" id="wrap-f-format">
+      <p className="quick-label" id="f-format-label">What are you planning?</p>
+      <div id="f-format" tabIndex={-1} role="radiogroup" aria-labelledby="f-format-label" aria-invalid={!!errors.format} aria-describedby={errors.format ? 'f-format-err' : undefined} className="quick-plans">
+        {PLANS.map(item => <button key={item.key} type="button" role="radio" aria-checked={plan === item.key} className="quick-plan" data-plan={item.key} onClick={() => choosePlan(item.key)}>
+          <span className="quick-plan-title"><Icon name={item.icon} size={20}/>{item.title}</span>
+          {item.tag}
+          <span className="quick-plan-description">{item.description}</span>
+        </button>)}
+      </div>
+      {errors.format && <p id="f-format-err" className="booking-field-error">{errors.format}</p>}
+    </div>}
+    {plan === 'class' || plan === 'table' ? <section className="quick-published" aria-labelledby="quick-published-heading">
+      <h2 id="quick-published-heading" className="quick-published-heading">{plan === 'class' ? 'Upcoming classes' : 'Upcoming evenings at Sergio’s table'}</h2>
+      <TableNightsLive kind={plan}/>
+      <p className="booking-help">{plan === 'class'
+        ? <>Want a private class for your own group? <a className="link" href={site.phoneHref}>Ask Sergio at {site.phone}</a>.</>
+        : <>One menu, one shared table at Sergio’s home. He reviews each seat request before confirming.</>}</p>
+    </section> : plan && <><form className="quick-booking" noValidate onSubmit={event => { event.preventDefault(); void submit() }} aria-label="Book with Sergio">
+    <div aria-hidden="true" className="booking-honeypot"><label>Website<input name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={event => setHoneypot(event.target.value)}/></label></div>
+    {configError && <div className="booking-notice" role="alert" id="f-config" tabIndex={-1}><p>{configError}</p><button type="button" className="link" onClick={() => setConfigRetry(value => value + 1)}>Reload booking settings</button></div>}
 
     <Group id="f-partyBand" label="How many people?" error={errors.partyBand}>
       {config ? config.partyBands.map(item => <Chip key={item.id} checked={s.partyBandId === item.id} onClick={() => chooseBand(item.id)} detail={item.deposit != null ? `${money(item.deposit)} deposit` : undefined}>{item.label}</Chip>) : !configError && <span className="quick-loading" role="status">Loading…</span>}
     </Group>
     {switched && <p className="quick-note" role="status"><Icon name="circle-check" size={17}/>{switched}</p>}
-    {(showFormats || errors.format) && <Group id="f-format" label="What kind of gathering?" error={errors.format}>
+    {fixed && (showFormats || errors.format) && <Group id="f-format" label="What kind of gathering?" error={errors.format}>
       {(band ? fits : Object.keys(FORMAT_CHOICE) as FormatKey[]).map(item => <Chip key={item} checked={s.format === item} onClick={() => { setSwitched(''); set({ format: item, where: item !== 'dinner' && s.where === 'his' ? 'home' : s.where }) }} detail={FORMAT_CHOICE[item].detail}>{FORMAT_CHOICE[item].title}</Chip>)}
     </Group>}
 
-    <Group id="f-date" label="When?" error={errors.date || errors.time} hint={<>Sergio’s open evenings · Eastern time</>}>
-      {!months[0] && !availabilityError && <span className="quick-loading" role="status">Finding open evenings…</span>}
-      {chips.map(day => <Chip key={day.date} checked={s.dateMode === 'exact' && s.date === day.date} onClick={() => { setOtherDate(false); set({ dateMode: 'exact', date: day.date, time: preferredTime(day.times) }) }} detail={clock(preferredTime(day.times)!)}>{shortDay(day.date)}</Chip>)}
-      {availabilityLoaded && <Chip checked={otherDate && s.dateMode === 'exact'} onClick={() => { setOtherDate(true); set({ dateMode: 'exact', date: undefined, time: undefined }) }}>Other date</Chip>}
-      <Chip checked={s.dateMode === 'undecided'} onClick={() => { setOtherDate(false); set({ dateMode: 'undecided', date: undefined, time: undefined }) }} detail="Settle it with Sergio">Not sure yet</Chip>
-    </Group>
-    {availabilityError && <div className="booking-notice" role="alert"><p>{availabilityError}</p><button className="link" type="button" onClick={() => setAvailabilityRetry(value => value + 1)}>Reload open dates</button></div>}
-    {otherDate && s.dateMode === 'exact' && <div className="booking-calendar-section quick-calendar">
-      <Calendar month={calMonth} days={calAvail?.days ?? []} loading={!calAvail && !calError} error={calError} onRetry={() => setCalRetry(value => value + 1)} value={s.date} minMonth={today.slice(0, 7)} nextOpen={calAvail?.nextOpen ?? null} onMonth={setCalMonth} onSelect={date => { const open = calAvail?.days.find(day => day.date === date)?.times ?? []; set({ date, time: preferredTime(open) }) }}/>
-    </div>}
-    {s.dateMode === 'exact' && s.date && times.length > 0 && <div className="booking-field quick-time" id="wrap-f-time">
-      <label htmlFor="f-time">Start time on {longDate(s.date)}</label>
-      <select id="f-time" className="booking-input" value={s.time ?? ''} onChange={event => set({ time: event.target.value })} aria-invalid={!!errors.time}>{times.map(time => <option key={time} value={time}>{clock(time)}</option>)}</select>
-    </div>}
+    <div className="quick-group" id="wrap-f-date">
+      <p className="quick-label">When?</p>
+      <Scheduler month={shownMonth} minMonth={today.slice(0, 7)} today={today} availability={shown} loading={!shown && !availabilityError} error={availabilityError}
+        onRetry={() => setAvailabilityRetry(value => value + 1)} onMonth={showMonth} nextOpen={soonest}
+        date={s.dateMode === 'exact' ? s.date : undefined} time={s.time} times={times} undecided={s.dateMode === 'undecided'}
+        onDate={date => { const open = loadedMonths.flatMap(month => month.days).find(day => day.date === date)?.times ?? []; set({ dateMode: 'exact', date, time: preferredTime(open) }); if (date.slice(0, 7) !== shownMonth) showMonth(date.slice(0, 7)) }}
+        onTime={time => set({ time })}
+        onUndecided={undecided => set(undecided ? { dateMode: 'undecided', date: undefined, time: undefined } : { dateMode: 'exact' })}
+        dateError={errors.date} timeError={errors.time}/>
+    </div>
 
     {(site.features.vacationRentals || (site.features.sergiosTable && format === 'dinner')) && <Group id="f-where" label="Where?" error={errors.where}>
       <Chip checked={s.where === 'home'} onClick={() => set({ where: 'home' })}>At home</Chip>
@@ -270,6 +326,7 @@ export function QuickBooking({ format: fixed, initialState, onDraft, onMoreDetai
     </section>
     {submissionError && <p className="booking-notice booking-notice--error" role="alert">{submissionError} Your answers are still here. You can also <a className="link" href={site.phoneHref}>call Sergio</a>.</p>}
     <CtaButton type="submit" emphasis="primary" className="quick-submit" disabled={busy || !config} aria-busy={busy || undefined}>{action}</CtaButton>
-    <p className="booking-help">More than 24 guests, or a private cooking class for your group? <a className="link" href={site.phoneHref}>Ask Sergio at {site.phone}</a>.{site.features.sergiosTable && !fixed ? <> Joining a published evening? <a className="link" href={href('/sergios-table/')}>Sergio’s table</a>.</> : null}</p>
-  </form>{onMoreDetails && <p className="booking-more-details"><button type="button" className="link" disabled={busy} onClick={() => onMoreDetails(s)}>Add more detail before sending</button><span className="booking-small"> Your current date and contact choices carry across in this tab.</span></p>}</div>
+    <p className="booking-help">More than 24 guests, or a private cooking class for your group? <a className="link" href={site.phoneHref}>Ask Sergio at {site.phone}</a>.</p>
+  </form>{onMoreDetails && <p className="booking-more-details"><button type="button" className="link" disabled={busy} onClick={() => onMoreDetails(s)}>Add more detail before sending</button><span className="booking-small"> Your current date and contact choices carry across in this tab.</span></p>}</>}
+  </div>
 }

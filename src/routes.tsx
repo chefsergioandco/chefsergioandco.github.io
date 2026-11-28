@@ -155,7 +155,7 @@ const all: Route[] = [
     path: '/catering/',
     title: 'Small event catering in Orlando | Chef Sergio & Co.',
     description: 'Full-service catering for 8 to 24 guests: menu, staff, tablecloths, dinnerware, glassware and centerpieces in one all-inclusive proposal.',
-    h1: 'Small events for 8 to 24 guests, fully catered.',
+    h1: 'Small event catering for 8 to 24 guests.',
     Page: Catering,
     jsonld: [service('Small event catering', '/catering/', 'Full-service catering for 8 to 24 guests.', site.pricing.eventFromPerGuest)],
   },

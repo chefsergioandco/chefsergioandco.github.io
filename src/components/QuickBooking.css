@@ -21,3 +21,26 @@
 .quick-after {opacity:.8;}
 .quick-submit {width:100%;justify-content:center;}
 @media (min-width:40rem) {.quick-submit {width:auto;justify-self:start;}}
+
+/* /book/: what the guest is planning comes first, named and marked as in the header's Experiences menu. */
+.quick-booking-entry {display:grid;gap:1.35rem;min-width:0;}
+.quick-plans {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13.5rem),1fr));gap:.5rem;outline:none;}
+.quick-plans:focus-visible {outline:2px solid rgb(var(--c-ink));outline-offset:4px;}
+.quick-plan {display:flex;flex-direction:column;align-items:flex-start;gap:.45rem;min-height:2.9rem;padding:.8rem .9rem .85rem;border:1px solid rgb(var(--c-ink)/.35);border-radius:var(--r-btn);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:border-color .15s,background-color .15s;}
+.quick-plan:hover {border-color:rgb(var(--c-ink));}
+.quick-plan:focus-visible {outline:2px solid oklch(var(--c-cta));outline-offset:2px;}
+.quick-plan[aria-checked=true] {background:rgb(var(--c-ink)/.055);border-color:rgb(var(--c-ink));box-shadow:inset 0 0 0 1px rgb(var(--c-ink));}
+.quick-plan-title {display:flex;align-items:center;gap:.5rem;font-family:var(--f-display);font-size:1.3rem;line-height:1.15;}
+.quick-plan-title>svg {flex-shrink:0;color:oklch(var(--c-cta));}
+.quick-plan .sergio-header-guest-tag {font-size:12px;padding:3px 7px;}
+.quick-plan-description {font-family:var(--f-ui);font-size:.86rem;line-height:1.4;opacity:.78;}
+.quick-published {display:grid;gap:1rem;min-width:0;}
+.quick-published-heading {font-size:1.6rem;}
+@media (max-width:30rem) {
+  .quick-plans {grid-template-columns:1fr 1fr;}
+  .quick-plan {padding:.7rem .7rem .75rem;gap:.4rem;}
+  .quick-plan-title {font-size:1.1rem;align-items:flex-start;}
+  .quick-plan-title>svg {width:18px;height:18px;margin-top:.1rem;}
+  .quick-plan-description {display:none;}
+}
+@media (prefers-reduced-motion: reduce) {.quick-plan {transition:none;}}
