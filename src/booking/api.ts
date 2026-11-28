@@ -1,5 +1,6 @@
 import { booking } from '../content/booking'
-import { BookingError, type BookingReceipt, type PublicBookingApi, type PublicHoldResult, type PlanningConfig } from './types'
+import { BookingError, type BookingReceipt, type DetailsReceipt, type PublicBookingApi, type PublicHoldResult, type PlanningConfig } from './types'
+import { isDetailsResult } from './details-result'
 
 // A failed or missing live service never creates a browser-only booking.
 export const IS_MOCK = false
@@ -88,9 +89,14 @@ export const api: PublicBookingApi = {
     const accessToken = receiptAccess(ref)
     if (!ref || !accessToken) throw new BookingError('invalid', 'Open your complete private booking link first.')
     const payload = { ref, accessToken, details }, attempt = await requestId('details', payload)
-    const result = await call<BookingReceipt | null>('/api/booking/details', { ...payload, requestId: attempt.value })
-    if (!result || result.ref !== ref) throw new BookingError('network', 'Your details were not confirmed. Retry to save them.')
-    completeAttempt(attempt)
+    const result = await call<DetailsReceipt | null>('/api/booking/details', { ...payload, requestId: attempt.value })
+    if (!result || result.ref !== ref || !isDetailsResult(result.detailsResult, attempt.value, details)) throw new BookingError('network', 'The result for these details could not be confirmed. Your answers are still here; retry the same submission or call Sergio.')
+    if (!Object.values(result.detailsResult.outcomes).includes('unverified')) {
+      completeAttempt(attempt)
+      // A later intentional update (including adding details after Remove)
+      // gets a fresh identity. Only uncertain submissions retain their retry ID.
+      if (attempts.get(attempt.key) === attempt.value) attempts.delete(attempt.key)
+    }
     return result
   },
   async booking(ref) {

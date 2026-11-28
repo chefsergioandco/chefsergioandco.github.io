@@ -107,11 +107,16 @@ export type PublicHoldResult = HoldResult & { next: 'done'; accessToken: string;
 export type HoldOptions = { checkout?: boolean; elapsedMs?: number }
 /** Menu-conversation answers a guest can add after the deposit. Sergio's agreed topics are never overwritten. */
 export type GuestDetails = { sensitiveDataConsent?: SensitiveDataConsent; occasion?: string; kitchen?: string; foodIdeas?: string; dietary?: string[]; allergies?: string; notes?: string; budgetMode?: 'range' | 'guidance'; budgetMin?: number; budgetMax?: number; budgetUnit?: 'total' | 'per_person'; physicalInvitations?: boolean }
+export type DetailsField = 'occasion' | 'kitchen' | 'foodIdeas' | 'dietary' | 'allergies' | 'notes' | 'budget' | 'physicalInvitations' | 'sensitiveDataConsent'
+export type DetailsOutcome = 'recorded' | 'unchanged' | 'requires_review' | 'unverified'
+/** A receipt for this exact submission, not a projection of current saved answers. */
+export type DetailsResult = { version: 1; requestId: string; recordedAt: string; outcomes: Partial<Record<DetailsField, DetailsOutcome>> }
+export type DetailsReceipt = BookingReceipt & { detailsResult: DetailsResult }
 export interface PublicBookingApi extends Omit<BookingApi, 'booking' | 'hold' | 'waitlist'> {
   config(): Promise<PlanningConfig>
   hold(req: BookingRequest, honeypot?: string, options?: HoldOptions): Promise<PublicHoldResult>
   booking(ref: string): Promise<BookingReceipt | null>
-  details(ref: string, details: GuestDetails): Promise<BookingReceipt | null>
+  details(ref: string, details: GuestDetails): Promise<DetailsReceipt>
   cancel(ref: string, reason: string): Promise<BookingReceipt | null>
   scheduleInterview(ref: string, slotId: string): Promise<BookingReceipt | null>
   checkout(ref: string): Promise<{url: string; expiresAt?: string}>

@@ -113,7 +113,7 @@ await check('events and holds without payment never ask for checkout; bad elapse
   assert.equal('checkoutRequestId' in calls.at(-1).body, false); assert.equal('elapsedMs' in calls.at(-1).body, false)
 })
 await check('guest details go to the booking’s private receipt with its access token in the body only', async () => {
-  reply = () => ({ ref, status: 'requested', kind: 'dinner' })
+  reply = body => ({ ref, status: 'requested', kind: 'dinner', detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'recorded', dietary: 'recorded' } } })
   await api.details(ref, { occasion: 'Birthday', dietary: ['Gluten-free'] })
   const last = calls.at(-1)
   assert.equal(last.url, 'https://api.example.test/api/booking/details'); assert.equal(last.body.ref, ref); assert.equal(last.body.accessToken, accessToken)

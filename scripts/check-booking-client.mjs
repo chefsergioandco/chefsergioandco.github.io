@@ -356,6 +356,74 @@ try {
     assert(checkout.url.startsWith('https://checkout.stripe.com/'))
   })
 
+  const detailsApi = (await actualModule('src/booking/api.ts', 'https://details.example.test')).api
+  const preparation = { occasion: 'Private family occasion', kitchen: 'Private kitchen description', budgetMode: 'guidance' }
+  let firstDetailsId, detailsReply = body => ({ ...receipt, detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'recorded', kitchen: 'requires_review', budget: 'unchanged' } } })
+  const detailKeys = () => [...pendingMemory.keys()].filter(key => key.startsWith('booking-pending:v1:https%3A%2F%2Fdetails.example.test:details:'))
+  globalThis.fetch = async (url, options) => {
+    const entry = observed(url, options); writeBoundary(entry)
+    firstDetailsId ??= entry.body.requestId
+    assert.equal(entry.body.requestId, firstDetailsId)
+    return Response.json(detailsReply(entry.body))
+  }
+  const goodDetailsReply = detailsReply
+  const invalidReplies = [
+    () => receipt,
+    body => ({ ...goodDetailsReply(body), ref: 'another-booking' }),
+    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, version: 2 } }),
+    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, requestId: crypto.randomUUID() } }),
+    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { occasion: 'recorded', budget: 'unchanged' } } }),
+    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { ...goodDetailsReply(body).detailsResult.outcomes, internalNotes: 'recorded' } } }),
+    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, outcomes: { occasion: 'recorded', kitchen: 'agreed', budget: 'unchanged' } } }),
+    body => ({ ...receipt, detailsResult: { ...goodDetailsReply(body).detailsResult, recordedAt: 'not-a-date' } }),
+  ]
+  for (const invalid of invalidReplies) {
+    detailsReply = invalid
+    await assert.rejects(detailsApi.details(receipt.ref, preparation), /could not be confirmed/)
+    assert.equal(detailKeys().length, 1)
+  }
+  check('preparation acknowledgment rejects legacy, wrong-action and incomplete field results while preserving one retry identity', () => {
+    assert.equal(calls.at(-1).body.requestId, firstDetailsId)
+    assert(!JSON.stringify([...pendingMemory]).includes(preparation.occasion))
+    assert(!JSON.stringify([...pendingMemory]).includes(preparation.kitchen))
+  })
+  detailsReply = goodDetailsReply
+  const acknowledged = await detailsApi.details(receipt.ref, preparation)
+  check('a verified preparation result covers grouped spending and separates recorded, unchanged and unapplied fields', () => {
+    assert.deepEqual(acknowledged.detailsResult.outcomes, { occasion: 'recorded', kitchen: 'requires_review', budget: 'unchanged' })
+    assert.equal(detailKeys().length, 0)
+    assert.equal(calls.at(-1).body.accessToken, 'action-private-token')
+  })
+  const completedDetailsId = firstDetailsId
+  firstDetailsId = undefined
+  await detailsApi.details(receipt.ref, preparation)
+  check('a later intentional preparation submission receives a new identity after a confirmed result', () => {
+    assert.notEqual(calls.at(-1).body.requestId, completedDetailsId)
+    assert.equal(detailKeys().length, 0)
+  })
+  firstDetailsId = undefined
+  detailsReply = body => ({ ...receipt, detailsResult: { version: 1, requestId: body.requestId, recordedAt: '2026-11-27T20:00:00.000Z', outcomes: { occasion: 'unverified' } } })
+  const legacyOutcome = await detailsApi.details(receipt.ref, { occasion: 'Earlier private submission', kitchen: undefined })
+  check('an unverified legacy outcome remains retryable and undefined fields omitted from JSON need no acknowledgment', () => {
+    assert.equal(legacyOutcome.detailsResult.outcomes.occasion, 'unverified')
+    assert.equal(detailKeys().length, 1)
+  })
+  let lostDetails = true, committedDetails
+  globalThis.fetch = async (url, options) => {
+    const entry = observed(url, options); writeBoundary(entry)
+    committedDetails ??= { ...receipt, detailsResult: { version: 1, requestId: entry.body.requestId, recordedAt: '2026-11-27T20:01:00.000Z', outcomes: { notes: 'recorded' } } }
+    assert.equal(entry.body.requestId, committedDetails.detailsResult.requestId)
+    if (lostDetails) { lostDetails = false; throw new TypeError('Reply lost after commitment') }
+    return Response.json(committedDetails)
+  }
+  await assert.rejects(detailsApi.details(receipt.ref, { notes: 'Private arrival note' }), /not been confirmed/)
+  const recoveredDetails = await detailsApi.details(receipt.ref, { notes: 'Private arrival note' })
+  check('lost preparation replies recover the exact committed acknowledgment without placing answers or proof in the URL', () => {
+    assert.deepEqual(recoveredDetails, committedDetails)
+    assert.equal(calls.at(-1).url, 'https://details.example.test/api/booking/details')
+    assert(!JSON.stringify([...pendingMemory]).includes('Private arrival note'))
+  })
+
   const { ics } = await actualModule('src/booking/format.ts')
   check('unconfirmed, held and cancelled requests do not become calendar appointments', () => {
     for (const status of ['requested', 'held', 'cancelled']) assert.equal(ics({ ...receipt, status }), null)

@@ -6,10 +6,13 @@ import { webcrypto, createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { access, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build } from 'esbuild'
 import puppeteer from 'puppeteer-core'
+import postcss from 'postcss'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 
 if (!globalThis.crypto) globalThis.crypto = webcrypto
 const root = fileURLToPath(new URL('../', import.meta.url))
@@ -19,13 +22,25 @@ await access(join(backend, 'server/index.ts'))
 const temporary = await mkdtemp(join(tmpdir(), 'sergio-prepare-details-'))
 const output = resolve(root, 'output/connection-completion/preparation-consent')
 const componentPath = resolve(root, 'src/booking/PrepareDetails.tsx')
-const componentHash = createHash('sha256').update(await readFile(componentPath)).digest('hex')
+const sourcePaths = [componentPath, ...['src/booking/api.ts', 'src/booking/types.ts', 'src/booking/details-result.ts', 'src/privacy/SensitiveDataConsent.tsx', 'src/styles.css', 'src/components/BookingForm.css', 'src/components/QuickBooking.css', 'src/components/CallToAction.css'].map(path => resolve(root, path)), ...['server/public-booking.ts', 'server/booking-detail-outcomes.ts', 'server/schema.ts', 'drizzle/0017_booking_detail_outcomes.sql'].map(path => join(backend, path))]
+const sourceHashes = async () => Object.fromEntries(await Promise.all(sourcePaths.map(async path => [path, createHash('sha256').update(await readFile(path)).digest('hex')])))
+const beforeSourceHashes = await sourceHashes()
 const browserOrigin = 'https://preparation.fixture.test', adminOrigin = 'https://operator.fixture.test'
 const bridgeSecret = 'preparation-fixture-secret-over-thirty-two-characters'
-const checks = [], requests = [], errors = [], forbiddenNetwork = []
+const checks = [], requests = [], errors = [], forbiddenNetwork = [], dimensions = [], screenshots = []
 const originalFetch = globalThis.fetch
 globalThis.fetch = async input => { forbiddenNetwork.push(String(input)); throw Error('Provider/network access is prohibited by this local check.') }
 const check = async (name, fn) => { await fn(); checks.push(name); console.log('PASS ' + name) }
+async function localCss(path) {
+  let css = await readFile(path, 'utf8')
+  for (const match of [...css.matchAll(/@import\s+['"]([^'"]+)['"];?/g)]) css = css.replace(match[0], await localCss(resolve(dirname(path), match[1])))
+  for (const match of [...css.matchAll(/url\(['"]?(\.\.?\/[^'"\s)]+)['"]?\)/g)]) {
+    const bytes = await readFile(resolve(dirname(path), match[1]))
+    const mime = match[1].endsWith('.woff2') ? 'font/woff2' : 'application/octet-stream'
+    css = css.replace(match[0], `url(data:${mime};base64,${bytes.toString('base64')})`)
+  }
+  return css
+}
 const sqlPython = `import sqlite3,json,sys
 p=json.load(sys.stdin);c=sqlite3.connect(p['file']);c.row_factory=sqlite3.Row
 try:
@@ -68,6 +83,11 @@ try {
   }
   const bridge = body => call('/api/booking-bridge/v1', body, { 'X-Booking-Bridge': bridgeSecret })
   const workspace = async () => { const result = await call('/api/workspace'); assert.equal(result.status, 200); return result.data }
+  const seed = async change => {
+    const current = await workspace()
+    change(current.state.bookings.find(item => item.id === ref), current.state)
+    await DB.prepare('UPDATE admin_workspace SET state_json=?, revision=revision+1 WHERE id=?').bind(JSON.stringify(current.state), 'main').run()
+  }
   await workspace()
   const consent = granted => ({ version: SENSITIVE_CONSENT_VERSION, granted, scope: 'self' })
   const created = await bridge({ operation: 'submit', requestId: crypto.randomUUID(), visitorKey: 'c'.repeat(64), honeypot: '', request: { kind: 'dinner', where: 'home', place: '', occasion: '', dietary: ['Vegetarian'], allergies: 'Peanut', sensitiveDataConsent: consent(true), notes: '', name: 'Preparation fixture', email: 'preparation@example.test', phone: '', contactBy: 'email', planning: { dateMode: 'undecided', partyBandId: 'small', headcount: null, kitchen: '', budgetMode: 'guidance', budgetMin: null, budgetMax: null, budgetUnit: 'total', foodIdeas: '', allergies: 'Peanut', physicalInvitations: false } } })
@@ -81,11 +101,13 @@ try {
   assert.match(initialHealth.dietary, /Peanut/)
   assert.equal(initialHealth.originalAllergies, 'Peanut')
 
+  const tailwindConfig = (await import(pathToFileURL(resolve(root, 'tailwind.config.js')))).default
+  const css = (await postcss([tailwindcss({ ...tailwindConfig, content: [resolve(root, 'index.html'), resolve(root, 'src/**/*.{ts,tsx}')] }), autoprefixer]).process((await Promise.all(['src/styles.css', 'src/components/BookingForm.css', 'src/components/QuickBooking.css', 'src/components/CallToAction.css', 'src/privacy/SensitiveDataConsent.css'].map(path => localCss(resolve(root, path))))).join('\n'), { from: resolve(root, 'src/styles.css') })).css
   const result = await build({ absWorkingDir: root, stdin: { contents: "import React from 'react';import{createRoot}from'react-dom/client';import{PrepareDetails}from'./src/booking/PrepareDetails';createRoot(document.getElementById('root')).render(<PrepareDetails bookingRef={new URLSearchParams(location.search).get('ref')}/>);", resolveDir: root, loader: 'tsx' }, write: false, bundle: true, platform: 'browser', format: 'esm', target: 'es2022', logLevel: 'silent', loader: { '.css': 'empty' }, define: { __SITE_MODE__: '"prototype"', __LOOK__: '"c"', __PLATING_SEQUENCE_AVAILABLE__: 'false', 'import.meta.env.BASE_URL': '"/"', 'import.meta.env.VITE_AUTH0_SPA_CLIENT_ID': '""' }, plugins: [{ name: 'local-booking-origin', setup(builder) { builder.onLoad({ filter: /content\/booking\.ts$/ }, async args => ({ contents: (await readFile(args.path, 'utf8')).replace('accountConfig.apiOrigin as string | null', JSON.stringify(browserOrigin)), loader: 'ts' })) } }] })
   const componentBundle = result.outputFiles[0].text
   browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true })
-  const html = '<!doctype html><html><head><meta charset="utf-8"><link rel="icon" href="data:,"></head><body><main id="root"></main></body></html>'
-  async function pageWith(proof = accessToken) {
+  const html = '<!doctype html><html data-look="c" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"></head><body><main class="wrap py-10"><div class="max-w-prose" id="root"></div></main></body></html>'
+  async function pageWith(proof = accessToken, options = {}) {
     const page = await browser.newPage()
     page.setDefaultTimeout(10000)
     page.on('pageerror', error => errors.push(error.message))
@@ -100,13 +122,20 @@ try {
         assert.equal(request.method(), 'POST')
         const body = JSON.parse(request.postData())
         const reply = await bridge({ operation: 'details', ...body })
-        requests.push({ body, status: reply.status })
-        await request.respond({ status: reply.status, contentType: 'application/json', body: JSON.stringify(reply.data) })
+        const observed = { body, status: reply.status, serverReply: structuredClone(reply.data) }
+        requests.push(observed)
+        if (options.beforeReply) await options.beforeReply(observed)
+        if (options.dropReplies > 0) { options.dropReplies--; observed.dropped = true; return await request.abort('connectionfailed') }
+        const data = options.transformReply ? options.transformReply(structuredClone(reply.data), body) : reply.data
+        observed.deliveredReply = structuredClone(data)
+        await request.respond({ status: reply.status, contentType: 'application/json', body: JSON.stringify(data) })
       } catch (error) { errors.push(error.stack || error.message); await request.abort().catch(() => {}) }
     })
     await page.goto(browserOrigin + '/?ref=' + encodeURIComponent(ref) + '#access=' + proof, { waitUntil: 'domcontentloaded' })
+    await page.addStyleTag({ content: css })
     await page.addScriptTag({ type: 'module', content: componentBundle })
     await page.waitForSelector('#d-occasion')
+    await page.evaluate(() => document.fonts.ready)
     assert.equal(await page.$eval('.sensitive-consent input', node => node.checked), false)
     return page
   }
@@ -118,7 +147,8 @@ try {
     const before = requests.length
     await fill(page)
     await page.click('button[type=submit]')
-    await page.waitForFunction(() => document.querySelector('main')?.textContent.includes('Sent to Sergio.'))
+    await page.waitForFunction(() => document.querySelector('main')?.textContent.includes('Your details are recorded.'))
+    assert(await page.$('form'), 'A confirmed save must retain the form and its answers')
     assert.equal(requests.length, before + 1, 'One Send must make one details request')
     const call = requests.at(-1)
     assert.equal(call.status, 200)
@@ -126,6 +156,30 @@ try {
     assert.equal(call.body.accessToken, accessToken)
     assert.match(call.body.requestId, /^[0-9a-f-]{36}$/)
     return call.body.details
+  }
+  async function feedback(page, fill = async () => {}, selector = '[data-details-result]') {
+    const before = requests.length
+    await fill(page)
+    await page.click('button[type=submit]')
+    await page.waitForFunction(selector => !document.querySelector('button[type=submit]')?.hasAttribute('aria-busy') && !!document.querySelector(selector), {}, selector)
+    assert.equal(requests.length, before + 1)
+    assert(await page.$('form'), 'Partial and uncertain answers must remain in the form')
+    return requests.at(-1)
+  }
+  async function retained(page, values) {
+    assert(await page.$('form'))
+    for (const [selector, value] of Object.entries(values)) assert.equal(await page.$eval(selector, node => node.value), value)
+    assert.equal((await page.$eval('main', node => node.textContent)).includes('Sent to Sergio.'), false)
+  }
+  async function noStoredAnswers(page, values) {
+    const storage = await page.evaluate(() => JSON.stringify({ local: Object.entries(localStorage), session: Object.entries(sessionStorage), url: location.href }))
+    for (const value of values) assert.equal(storage.includes(value), false, 'A raw preparation answer reached browser storage or URL')
+  }
+  async function capture(page, name) {
+    await mkdir(output, { recursive: true })
+    const path = join(output, name + '.png')
+    await page.screenshot({ path, fullPage: true })
+    screenshots.push(path)
   }
   await check('occasion-only actual form Send omits consent and preserves every existing health source', async () => {
     const page = await pageWith()
@@ -186,10 +240,170 @@ try {
     assert.equal(booking.status, 'requested'); assert.equal(booking.id, ref); assert.equal(data.state.bookings.length, 1)
     await page.close()
   })
+  await check('saving, removing and restoring identical health answers in one page creates a fresh action and restores current facts', async () => {
+    const page = await pageWith()
+    const enterHealth = async page => { await page.click('.sensitive-consent input'); await button(page, 'Vegan'); await page.type('#d-allergies', 'SAME_PAGE_RESTORED_HEALTH') }
+    await sent(page, enterHealth)
+    const first = requests.at(-1)
+    assert.equal(health(await workspace()).topic.supplied, 'Vegan\nSAME_PAGE_RESTORED_HEALTH')
+    await button(page, 'Remove my saved dietary and allergy details')
+    await page.waitForFunction(() => [...document.querySelectorAll('[role=status]')].some(node => node.textContent.includes('were removed')))
+    assert.equal(health(await workspace()).topic.supplied, '')
+    await sent(page, enterHealth)
+    const restored = requests.at(-1)
+    assert.notEqual(restored.body.requestId, first.body.requestId, 'A completed then removed answer must not replay an obsolete save')
+    assert.deepEqual(restored.body.details, first.body.details)
+    const current = health(await workspace())
+    assert.equal(current.topic.supplied, 'Vegan\nSAME_PAGE_RESTORED_HEALTH'); assert.equal(current.dietary, 'Vegan\nSAME_PAGE_RESTORED_HEALTH')
+    await noStoredAnswers(page, ['SAME_PAGE_RESTORED_HEALTH'])
+    await page.close()
+  })
+  await check('all locked fields stay visible with exact requires-review outcomes and no false success', async () => {
+    await seed(booking => { Object.assign(booking.planning.topics.find(item => item.id === 'kitchen'), { status: 'agreed', supplied: 'Sergio agreed kitchen' }); Object.assign(booking.planning.topics.find(item => item.id === 'menu'), { status: 'tentative', updatedBy: 'Sergio', supplied: 'Sergio menu draft' }) })
+    const page = await pageWith(), kitchen = 'Host kitchen correction', foodIdeas = 'Host menu correction'
+    const result = await feedback(page, async page => { await page.type('#d-kitchen', kitchen); await page.type('#d-food', foodIdeas) })
+    assert.deepEqual(result.serverReply.detailsResult.outcomes, { kitchen: 'requires_review', foodIdeas: 'requires_review' })
+    const notice = await page.$eval('[data-details-result]', node => node.textContent)
+    assert.match(notice, /Some details need Sergio’s review/); assert.match(notice, /Kitchen:.*Not applied/); assert.match(notice, /Food ideas:.*Not applied/)
+    assert(!notice.includes('Your details are recorded.'))
+    await retained(page, { '#d-kitchen': kitchen, '#d-food': foodIdeas })
+    assert.equal(await page.$eval('button[type=submit]', node => node.disabled), true, 'A confirmed identical action must not silently become a new intent')
+    await capture(page, 'desktop-all-locked')
+    await page.type('#d-kitchen', ' edited')
+    assert.match(await page.$eval('[data-details-result]', node => node.textContent), /These edits haven’t been sent/)
+    assert.equal(await page.$eval('button[type=submit]', node => node.disabled), false)
+    await page.close()
+  })
+  await check('partial saves distinguish recorded occasion from blocked kitchen without hiding either answer', async () => {
+    const page = await pageWith(), occasion = 'PARTIAL_HOST_OCCASION', kitchen = 'PARTIAL_HOST_KITCHEN'
+    const result = await feedback(page, async page => { await page.type('#d-occasion', occasion); await page.type('#d-kitchen', kitchen) })
+    assert.deepEqual(result.serverReply.detailsResult.outcomes, { occasion: 'recorded', kitchen: 'requires_review' })
+    const notice = await page.$eval('[data-details-result]', node => node.textContent)
+    assert.match(notice, /Occasion:.*Recorded/); assert.match(notice, /Kitchen:.*Not applied/)
+    await retained(page, { '#d-occasion': occasion, '#d-kitchen': kitchen })
+    await noStoredAnswers(page, [occasion, kitchen])
+    await capture(page, 'desktop-partial')
+    await page.setViewport({ width: 390, height: 900 }); await capture(page, 'phone-partial')
+    await page.close()
+  })
+  await check('unchanged fields receive an already-recorded outcome without another planning event', async () => {
+    const before = await workspace(), occasion = before.state.bookings.find(item => item.id === ref).occasion, page = await pageWith()
+    const result = await feedback(page, page => page.type('#d-occasion', occasion))
+    assert.deepEqual(result.serverReply.detailsResult.outcomes, { occasion: 'unchanged' })
+    assert.match(await page.$eval('[data-details-result]', node => node.textContent), /These details were already recorded/)
+    const after = await workspace()
+    assert.equal(after.state.bookings.find(item => item.id === ref).planning.events.length, before.state.bookings.find(item => item.id === ref).planning.events.length)
+    await retained(page, { '#d-occasion': occasion })
+    await page.close()
+  })
+  await check('recording consent does not make locked dietary answers appear accepted', async () => {
+    await seed(booking => Object.assign(booking.planning.topics.find(item => item.id === 'dietary'), { status: 'agreed', supplied: 'Protected agreed requirement', answer: 'Protected answer' }))
+    const page = await pageWith()
+    const result = await feedback(page, async page => { await page.click('.sensitive-consent input'); await button(page, 'Vegan'); await page.type('#d-allergies', 'LOCKED_HOST_HEALTH') })
+    assert.deepEqual(result.serverReply.detailsResult.outcomes, { dietary: 'requires_review', allergies: 'requires_review', sensitiveDataConsent: 'recorded' })
+    const notice = await page.$eval('[data-details-result]', node => node.textContent)
+    assert.match(notice, /Dietary needs:.*Not applied/); assert.match(notice, /Allergies:.*Not applied/); assert.match(notice, /Permission for dietary information:.*Recorded/)
+    assert(!notice.includes('Your details are recorded.'))
+    assert.equal(await page.$eval('.sensitive-consent input', node => node.checked), true)
+    await retained(page, { '#d-allergies': 'LOCKED_HOST_HEALTH' })
+    await noStoredAnswers(page, ['LOCKED_HOST_HEALTH'])
+    await page.close()
+  })
+  const invalidAcknowledgments = {
+    missing: data => { delete data.detailsResult; return data },
+    wrong_id: data => { data.detailsResult.requestId = crypto.randomUUID(); return data },
+    wrong_booking: data => ({ ...data, ref: 'WEB-wrong-fixture-booking' }),
+    wrong_version: data => { data.detailsResult.version = 2; return data },
+    missing_field: data => { delete data.detailsResult.outcomes.occasion; return data },
+    extra_field: data => { data.detailsResult.outcomes.kitchen = 'recorded'; return data },
+    malformed: data => { data.detailsResult.outcomes.occasion = 'sent'; return data },
+  }
+  for (const [kind, transformReply] of Object.entries(invalidAcknowledgments)) await check(`${kind} acknowledgment retains entered answers and retry identity until a validated replay`, async () => {
+    const options = { transformReply }, page = await pageWith(accessToken, options), occasion = 'UNCERTAIN_' + kind
+    const first = await feedback(page, page => page.type('#d-occasion', occasion), '[role=alert]')
+    assert.equal(await page.$('[data-details-result]'), null)
+    await retained(page, { '#d-occasion': occasion })
+    assert.equal(await page.evaluate(id => Object.values(localStorage).includes(id), first.body.requestId), true)
+    await noStoredAnswers(page, [occasion])
+    options.transformReply = null
+    const second = await feedback(page)
+    assert.equal(second.body.requestId, first.body.requestId)
+    assert.deepEqual(second.serverReply.detailsResult, first.serverReply.detailsResult)
+    assert.match(await page.$eval('[data-details-result]', node => node.textContent), /Your details are recorded/)
+    assert.equal(await page.evaluate(id => Object.values(localStorage).includes(id), first.body.requestId), false)
+    await page.close()
+  })
+  await check('a legacy action with no stored proof stays unverified and retryable without guessing saved fields', async () => {
+    const options = { transformReply: invalidAcknowledgments.missing }, page = await pageWith(accessToken, options), occasion = 'LEGACY_HOST_ANSWER'
+    const first = await feedback(page, page => page.type('#d-occasion', occasion), '[role=alert]')
+    await DB.prepare('UPDATE booking_detail_actions SET outcomes_json=NULL WHERE request_id=?').bind(first.body.requestId).run()
+    options.transformReply = null
+    const second = await feedback(page)
+    assert.equal(second.body.requestId, first.body.requestId)
+    assert.deepEqual(second.serverReply.detailsResult.outcomes, { occasion: 'unverified' })
+    assert.match(await page.$eval('[data-details-result]', node => node.textContent), /could not confirm all of its changes/)
+    assert.equal(await page.$eval('button[type=submit]', node => node.disabled), false)
+    assert.equal(await page.$eval('button[type=submit]', node => node.textContent), 'Retry these details')
+    assert.equal(await page.evaluate(id => Object.values(localStorage).includes(id), first.body.requestId), true)
+    await retained(page, { '#d-occasion': occasion })
+    await capture(page, 'desktop-unverified')
+    await page.close()
+  })
+  await check('lost response replays original outcomes after a later staff lock without another note or overwrite', async () => {
+    await seed(booking => Object.assign(booking.planning.topics.find(item => item.id === 'kitchen'), { status: 'tentative', updatedBy: 'Guest', supplied: 'Before lost reply' }))
+    const options = { dropReplies: 1 }, page = await pageWith(accessToken, options), kitchen = 'LOST_REPLY_KITCHEN', note = 'ONE_DURABLE_HOST_NOTE'
+    const first = await feedback(page, async page => { await page.type('#d-kitchen', kitchen); await page.type('#d-notes', note) }, '[role=alert]')
+    assert.equal(first.dropped, true)
+    await retained(page, { '#d-kitchen': kitchen, '#d-notes': note })
+    assert.equal(await page.evaluate(id => Object.values(localStorage).includes(id), first.body.requestId), true)
+    await seed(booking => Object.assign(booking.planning.topics.find(item => item.id === 'kitchen'), { status: 'agreed', updatedBy: 'Sergio', supplied: 'Later agreed kitchen' }))
+    const second = await feedback(page)
+    assert.equal(second.body.requestId, first.body.requestId)
+    assert.deepEqual(second.serverReply.detailsResult, first.serverReply.detailsResult)
+    const received = await page.evaluate(at => 'Submission received ' + new Date(at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/New_York' }) + ' Eastern.', first.serverReply.detailsResult.recordedAt)
+    assert((await page.$eval('[data-details-result]', node => node.textContent)).includes(received), 'The visible acknowledgment must identify the original submission time in Eastern time')
+    const booking = (await workspace()).state.bookings.find(item => item.id === ref)
+    assert.equal(booking.planning.topics.find(item => item.id === 'kitchen').supplied, 'Later agreed kitchen')
+    assert.equal(booking.planning.events.filter(item => item.description.includes(note)).length, 1)
+    await noStoredAnswers(page, [kitchen, note])
+    await page.close()
+  })
+  await check('every editable control is blocked while pending and the submitted answer remains unchanged', async () => {
+    let release, notify
+    const held = new Promise(resolve => { release = resolve }), started = new Promise(resolve => { notify = resolve })
+    const options = { beforeReply: async () => { notify(); await held } }, page = await pageWith(accessToken, options)
+    await page.type('#d-occasion', 'PENDING_HOST_ANSWER'); await page.click('button[type=submit]'); await started
+    assert.equal(await page.$eval('fieldset', node => node.disabled), true)
+    assert.equal(await page.$$eval('fieldset input,fieldset textarea,fieldset button', nodes => nodes.every(node => node.matches(':disabled'))), true)
+    await page.type('#d-occasion', 'MUST_NOT_APPEAR')
+    assert.equal(await page.$eval('#d-occasion', node => node.value), 'PENDING_HOST_ANSWER')
+    await capture(page, 'desktop-pending')
+    release()
+    await page.waitForFunction(() => document.querySelector('[data-details-result]')?.textContent.includes('Your details are recorded.'))
+    await retained(page, { '#d-occasion': 'PENDING_HOST_ANSWER' })
+    await page.close()
+  })
+  for (const width of [1280, 390, 320]) await check(`${width}px real CSS geometry adds no fieldset box, spacing or horizontal overflow`, async () => {
+    const page = await pageWith(); await page.setViewport({ width, height: 900 }); await page.evaluate(() => document.fonts.ready)
+    await button(page, 'I have a range in mind')
+    const measure = () => {
+      const selectors = ['form', '#d-occasion', '.sensitive-consent', '#d-allergies', '#d-food', '#d-kitchen', '#d-min', '#d-max', '#d-notes', 'button[type=submit]']
+      return Object.fromEntries(selectors.map(selector => { const box = document.querySelector(selector).getBoundingClientRect(); return [selector, { x: box.x, y: box.y, width: box.width, height: box.height }] }))
+    }
+    const before = await page.evaluate(measure)
+    assert.equal(await page.$eval('fieldset', node => getComputedStyle(node).display), 'contents')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+    await capture(page, `geometry-${width}`)
+    await page.evaluate(() => { const fieldset = document.querySelector('fieldset'); fieldset.replaceWith(...fieldset.childNodes) })
+    const flattened = await page.evaluate(measure)
+    for (const selector of Object.keys(before)) for (const dimension of ['x', 'y', 'width', 'height']) assert(Math.abs(before[selector][dimension] - flattened[selector][dimension]) <= 0.5, `${selector} ${dimension} changed when flattening the fieldset`)
+    dimensions.push({ width, before, flattened })
+    await page.close()
+  })
   assert.deepEqual(errors, []); assert.deepEqual(forbiddenNetwork, [])
-  assert.equal(createHash('sha256').update(await readFile(componentPath)).digest('hex'), componentHash, 'Component changed during the run')
+  assert.deepEqual(await sourceHashes(), beforeSourceHashes, 'Application source changed during the run')
   await mkdir(output, { recursive: true })
-  await writeFile(join(output, 'results.json'), JSON.stringify({ checks, count: checks.length, actualComponent: 'src/booking/PrepareDetails.tsx', componentHash, actualWorker: join(backend, 'server/index.ts'), migrations: migrations.length, providerCalls: 0, errors, limits: 'Local intercepted transport and real SQLite; no live delivery, deployment or visual acceptance claimed.' }, null, 2) + '\n')
+  await writeFile(join(output, 'results.json'), JSON.stringify({ checks, count: checks.length, actualComponent: 'src/booking/PrepareDetails.tsx', sourceHashes: beforeSourceHashes, actualWorker: join(backend, 'server/index.ts'), migrations: migrations.length, dimensions, screenshots, providerCalls: 0, errors, limits: 'Local intercepted transport, actual component/CSS/fonts and real SQLite; no live delivery, deployment or human acceptance claimed.' }, null, 2) + '\n')
   console.log(`\n${checks.length} actual-component preparation consent checks passed against ${migrations.length} SQLite migrations.`)
 } finally {
   await browser?.close()
