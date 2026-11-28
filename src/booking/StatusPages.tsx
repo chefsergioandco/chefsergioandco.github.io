@@ -38,7 +38,7 @@ function nextSteps(b: BookingReceipt, config: PlanningConfig | null) {
   ]
 }
 function interviewLabel(status?: string) {
-  return status === 'sent' ? 'Invitation sent' : status === 'scheduled' ? 'Time selected' : status === 'completed' ? 'Interview complete' : status === 'accepted' ? 'Invitation accepted' : 'To arrange'
+  return status === 'invitation_sent' || status === 'sent' ? 'Invitation sent' : status === 'scheduled' ? 'Time selected' : status === 'completed' ? 'Interview complete' : status === 'accepted' ? 'Invitation accepted' : 'To arrange'
 }
 
 /** The token-protected receipt reveals status and agreed public details, never guest contact or dietary notes. */
