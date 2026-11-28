@@ -1,4 +1,5 @@
 import { sensitiveDataConsent } from '../privacy/policy'
+import { booking } from '../content/booking'
 import type { BookingRequest, Kind, Night, PlanningConfig, PlanningRequest, Where } from './types'
 
 export const DRAFT_KEY = 'booking-draft:v2'
@@ -114,7 +115,7 @@ export function validDraft(value: any): value is SavedDraft {
   for (const [key, values] of Object.entries({ dateMode: ['exact', 'flexible', 'undecided'], headcountMode: ['exact', 'approximate'], where: ['home', 'rental', 'his'], budgetMode: ['range', 'guidance'], budgetUnit: ['total', 'per_person'], contactBy: ['call', 'text', 'email'] })) if (!values.includes(s[key])) return false
   for (const [key, max] of Object.entries({ occasion: 1000, dateFrom: 10, dateTo: 10, partyBandId: 100, place: 300, kitchen: 2000, budgetMin: 20, budgetMax: 20, foodIdeas: 2000, allergies: 2000, notes: 4000, name: 150, email: 254, phone: 40, gift: 100 })) if (typeof s[key] !== 'string' || s[key].length > max) return false
   if (!Array.isArray(s.dietary) || s.dietary.length > 20 || s.dietary.some((value: unknown) => typeof value !== 'string' || value.length > 150)) return false
-  if (typeof s.physicalInvitations !== 'boolean' || !Number.isInteger(s.seats) || s.seats < 1 || s.seats > 6) return false
+  if (typeof s.physicalInvitations !== 'boolean' || !Number.isInteger(s.seats) || s.seats < 1 || s.seats > booking.table.maxSeatsPerBooking) return false
   if (s.guests !== undefined && (!Number.isInteger(s.guests) || s.guests < 1 || s.guests > 1000)) return false
   if (s.date !== undefined && (typeof s.date !== 'string' || !validDate(s.date))) return false
   if (s.time !== undefined && (typeof s.time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(s.time))) return false

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react'
 import { api } from '../booking/api'
+import { attachFriend, forgetFriendCode, lookupFriend, pendingFriendCode, type FriendCode, type FriendInvite } from '../booking/referral'
 import { navigateAccount } from '../account/navigation'
 import { Calendar } from '../booking/Calendar'
 import { addMonths, clock, longDate, money } from '../booking/format'
 import { todayET, validDate } from '../booking/planning'
 import { formatFits, formatsFor, nextOpenDays, preferredTime, quickBand, quickRequest, QUICK_EMPTY, validateQuick, type QuickState } from '../booking/quick'
-import { BookingError, type Availability, type PlanningConfig } from '../booking/types'
+import { BookingError, type Availability, type PlanningConfig, type PublicHoldResult } from '../booking/types'
 import { site, type FormatKey } from '../content/site'
 import { formatGiftCode, isGiftCode } from '../../prototypes/sergio-admin/shared/gift-cards/code'
 import { CtaButton } from './CallToAction'
@@ -50,6 +51,8 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   const [calError, setCalError] = useState(''), [calRetry, setCalRetry] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({}), [submissionError, setSubmissionError] = useState(''), [busy, setBusy] = useState(false)
   const [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false), [switched, setSwitched] = useState('')
+  const [friendCode, setFriendCode] = useState<FriendCode | null>(null), [friend, setFriend] = useState<FriendInvite | null>(null), [friendNotice, setFriendNotice] = useState('')
+  const [savedRequest, setSavedRequest] = useState<PublicHoldResult | null>(null), [friendFailure, setFriendFailure] = useState('')
   const inFlight = useRef(false)
   const set = (patch: Partial<QuickState>) => { setState(previous => ({ ...previous, ...patch })); setErrors({}) }
   const today = todayET(), band = quickBand(s, config), format = s.format
@@ -58,6 +61,17 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   const times = loadedDays.find(day => day.date === s.date)?.times ?? []
   const chips = nextOpenDays(months, today, 6)
   const availabilityLoaded = !!months[0] && !availabilityError
+
+  useEffect(() => {
+    let current = true
+    const pending = pendingFriendCode(); setFriendCode(pending)
+    if (pending) lookupFriend(pending.code, pending.source).then(value => {
+      if (!current) return
+      setFriend(value)
+      if (!value) setFriendNotice('This invitation could not be verified. You can still send your booking request.')
+    }, () => { if (current) setFriendNotice('Your invitation could not be checked yet. We’ll try again when your request is saved.') })
+    return () => { current = false }
+  }, [])
 
   // Prefill from the address: ?guests, ?date, ?where, ?type (on /book/ only) and a gift code from #gift= (an older
   // ?gift= link still works, but the code is taken out of the address so it isn't bookmarked or shared).
@@ -104,7 +118,7 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
 
   function chooseBand(id: string) {
     const chosen = config?.partyBands.find(item => item.id === id)
-    const fits = chosen ? formatsFor(chosen) : []
+    const fits = chosen ? formatsFor(chosen, fixed ?? s.format) : []
     let next = s.format
     if (chosen && (!next || !formatFits(next, chosen))) {
       // One fitting format is chosen for the guest; several are left to them.
@@ -124,16 +138,9 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     })
   }
   const canPay = !!config?.paymentReady && band?.deposit != null && config.planningFee != null
-  async function submit() {
-    if (inFlight.current) return
-    const found = validateQuick(s, config, { openTimes: times, availabilityLoaded, today })
-    setErrors(found)
-    const first = Object.keys(found)[0]
-    if (first) { reveal(first); track('booking_error', { step: 'quick', field: first }); return }
-    inFlight.current = true; setBusy(true); setSubmissionError('')
+  async function openSavedBooking(result: PublicHoldResult) {
+    setBusy(true)
     try {
-      const result = await api.hold(quickRequest(s), honeypot, { checkout: canPay, elapsedMs: Math.round(performance.now()) })
-      track('booking_submitted', { kind: s.format ?? '', quick: 'yes' })
       if (canPay) {
         if (result.checkout?.url) { window.location.assign(result.checkout.url); return }
         // An older booking service answers without a checkout: open it the usual way.
@@ -145,6 +152,34 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
       const destination = new URL(result.url, window.location.href)
       if (destination.origin === window.location.origin && destination.pathname === href('/book/done/')) { navigateAccount(destination.pathname + destination.search + destination.hash); window.scrollTo(0, 0) }
       else window.location.assign(result.url)
+    } catch {
+      setSavedRequest(result); setBusy(false)
+      setSubmissionError('Your request is saved, but its page could not be opened. Continue to try opening the same booking again.')
+    }
+  }
+  async function connectFriend(result: PublicHoldResult) {
+    const pending = friendCode ?? pendingFriendCode()
+    if (pending) {
+      try { await attachFriend(result.ref, result.accessToken, pending); forgetFriendCode(pending.code); setFriendFailure('') }
+      catch (failure) {
+        setSavedRequest(result); setBusy(false)
+        setFriendFailure(failure instanceof Error ? failure.message : 'The invitation credit could not be confirmed.')
+        return
+      }
+    }
+    await openSavedBooking(result)
+  }
+  async function submit() {
+    if (inFlight.current) return
+    const found = validateQuick(s, config, { openTimes: times, availabilityLoaded, today })
+    setErrors(found)
+    const first = Object.keys(found)[0]
+    if (first) { reveal(first); track('booking_error', { step: 'quick', field: first }); return }
+    inFlight.current = true; setBusy(true); setSubmissionError('')
+    try {
+      const result = await api.hold(quickRequest(s), honeypot, { checkout: canPay, elapsedMs: Math.round(performance.now()) })
+      track('booking_submitted', { kind: s.format ?? '', quick: 'yes' })
+      await connectFriend(result)
     } catch (failure) {
       inFlight.current = false; setBusy(false)
       setSubmissionError(failure instanceof Error ? failure.message : 'Your request could not be confirmed. Your answers are still here.')
@@ -152,13 +187,22 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
     }
   }
 
-  const fits = band ? formatsFor(band) : []
+  const fits = band ? formatsFor(band, fixed ?? s.format) : []
   const showFormats = !fixed ? !!band && fits.length > 1 : !!band && !formatFits(fixed, band) && fits.length > 1
   const action = busy ? 'Opening your booking…' : canPay ? s.dateMode === 'exact' && s.date ? `Hold ${shortDay(s.date)} · ${money(band!.deposit!)} deposit` : `Continue to ${money(band!.deposit!)} deposit` : 'Send your request'
+
+  if (savedRequest) return <section className="quick-booking booking-referral-recovery" aria-label="Your saved booking">
+    <h2>Your request is saved.</h2><p>Reference: <strong>{savedRequest.ref}</strong>. You do not need to send it again.</p>
+    <p role="alert">{friendFailure || submissionError}</p>{friendFailure && <p>The invitation credit is not confirmed. You can retry it, or continue and ask Sergio to check your invitation.</p>}
+    <div className="cta-pair">{friendFailure && <CtaButton emphasis="secondary" disabled={busy} onClick={() => { setBusy(true); void connectFriend(savedRequest) }}>{busy ? 'Checking…' : 'Retry invitation'}</CtaButton>}<CtaButton emphasis="primary" disabled={busy} onClick={() => void openSavedBooking(savedRequest)}>{canPay ? 'Continue to payment' : 'Continue to your booking'}</CtaButton></div>
+    <p className="booking-help">Need help? <a className="link" href={site.phoneHref}>Call Sergio</a> with your booking reference.</p>
+  </section>
 
   return <form className="quick-booking" noValidate onSubmit={event => { event.preventDefault(); void submit() }} aria-label="Book with Sergio">
     <div aria-hidden="true" className="booking-honeypot"><label>Website<input name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={event => setHoneypot(event.target.value)}/></label></div>
     {configError && <div className="booking-notice" role="alert" id="f-config" tabIndex={-1}><p>{configError}</p><button type="button" className="link" onClick={() => setConfigRetry(value => value + 1)}>Reload booking settings</button></div>}
+    {friend && <p className="booking-friend" role="status"><Icon name="gift" size={18}/><span><strong>Invited by {friend.name}{friend.name.endsWith('.') ? '' : '.'}</strong> Eligible first bookings can receive {money(friend.welcome)} off the final bill. We’ll confirm eligibility when you send your request.</span></p>}
+    {friendNotice && <p className="booking-small" role="status">{friendNotice}</p>}
 
     <Group id="f-partyBand" label="How many people?" error={errors.partyBand}>
       {config ? config.partyBands.map(item => <Chip key={item.id} checked={s.partyBandId === item.id} onClick={() => chooseBand(item.id)} detail={item.deposit != null ? `${money(item.deposit)} deposit` : undefined}>{item.label}</Chip>) : !configError && <span className="quick-loading" role="status">Loading…</span>}

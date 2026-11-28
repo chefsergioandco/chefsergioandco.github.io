@@ -16,12 +16,11 @@ export const FAQ: Record<string, FaqItem> = {
     a: (
       <>
         Private dinners: <FromPrice k="dinnerFromPerGuest" lower />. Cooking classes: <FromPrice k="classFromPerGuest" lower />. Small events:{' '}
-        <FromPrice k="eventFromPerGuest" lower />. The final price depends on the menu and guest count, and you see it in writing before
-        you pay anything.
+        <FromPrice k="eventFromPerGuest" lower />. A planning deposit may be requested before the menu interview. Your final menu and price follow the spending ceiling you agree with Sergio; the deposit is credited toward the event bill.
       </>
     ),
     plain: pr.dinnerFromPerGuest
-      ? `Private dinners start at $${pr.dinnerFromPerGuest} per guest. The final price depends on the menu and guest count, and you see it in writing before you pay anything.`
+      ? `Private dinners start at $${pr.dinnerFromPerGuest} per guest. A planning deposit may be requested before the menu interview. Your final menu and price follow the spending ceiling you agree with Sergio; the deposit is credited toward the event bill.`
       : null,
   },
   included: {
@@ -77,10 +76,10 @@ export const FAQ: Record<string, FaqItem> = {
     q: 'How do I pay, and what if plans change?',
     a: (
       <>
-        Send your request without entering a card. Sergio confirms the arrangements, pricing and payment terms with you after reviewing it. No payment is taken online. Contact Sergio if your plans change.
+        The booking form states whether you are sending a request or continuing to online payment. When checkout is available, review the deposit or seat payment and the cancellation terms before paying. A private-event deposit is credited toward the event bill; your menu and final price follow the interview and agreed spending ceiling. Contact Sergio if your plans change.
       </>
     ),
-    plain: 'Send your request without entering a card. Sergio confirms the arrangements, pricing and payment terms with you after reviewing it. No payment is taken online. Contact Sergio if your plans change.',
+    plain: 'The booking form states whether you are sending a request or continuing to online payment. When checkout is available, review the deposit or seat payment and the cancellation terms before paying. A private-event deposit is credited toward the event bill; your menu and final price follow the interview and agreed spending ceiling. Contact Sergio if your plans change.',
   },
   tip: {
     id: 'tip',
@@ -107,8 +106,8 @@ if (site.features.sergiosTable) {
   FAQ.table = {
     id: 'table',
     q: "What is Sergio's table?",
-    a: <>Some evenings Sergio hosts at his own home: one menu, one shared table. Browse published evenings and request seats. Sergio reviews your request before reserving places, and reviews the evening if the guest minimum is at risk. No card is saved or charged here.</>,
-    plain: 'Sergio publishes shared-table evenings and reviews each seat request before reserving places. No card is saved or charged online.',
+    a: <>Some evenings Sergio hosts at his own home: one menu, one shared table. Browse published evenings for the date, menu, price and available seats. When online payment is available, complete checkout to secure your seats; otherwise, send a seat request for Sergio to review. A request alone does not reserve seats. Check the evening’s guest minimum, decision date and current status before booking.</>,
+    plain: 'Some evenings Sergio hosts at his own home: one menu, one shared table. Browse published evenings for the date, menu, price and available seats. When online payment is available, complete checkout to secure your seats; otherwise, send a seat request for Sergio to review. A request alone does not reserve seats. Check the evening’s guest minimum, decision date and current status before booking.',
   }
 }
 

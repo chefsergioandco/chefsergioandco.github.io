@@ -21,10 +21,11 @@
     "og": "node scripts/og-cards.mjs --force",
     "schema:vocab": "node scripts/schema-vocab.mjs",
     "preview": "node scripts/serve.mjs",
-    "check:booking": "node scripts/check-booking-client.mjs && node scripts/check-quick-booking.mjs && node scripts/check-invitation-menu.mjs",
+    "check:booking": "node scripts/check-booking-client.mjs && node scripts/check-quick-booking.mjs && node scripts/check-invitation-menu.mjs && node scripts/check-draft-restoration.mjs",
     "check:account": "node scripts/check-staging-account.mjs",
     "check:types": "tsc --noEmit",
-    "check:account-export": "node scripts/check-account-export.mjs"
+    "check:account-export": "node scripts/check-account-export.mjs",
+    "check:referrals": "node scripts/check-quick-referral.mjs"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "2.30.0",

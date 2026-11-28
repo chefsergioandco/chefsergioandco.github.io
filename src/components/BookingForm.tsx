@@ -4,13 +4,13 @@ import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useActivated } from '../activation'
 import { api } from '../booking/api'
-import { attachFriend, forgetFriendCode, lookupFriend, pendingFriendCode, type FriendInvite } from '../booking/referral'
+import { attachFriend, forgetFriendCode, lookupFriend, pendingFriendCode, type FriendCode, type FriendInvite } from '../booking/referral'
 import { navigateAccount } from '../account/navigation'
 import { Calendar } from '../booking/Calendar'
 import { addMonths, clock, longDate, money } from '../booking/format'
 import { budgetLabel, DRAFT_KEY, EMPTY, privateDraftState, migrateLegacyDraft, planningRequest, selectedBand, todayET, validDate, validDraft, validatePlanningStep, type PlanningState, type SavedDraft } from '../booking/planning'
 import { canRequestNight, NightPicker } from '../booking/TableNights'
-import { BookingError, type Availability, type Kind, type Night, type PlanningConfig } from '../booking/types'
+import { BookingError, type Availability, type Kind, type Night, type PlanningConfig, type PublicHoldResult } from '../booking/types'
 import { booking } from '../content/booking'
 import { site } from '../content/site'
 import { BookingBrief } from './BookingBrief'
@@ -73,7 +73,18 @@ export function BookingForm() {
   const [toast, setToast] = useState<{ id: number; text: string; more: number } | null>(null)
   // A friend's invitation link (?friend=CODE): shown as a welcome, recorded on the booking once it is made.
   const [friend, setFriend] = useState<FriendInvite | null>(null)
-  useEffect(() => { const pending = pendingFriendCode(); if (pending) lookupFriend(pending.code, pending.source).then(setFriend, () => {}) }, [])
+  const [friendCode, setFriendCode] = useState<FriendCode | null>(null), [friendNotice, setFriendNotice] = useState('')
+  const [savedRequest, setSavedRequest] = useState<PublicHoldResult | null>(null), [friendFailure, setFriendFailure] = useState('')
+  useEffect(() => {
+    let current = true
+    const pending = pendingFriendCode(); setFriendCode(pending)
+    if (pending) lookupFriend(pending.code, pending.source).then(value => {
+      if (!current) return
+      setFriend(value)
+      if (!value) setFriendNotice('This invitation could not be verified. You can still send your booking request.')
+    }, () => { if (current) setFriendNotice('Your invitation could not be checked yet. We’ll try again when your request is saved.') })
+    return () => { current = false }
+  }, [])
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), 5200); return () => clearTimeout(timer) }, [toast])
   const [draft, setDraft] = useState<SavedDraft | null>(null), [hydrated, setHydrated] = useState(false), [honeypot, setHoneypot] = useState(''), [giftOpen, setGiftOpen] = useState(false)
   const heading = useRef<HTMLHeadingElement>(null), inFlight = useRef(false), reduced = useReducedMotion()
@@ -178,20 +189,12 @@ export function BookingForm() {
   }
   function go(target: number) { setDirection(target > step ? 1 : -1); setStep(target); setErrors({}); setToast(null); requestAnimationFrame(() => heading.current?.focus()) }
   function next() { if (check(step)) { track('booking_step', { step: String(step + 2), kind: s.kind ?? '' }); go(step + 1) } }
-  async function submit() {
-    if (inFlight.current) return
-    for (const index of [0, 1, 2, 3]) if (!check(index)) { setDirection(index > step ? 1 : -1); setStep(index); return }
-    inFlight.current = true; setBusy(true); setSubmissionError('')
+  async function openSavedBooking(result: PublicHoldResult) {
+    setBusy(true)
     try {
-      const result = await api.hold(planningRequest(s), honeypot)
-      if (friend && s.kind !== 'table') {
-        try { await attachFriend(result.ref, result.accessToken, friend); forgetFriendCode() }
-        catch { /* The request stands; Sergio can still honour the welcome by hand. */ }
-      }
       try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
       const destination = new URL(result.url, window.location.href)
-      // "Continue to deposit" goes straight to Stripe. The saved request stands if
-      // checkout cannot open; the receipt then explains why, beside its Pay button.
+      // Keep the original saved booking and checkout path on invitation retries.
       if (canPay && result.next === 'done') {
         try { window.location.assign((await api.checkout(result.ref)).url); return }
         catch (failure) { try { sessionStorage.setItem('booking-pay-error:' + result.ref, failure instanceof Error ? failure.message : 'Checkout could not be opened. Your request is saved.') } catch { /* The receipt still offers payment. */ } }
@@ -200,6 +203,32 @@ export function BookingForm() {
         navigateAccount(destination.pathname + destination.search + destination.hash)
         window.scrollTo(0, 0)
       } else window.location.assign(result.url)
+    } catch {
+      setSavedRequest(result); setBusy(false)
+      setSubmissionError('Your request is saved, but its page could not be opened. Continue to try opening the same booking again.')
+    }
+  }
+  async function connectFriend(result: PublicHoldResult) {
+    const pending = friendCode ?? pendingFriendCode()
+    if (pending && s.kind !== 'table') {
+      try { await attachFriend(result.ref, result.accessToken, pending); forgetFriendCode(pending.code); setFriendFailure('') }
+      catch (failure) {
+        setSavedRequest(result); setBusy(false)
+        setFriendFailure(failure instanceof Error ? failure.message : 'The invitation credit could not be confirmed.')
+        return
+      }
+    }
+    await openSavedBooking(result)
+  }
+  async function submit() {
+    if (inFlight.current) return
+    for (const index of [0, 1, 2, 3]) if (!check(index)) { setDirection(index > step ? 1 : -1); setStep(index); return }
+    inFlight.current = true; setBusy(true); setSubmissionError('')
+    try {
+      const result = await api.hold(planningRequest(s), honeypot)
+      // The server has confirmed this request even when its optional referral needs recovery.
+      try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
+      await connectFriend(result)
     } catch (failure) {
       inFlight.current = false; setBusy(false); setSubmissionError(failure instanceof Error ? failure.message : 'Your request could not be confirmed. Your answers are still here.')
       if (failure instanceof BookingError && ['unavailable', 'seats-gone'].includes(failure.code)) { setAvail(null); setAvailabilityRetry(value => value + 1); setNightsRetry(value => value + 1); go(1) }
@@ -211,6 +240,13 @@ export function BookingForm() {
   const action = table ? canPay ? 'Continue to seat payment' : `Request ${s.seats} ${s.seats === 1 ? 'seat' : 'seats'}` : canPay ? `Continue to ${money(band!.deposit!)} deposit` : 'Send your planning request'
   const described = (id: string, hint = false) => [hint && `${id}-hint`, errors[id.replace('f-', '')] && `${id}-err`].filter(Boolean).join(' ') || undefined
 
+  if (savedRequest) return <section className="booking-layout booking-referral-recovery" aria-label="Your saved booking"><div className="booking-flow">
+    <h2>Your request is saved.</h2><p>Reference: <strong>{savedRequest.ref}</strong>. You do not need to send it again.</p>
+    <p role="alert">{friendFailure || submissionError}</p>{friendFailure && <p>The invitation credit is not confirmed. You can retry it, or continue and ask Sergio to check your invitation.</p>}
+    <div className="cta-pair">{friendFailure && <CtaButton emphasis="secondary" disabled={busy} onClick={() => { setBusy(true); void connectFriend(savedRequest) }}>{busy ? 'Checking…' : 'Retry invitation'}</CtaButton>}<CtaButton emphasis="primary" disabled={busy} onClick={() => void openSavedBooking(savedRequest)}>{canPay ? 'Continue to payment' : 'Continue to your booking'}</CtaButton></div>
+    <p className="booking-help">Need help? <a className="link" href={site.phoneHref}>Call Sergio</a> with your booking reference.</p>
+  </div></section>
+
   return <div className="booking-layout">
     <form className="booking-flow" noValidate onSubmit={event => { event.preventDefault(); step === 3 ? void submit() : next() }}>
       <div aria-hidden="true" className="booking-honeypot"><label>Website<input name="website" autoComplete="off" tabIndex={-1} value={honeypot} onChange={event => setHoneypot(event.target.value)}/></label></div>
@@ -220,7 +256,8 @@ export function BookingForm() {
       <ol className="booking-progress" aria-label="Booking progress">{labels.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined} className={index <= step ? 'reached' : ''}><span className="sr-only">{label}{index < step ? ', completed' : ''}</span></li>)}</ol>
       {configError && <div className="booking-notice" role="alert" id="f-config" tabIndex={-1}><p>{configError}</p><button type="button" className="link" onClick={() => setConfigRetry(value => value + 1)}>Reload booking settings</button></div>}
       {!!Object.keys(errors).length && <div className="booking-error-summary" role="alert"><strong>A few details need your attention.</strong><ul>{Object.entries(errors).map(([key, value]) => <li key={key}><button type="button" onClick={() => reveal(key)}>{value}</button></li>)}</ul></div>}
-      {friend && <p className="booking-friend"><Icon name="gift" size={18}/><span><strong>Invited by {friend.name}{friend.name.endsWith('.') ? '' : '.'}</strong> {s.kind === 'table' ? 'The welcome gift applies to private dinners, cooking classes and small events.' : `Your first evening with Sergio comes with ${money(friend.welcome)} off the final bill.`}</span></p>}
+      {friend && <p className="booking-friend" role="status"><Icon name="gift" size={18}/><span><strong>Invited by {friend.name}{friend.name.endsWith('.') ? '' : '.'}</strong> {s.kind === 'table' ? 'The welcome gift applies to private dinners, cooking classes and small events.' : `Eligible first bookings can receive ${money(friend.welcome)} off the final bill. We’ll confirm eligibility when you send your request.`}</span></p>}
+      {friendNotice && <p className="booking-small" role="status">{friendNotice}</p>}
       {toast && <div key={toast.id} className="booking-toast" aria-hidden="true" onClick={() => setToast(null)}><p><strong>{toast.text}</strong>{toast.more > 0 && <span>{toast.more} more {toast.more === 1 ? 'detail needs' : 'details need'} attention.</span>}</p></div>}
       <AnimatePresence initial={false} mode="wait" custom={direction}><m.div key={`${step}-${table}`} custom={direction} initial={reduced ? false : { opacity: 0, x: direction * 14 }} animate={{ opacity: 1, x: 0 }} exit={reduced ? undefined : { opacity: 0, x: direction * -10 }} transition={{ duration: reduced ? 0 : 0.18 }} className="booking-step-content" data-step={step}>
         {step === 0 && <>

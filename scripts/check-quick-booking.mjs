@@ -32,6 +32,15 @@ await check('party size decides between a dinner and an event; classes are publi
   assert.equal(quick.FORMAT_ORDER.includes('class'), false)
   assert.equal(quick.formatFits('dinner', bands[2]), false); assert.equal(quick.formatFits('event', bands[0]), false)
 })
+await check('an explicitly requested private class stays visible while its party band fits', () => {
+  assert(quick.formatsFor(bands[0], 'class').includes('class'))
+  assert(quick.formatsFor(bands[1], 'class').includes('class'))
+  assert(!quick.formatsFor(bands[2], 'class').includes('class'))
+  assert(!quick.formatsFor(bands[0]).includes('class'), 'ordinary dinner/event choices remain unchanged')
+  const classState = { ...filled, format: 'class', where: 'home' }
+  assert.deepEqual(quick.validateQuick(classState, config, { openTimes: ['18:30'], availabilityLoaded: true, today: '2027-01-15' }), {})
+  assert.equal(quick.quickRequest(classState).kind, 'class')
+})
 await check('the default start is an evening time that is actually open', () => {
   assert.equal(quick.preferredTime(['17:00', '18:00', '18:30', '20:00']), '18:30')
   assert.equal(quick.preferredTime(['08:00', '17:30', '20:30']), '17:30')

@@ -15,6 +15,7 @@ let moduleId = 0
 async function actualModule(path, apiBase) {
   const output = await build({
     absWorkingDir: root, entryPoints: [path], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022',
+    define: { 'import.meta.env': '{}' },
     plugins: apiBase === undefined ? [] : [{ name: 'test-runtime-configuration', setup(builder) {
       builder.onLoad({ filter: /content\/booking\.ts$/ }, () => ({ contents: `export const booking = {apiBase:${JSON.stringify(apiBase)}}`, loader: 'ts' }))
     } }],

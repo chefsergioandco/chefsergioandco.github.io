@@ -33,8 +33,9 @@ export function formatFits(format: FormatKey, band: Pick<PartyBand, 'min' | 'max
   const range = site.formats[format]
   return band.max >= range.min && band.min <= range.max
 }
-export function formatsFor(band: Pick<PartyBand, 'min' | 'max'> | undefined): FormatKey[] {
-  return band ? FORMAT_ORDER.filter(format => formatFits(format, band)) : FORMAT_ORDER
+export function formatsFor(band: Pick<PartyBand, 'min' | 'max'> | undefined, requested?: FormatKey): FormatKey[] {
+  const choices = requested === 'class' ? [...FORMAT_ORDER, 'class' as const] : FORMAT_ORDER
+  return band ? choices.filter(format => formatFits(format, band)) : choices
 }
 
 /** A dinner start Sergio's guests usually want: 6:30 pm, then the nearest evening slot, then the latest open time. */
