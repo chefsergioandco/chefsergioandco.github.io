@@ -4,7 +4,7 @@ import { Icon } from '../components/Icons'
 import { useAuth } from './AuthProvider'
 import { accountApi } from './api'
 import { accountConfig, accountReturnHref, currentReturnTo, safeReturnTo, signInHref } from './config'
-import { beginSignIn, completeSignIn, endedResume, endSignIn } from './auth-client'
+import { beginSignIn, completeSignIn, endedResume, endSignIn, SignInCallbackError } from './auth-client'
 import { navigateAccount } from './navigation'
 
 type Kind = 'sign-in' | 'create' | 'check-email' | 'verify-email' | 'password-reset' | 'sign-out' | 'signed-out'
@@ -95,17 +95,21 @@ export const CheckEmail = () => <AccountPage kind="check-email"/>
 export const SignOut = () => <AccountPage kind="sign-out"/>
 export const SignedOut = () => <AccountPage kind="signed-out"/>
 export function AuthCallback() {
-  const { refresh } = useAuth(), [error, setError] = useState('')
-  useEffect(() => { let active = true; const params = new URLSearchParams(location.search)
-    if (params.has('error')) {
-      // A silent resume found no Auth0 session: show the ordinary sign-in, not an error.
-      const resumeTarget = endedResume(params.get('error'))
+  const { refresh } = useAuth(), [error, setError] = useState(''), [retryTarget, setRetryTarget] = useState<string | null>(null)
+  const callbackUrl = useRef(typeof location === 'undefined' ? '' : location.href), settlement = useRef<Promise<string> | null>(null)
+  useEffect(() => { let active = true; const params = new URL(callbackUrl.current).searchParams
+    if (!params.has('error') && (!params.has('code') || !params.has('state'))) { navigateAccount('/account/verify-email/', true); return }
+    // Keep the original input and one settlement, including a denial, across StrictMode effects.
+    settlement.current ??= completeSignIn(callbackUrl.current)
+    void settlement.current.then(async target => { if (!active) return; history.replaceState(null, '', '/auth/callback/'); await refresh(); if (active) navigateAccount(target, true) }).catch(failure => {
+      if (!active) return
+      history.replaceState(null, '', '/auth/callback/')
+      const resumeTarget = endedResume(failure)
       if (resumeTarget) { navigateAccount(signInHref(resumeTarget), true); return }
-      history.replaceState(null, '', '/auth/callback/'); setError('Sign-in was not completed. You can start again from the sign-in page.'); return
-    }
-    if (!params.has('code') || !params.has('state')) { navigateAccount('/account/verify-email/', true); return }
-    void completeSignIn().then(async target => { history.replaceState(null, '', '/auth/callback/'); await refresh(); if (active) navigateAccount(target, true) }).catch(() => { history.replaceState(null, '', '/auth/callback/'); if (active) setError('Your sign-in could not be completed. Please start again from the sign-in page.') })
+      setRetryTarget(failure instanceof SignInCallbackError ? failure.returnTo : null)
+      setError('Your sign-in could not be completed. Please start again from the sign-in page.')
+    })
     return () => { active = false }
   }, [refresh])
-  return <section className="arrival"><p className="eyebrow">Your account</p><h1>Opening your account.</h1>{error ? <><p className="notice error" role="alert">{error}</p><a className="button" href="/account/sign-in/">Return to sign in</a></> : <p className="introduction" role="status">Completing secure sign-in…</p>}</section>
+  return <section className="arrival"><p className="eyebrow">Your account</p><h1>Opening your account.</h1>{error ? <><p className="notice error" role="alert">{error}</p><a className="button" href={retryTarget ? signInHref(retryTarget) : '/account/sign-in/'}>Return to sign in</a></> : <p className="introduction" role="status">Completing secure sign-in…</p>}</section>
 }

@@ -325,7 +325,7 @@ try {
   await resume.goto(base + '/admin/', { waitUntil: 'networkidle0' }).catch(() => {})
   await new Promise(resolve => setTimeout(resolve, 400))
   assert.equal(silent.length, 1, 'the same tab never loops through Auth0')
-  await resume.goto(base + '/auth/callback/?error=login_required&state=fixture', { waitUntil: 'networkidle0' })
+  await resume.goto(base + '/auth/callback/?error=login_required&state=' + encodeURIComponent(silent[0].searchParams.get('state')), { waitUntil: 'networkidle0' })
   await resume.waitForFunction(() => location.pathname === '/account/sign-in/')
   assert.equal(new URL(resume.url()).searchParams.get('returnTo'), '/admin/')
   assert.equal(await resume.evaluate(() => document.querySelector('[role="alert"]')?.textContent ?? null), null, 'an ended session is not reported as an error')

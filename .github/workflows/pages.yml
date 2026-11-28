@@ -29,6 +29,7 @@ jobs:
       - run: npm ci
       - run: npm run check:booking
       - run: npm run check:types
+      - run: node scripts/check-auth-callback.mjs
       - run: python3 scripts/check-retained-assets.py
       # Watermarked references are committed (public/reference + src/content/reference-credits.json);
       # check-images.mjs verifies each one's pixel hash, so CI never re-downloads third-party photos.
