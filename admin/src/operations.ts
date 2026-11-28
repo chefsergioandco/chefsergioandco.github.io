@@ -1,6 +1,6 @@
 import type { Booking, Night } from './model'
-export type BillingEventKind = 'initiated'|'processing'|'posted'|'failed'|'canceled'|'refund_initiated'|'refunded'|'offline_received'|'plan_changed'|'invoice_issued'|'payment_link_created'|'credit_issued'
-export type BillingEvent = {id:string;kind:BillingEventKind;at:string;amount:number;reference:string;description:string;actor:string;transactionId?:string}
+export type BillingEventKind = 'initiated'|'processing'|'posted'|'failed'|'canceled'|'refund_initiated'|'refunded'|'offline_received'|'plan_changed'|'invoice_issued'|'payment_link_created'|'credit_issued'|'reward_credit_applied'|'reward_credit_reversed'
+export type BillingEvent = {id:string;kind:BillingEventKind;at:string;amount:number;reference:string;description:string;actor:string;transactionId?:string;rewardCreditId?:string;rewardAllocationId?:string}
 export type CollectionPlan = {mode:'auto_debit'|'manual'|'paused';dueAt:string;amount:number;changedAt:string;reason:string}
 export type BillingRecord = {id:string;invoiceState?:'draft'|'open'|'paid'|'void'|'uncollectible';bookingId:string|null;nightId?:string;reservationId?:string;customer:string;eventDate:string;eventLabel:string;invoiceNumber:string;issuedAt:string;items:{description:string;quantity:number;unitPrice:number}[];total:number;consent:{status:'on_file'|'not_recorded'|'revoked';recordedAt:string|null;method:string;last4:string};collection:CollectionPlan;events:BillingEvent[];refundReview:boolean}
 export type VenueRecord={kind:'guest_home'|'sergio_home'|'event_venue'|'undecided';name:string;address:{line1:string;line2:string;city:string;region:string;postalCode:string};contactName:string;contactPhone:string;arrivalNotes:string;parking:string;kitchen:{hob:'gas'|'electric'|'induction'|'unknown';oven:'yes'|'no'|'unknown';refrigerator:'yes'|'no'|'unknown';prepSpace:string};reviewedAt:string|null}
@@ -15,7 +15,8 @@ export type OperationsState={billing:BillingRecord[];details:Record<string,Booki
 export const DEMO_NOW='2026-11-23T14:00:00Z'
 export const businessDate=(value:string,precise=false)=>new Date(value).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:precise?'2-digit':undefined})+' ET'
 export function receivedFor(record:BillingRecord){return Math.max(0,record.events.reduce((sum,e)=>sum+(['posted','offline_received'].includes(e.kind)?e.amount:e.kind==='refunded'?-e.amount:0),0))}
-export function creditFor(record:BillingRecord){return record.events.filter(e=>e.kind==='credit_issued').reduce((sum,e)=>sum+e.amount,0)}
+export function rewardCreditFor(record:BillingRecord){return Math.round(record.events.reduce((sum,e)=>sum+(e.kind==='reward_credit_applied'?e.amount:e.kind==='reward_credit_reversed'?-e.amount:0),0)*100)/100}
+export function creditFor(record:BillingRecord){return Math.round((record.events.filter(e=>e.kind==='credit_issued').reduce((sum,e)=>sum+e.amount,0)+rewardCreditFor(record))*100)/100}
 export function creditNeededForRefund(record:BillingRecord,amount:number){const effective=record.invoiceState==='void'?0:Math.max(0,record.total-creditFor(record));const overpayment=Math.max(0,receivedFor(record)-effective);return Math.min(Math.max(0,record.total-creditFor(record)),Math.max(0,Math.round((amount-overpayment)*100)/100))}
 export function balanceFor(record:BillingRecord){if(record.invoiceState==='void')return 0;return Math.max(0,Math.round((record.total-creditFor(record)-receivedFor(record))*100)/100)}
 /** Close a cancellation without voiding an invoice that already has a receipt. */

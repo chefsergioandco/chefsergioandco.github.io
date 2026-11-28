@@ -1,4 +1,4 @@
-import { balanceFor, creditFor, receivedFor, type BillingEvent, type BillingRecord } from './operations'
+import { balanceFor, creditFor, rewardCreditFor, receivedFor, type BillingEvent, type BillingRecord } from './operations'
 import './BillingDocument.css'
 
 export type BillingDocumentProps = { record: BillingRecord; receipt?: BillingEvent }
@@ -36,7 +36,7 @@ export function BillingDocument({ record, receipt }: BillingDocumentProps) {
   const payment = receipt ? record.events.find(event => event.id === receipt.id && paymentKinds.has(event.kind)) : undefined
   if (receipt && !payment) return <article className="billing-paper" data-billing-document="unavailable"><h2>Payment receipt unavailable</h2><p>Choose a posted payment or a confirmed offline payment from this billing record.</p></article>
 
-  const credits = creditFor(record), received = receivedFor(record), balance = balanceFor(record)
+  const credits = creditFor(record), rewards = rewardCreditFor(record), received = receivedFor(record), balance = balanceFor(record)
   const draft = record.invoiceState !== 'void' && (record.invoiceState === 'draft' || !record.total)
   const voided = record.invoiceState === 'void'
   const effective = voided ? 0 : Math.max(0, cents(record.total - credits))
@@ -80,7 +80,7 @@ export function BillingDocument({ record, receipt }: BillingDocumentProps) {
       </tbody></table>
       <dl className="billing-paper-totals">
         <div><dt>{draft ? 'Draft total' : 'Invoice total'}</dt><dd>{currency.format(record.total)}</dd></div>
-        {credits > 0 && <div><dt>Credits issued</dt><dd>−{currency.format(credits)}</dd></div>}
+        {credits - rewards > 0 && <div><dt>Other credit notes</dt><dd>−{currency.format(cents(credits - rewards))}</dd></div>}{rewards > 0 && <div><dt>Reward credits applied</dt><dd>−{currency.format(rewards)}</dd></div>}
         {(credits > 0 || voided) && <div><dt>{voided ? 'Invoice voided' : 'Total after credits'}</dt><dd>{currency.format(effective)}</dd></div>}
         {grossReceived > 0 && <div><dt>Payments received</dt><dd>−{currency.format(grossReceived)}</dd></div>}
         {refunds > 0 && <div><dt>Refunds recorded</dt><dd>+{currency.format(refunds)}</dd></div>}

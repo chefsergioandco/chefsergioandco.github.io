@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { accountApi, AccountApiError } from './api'
+import { accountFetch, AccountApiError } from './api'
+import { useAuth } from './AuthProvider'
 
 type Rewards = {
   code: string; link: string; evenings: number; available: number
   milestones: { evenings: number; perk: string; reached: boolean }[]
   referrals: { id: string; name: string; service: string | null; status: 'pending' | 'earned' | 'void'; source: 'link' | 'invitation'; createdAt: string }[]
-  credits: { id: string; kind: 'welcome' | 'referral'; amount: number; status: 'pending' | 'available' | 'applied' | 'void'; createdAt: string; appliedAt: string | null }[]
-  terms: { welcome: number; referral: number; services: string[] }
+  credits: { id: string; kind: 'welcome' | 'referral'; amount: number; status: 'pending' | 'available' | 'applied' | 'void'; createdAt: string; appliedAt: string | null; originalCents: number; remainingCents: number; allocatedCents: number; voidedCents: number; legacy: 'none' | 'unreconciled' | 'external_confirmed' | 'marker_error' }[]
+  terms: { welcome: number; referral: number; services: string[] }; limits: { maxCredits: number; creditsTruncated: boolean }
 }
 const money = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value)
 const shortDate = (value: string) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -17,8 +18,16 @@ const creditStatus = { pending: 'Pending', available: 'Ready for your next bill'
 
 /** Share Sergio with friends, see what it has earned, and the perks your own evenings have unlocked. */
 export function CustomerRewards() {
-  const [data, setData] = useState<Rewards | null>(null), [error, setError] = useState(''), [copied, setCopied] = useState(false)
-  useEffect(() => { accountApi<Rewards>('/customer/rewards').then(setData, value => setError(value instanceof AccountApiError || value instanceof Error ? value.message : 'Your rewards could not be opened.')) }, [])
+  const { state } = useAuth(), subject = state.kind === 'authenticated' ? state.identity.sub : '', verified = state.kind === 'authenticated' && state.identity.email_verified === true
+  const [saved, setData] = useState<Rewards | null>(null), [recordOwner, setRecordOwner] = useState(''), [error, setError] = useState(''), [copied, setCopied] = useState(false), [readVersion, setReadVersion] = useState(0)
+  const data = verified && recordOwner === subject ? saved : null
+  useEffect(() => {
+    const abort = new AbortController(); setData(null); setRecordOwner(''); setError(''); setCopied(false)
+    if (subject && verified) void (async () => {
+      try { const response = await accountFetch('/customer/rewards', { signal: abort.signal }), value = await response.json().catch(() => null); if (!response.ok) throw new AccountApiError(value?.error?.message || 'Your rewards could not be opened.', response.status); if (!value || typeof value.available !== 'number' || !Number.isFinite(value.available) || value.available < 0 || !Array.isArray(value.credits) || !value.limits || value.limits.maxCredits !== 100 || typeof value.limits.creditsTruncated !== 'boolean' || value.credits.length > value.limits.maxCredits || value.credits.some((credit: Rewards['credits'][number]) => !['originalCents','remainingCents','allocatedCents','voidedCents'].every(key => Number.isSafeInteger(credit[key as keyof typeof credit]) && Number(credit[key as keyof typeof credit]) >= 0) || Math.abs(credit.amount * 100 - credit.originalCents) > .000001 || credit.remainingCents + credit.allocatedCents + credit.voidedCents > credit.originalCents || !['none','unreconciled','external_confirmed','marker_error'].includes(credit.legacy))) throw new Error('Your credit balances could not be verified. Refresh before relying on them.'); if (!abort.signal.aborted) { setData(value); setRecordOwner(subject) } } catch (failure) { if (!abort.signal.aborted) setError(failure instanceof Error ? failure.message : 'Your rewards could not be opened.') }
+    })()
+    return () => abort.abort()
+  }, [subject, verified, readVersion])
   const url = data ? new URL(data.link, location.origin).href : ''
   const message = data ? `I’ve been cooking with Chef Sergio. Book your first evening through my link and it comes with ${money(data.terms.welcome)} off (I get a credit too):` : ''
   async function copy() {
@@ -30,7 +39,7 @@ export function CustomerRewards() {
   }
   const next = data?.milestones.find(milestone => !milestone.reached)
   return <section className="ev-panel ev-rewards">
-    <h1 tabIndex={-1}>Rewards.</h1>
+    <div className="ev-page-top"><h1 tabIndex={-1}>Rewards.</h1><button className="ev-text-button" type="button" disabled={!subject || !verified} onClick={() => setReadVersion(value => value + 1)}>Refresh rewards</button></div>
     {error && <div className="notice error" role="alert">{error}</div>}
     {!data ? !error && <p className="ev-note" role="status">Opening your rewards…</p> : <>
       <p className="ev-intro">Share Sergio with friends. Their first evening through your link comes with {money(data.terms.welcome)} off its final bill, and once it has happened, you get {money(data.terms.referral)} off your next one.</p>
@@ -48,8 +57,9 @@ export function CustomerRewards() {
       <section className="ev-reward-balance" aria-labelledby="reward-balance-title">
         <h2 id="reward-balance-title">Your credit</h2>
         <p className="ev-reward-amount">{money(data.available)}</p>
-        <p className="ev-note">{data.available > 0 ? 'Sergio takes it off the final bill of your next evening.' : 'Credits appear here once a friend’s evening has happened.'}</p>
-        {data.credits.length > 0 && <ul className="ev-reward-list">{data.credits.map(credit => <li key={credit.id}><span>{money(credit.amount)} · {creditLabel(credit)}</span><span className="ev-note">{creditStatus[credit.status]}{credit.appliedAt ? ` ${shortDate(credit.appliedAt)}` : ''}</span></li>)}</ul>}
+        <p className="ev-note">{data.available > 0 ? 'Sergio can apply it to an eligible final bill. Any unused amount stays available for a later eligible evening.' : 'Credits appear here once a friend’s evening has happened.'}</p>
+        {data.credits.length > 0 && <ul className="ev-reward-list">{data.credits.map(credit => <li key={credit.id}><span>{money(credit.amount)} · {creditLabel(credit)}</span><span className="ev-note">{credit.legacy === 'unreconciled' ? 'Historical record under review' : credit.legacy === 'external_confirmed' ? 'Used on an earlier bill' : creditStatus[credit.status]} · {money(credit.allocatedCents / 100)} applied · {money(credit.remainingCents / 100)} left{credit.appliedAt ? ` · ${shortDate(credit.appliedAt)}` : ''}</span></li>)}</ul>}
+        {data.limits.creditsTruncated && <p className="ev-note">Showing up to {data.limits.maxCredits} credit records. Your available balance includes all of your credit.</p>}
       </section>
 
       <section aria-labelledby="reward-friends-title">
