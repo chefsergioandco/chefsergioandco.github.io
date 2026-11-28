@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { adminFetch } from './api-client'
+import RetainedRecordControls from './RetainedRecordControls'
 type Review={id:string;revision:number;kind:string;status:string}
 type Attempt={fingerprint:string;key:string;payload:Record<string,any>;source?:string;ack?:any}
 const FLAGS=['restricted','marketingObjected','accountClosed','erasureRequested','sensitiveWithdrawn']
@@ -53,6 +54,7 @@ export default function PrivacyProcessingControls({request}:{request:Review}){
     {error&&<p role="alert" className="admin-privacy-error">{error}</p>}{notice&&<pre role="status" style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{notice}</pre>}
     {unconfirmed&&<div className="privacy-export-reconcile"><p>The earlier action and its exact identifier are retained. Compare current state before starting another action.</p><button type="button" className="button secondary" disabled={busy} onClick={()=>{if(attempt.current)void execute(attempt.current)}}>Retry saved action</button><button type="button" className="button secondary" disabled={busy||!reconciled} onClick={()=>{attempt.current=null;setUnconfirmed(false);setConfirmed(false);setPlan(null);setError('');setNotice('Current state was refreshed. Prepare a new action only after reconciling the earlier result.')}}>Prepare a new action after reconciliation</button></div>}
     {state?<><details><summary>Current account controls and scoped holds</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(state,null,2)}</pre></details>{action&&!closed&&<button className="button secondary" disabled={busy||unconfirmed} onClick={()=>void run({operation:'control',action})}>Apply {action.replaceAll('_',' ')} safeguard</button>}</>:<p role="status">Reading current processing controls…</p>}
+    <RetainedRecordControls request={request} onChanged={()=>void refresh()}/>
     {!closed&&<>
       <h5>Review an exact retention or erasure page</h5>
       <label>Purpose<select disabled={busy||unconfirmed} value={category} onChange={event=>{setCategory(event.target.value);setCursor({});setPlan(null);setConfirmed(false)}}>{['local_erasure','consent_withdrawal','sensitive','inquiries','core','financial','profiles','rights_working','rights_audit','logs'].map(value=><option key={value} value={value}>{value.replaceAll('_',' ')}</option>)}</select></label>
