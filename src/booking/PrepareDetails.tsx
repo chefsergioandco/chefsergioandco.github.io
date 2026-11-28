@@ -27,7 +27,8 @@ export function PrepareDetails({ bookingRef }: { bookingRef: string }) {
     if (!rangeValid) { setError('Enter a spending range in whole dollars, with the upper amount at least the lower.'); return }
     setBusy(true); setError('')
     const details: GuestDetails = {
-      sensitiveDataConsent: sensitiveDataConsent(sensitiveConsent),
+      // An ordinary update leaves saved sensitive details alone; only Remove below withdraws them.
+      ...(sensitiveConsent && (dietary.length || allergies.trim()) ? { sensitiveDataConsent: sensitiveDataConsent(true) } : {}),
       ...(occasion.trim() ? { occasion: occasion.trim() } : {}), ...(sensitiveConsent && dietary.length ? { dietary } : {}), ...(sensitiveConsent && allergies.trim() ? { allergies: allergies.trim() } : {}),
       ...(foodIdeas.trim() ? { foodIdeas: foodIdeas.trim() } : {}), ...(kitchen.trim() ? { kitchen: kitchen.trim() } : {}), ...(notes.trim() ? { notes: notes.trim() } : {}),
       ...(budgetMode === 'range' ? { budgetMode, budgetMin: min, budgetMax: max, budgetUnit } : {}),
