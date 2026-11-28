@@ -14,23 +14,27 @@ import Rewards from './Rewards'
 import Newsletter from './Newsletter'
 import PrivacyRequests from './PrivacyRequests'
 import PrivacyExternalRequests from './PrivacyExternalRequests'
+import ServiceOperations from './ServiceOperations'
+import { isOperationsView, type OperationsTarget } from './service-operations-types'
+import { operationsTargetFromHash, operationsTargetHash } from './operations-navigation'
 import { getAdminNavigation } from './api-client'
 
-type WindowName = 'requests' | 'bookings' | 'calendar' | 'table' | 'payments' | 'communications' | 'reviews' | 'rewards' | 'newsletter' | 'website' | 'activity' | 'privacy'
-const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Table & classes',payments:'Billing & records',communications:'Communications',reviews:'Client reviews',rewards:'Referrals & credits',newsletter:'Newsletter',website:'Your website',activity:'Recent activity',privacy:'Account & privacy'}
+type WindowName = 'requests' | 'bookings' | 'calendar' | 'table' | 'payments' | 'communications' | 'reviews' | 'rewards' | 'newsletter' | 'website' | 'activity' | 'privacy' | 'operations'
+const windowTitles: Record<WindowName, string> = {requests:'Bookings',bookings:'Bookings',calendar:'Calendar',table:'Table & classes',payments:'Billing & records',communications:'Communications',reviews:'Client reviews',rewards:'Referrals & credits',newsletter:'Newsletter',website:'Your website',activity:'Recent activity',privacy:'Account & privacy',operations:'Service operations'}
 function fromHash():WindowName|null {
- const hash=location.hash.slice(1)
+ const hash=location.hash.slice(1).split('?')[0]
  if(hash==='overview'||!hash)return null
  if(hash==='nights')return 'table'
  return Object.hasOwn(windowTitles,hash)?hash as WindowName:null
 }
-const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Table & classes',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'reviews',label:'Reviews',icon:'people'},{id:'rewards',label:'Referrals',icon:'card'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'},{id:'privacy',label:'Account & privacy',icon:'lock'}]
+const navigation: {id:'overview'|WindowName;label:string;icon:string}[]=[{id:'overview',label:'Overview',icon:'home'},{id:'bookings',label:'Bookings',icon:'book'},{id:'calendar',label:'Calendar',icon:'calendar'},{id:'table',label:'Table & classes',icon:'cutlery'},{id:'payments',label:'Billing & records',icon:'card'},{id:'communications',label:'Communications',icon:'mail'},{id:'reviews',label:'Reviews',icon:'people'},{id:'rewards',label:'Referrals',icon:'card'},{id:'newsletter',label:'Newsletter',icon:'edit'},{id:'website',label:'Your website',icon:'globe'},{id:'activity',label:'Recent activity',icon:'history'},{id:'privacy',label:'Account & privacy',icon:'lock'},{id:'operations',label:'Service operations',icon:'shield'}]
 const twoDigits=(value:number)=>String(Math.round(value)).padStart(2,'0')
 export default function App(){
  const accountNavigation=getAdminNavigation()
- const {state,pending,businessDate:today,user,updatedAt,saveError}=useAdmin()
+ const {state,pending,businessDate:today,user,updatedAt,saveError,capabilities}=useAdmin()
  const [activeWindow,setActiveWindow]=useState<WindowName|null>(fromHash)
  const [help,setHelp]=useState(false)
+ const [operationsTarget,setOperationsTarget]=useState<OperationsTarget|null>(()=>operationsTargetFromHash(location.hash))
  const [bookingScope,setBookingScope]=useState<'all'|'upcoming'>('all')
  const [menuOpen,setMenuOpen]=useState(false)
  const [isMobile,setIsMobile]=useState(()=>window.matchMedia('(max-width:800px)').matches)
@@ -65,9 +69,13 @@ export default function App(){
   return()=>{document.removeEventListener('keydown',key);if(drawerOverflow.current!==null){document.body.style.overflow=drawerOverflow.current;drawerOverflow.current=null}}
  },[isMobile,menuOpen])
  function showHelp(){if(menuOpen)closeNavigation();setHelp(true)}
- useEffect(()=>{const changed=()=>setActiveWindow(fromHash());window.addEventListener('hashchange',changed);window.addEventListener('popstate',changed);return()=>{window.removeEventListener('hashchange',changed);window.removeEventListener('popstate',changed)}},[])
- function openWindow(name:WindowName,scope:'all'|'upcoming'='upcoming'){if(menuOpen)closeNavigation();setBookingScope(scope);setActiveWindow(name);history.pushState({kioskWindow:true},'',`#${name}`)}
- function closeWindow(){setActiveWindow(null);if(history.state?.kioskWindow)history.back();else history.replaceState(null,'','#overview')}
+ useEffect(()=>{const changed=()=>{setActiveWindow(fromHash());setOperationsTarget(operationsTargetFromHash(location.hash))};window.addEventListener('hashchange',changed);window.addEventListener('popstate',changed);return()=>{window.removeEventListener('hashchange',changed);window.removeEventListener('popstate',changed)}},[])
+ function openWindow(name:WindowName,scope:'all'|'upcoming'='upcoming'){setOperationsTarget(null);if(menuOpen)closeNavigation();setBookingScope(scope);setActiveWindow(name);history.pushState({kioskWindow:true},'',`#${name}`)}
+ function closeWindow(){setOperationsTarget(null);setActiveWindow(null);if(history.state?.kioskWindow)history.back();else history.replaceState(null,'','#overview')}
+ function openOverview(){setOperationsTarget(null);setActiveWindow(null);history.pushState(null,'','#overview')}
+ function openOperationsTarget(target:OperationsTarget){const hash=operationsTargetHash(target);openWindow(target.section,'all');setOperationsTarget(target);history.replaceState({kioskWindow:true},'',hash)}
+ const destination=operationsTarget?.section===activeWindow?operationsTarget:null
+ const billingFilter=destination?.filter==='due'?'outstanding':destination?.filter==='refund'?'review':destination?.filter==='outstanding'||destination?.filter==='review'?destination.filter:'all'
  const requests=state.bookings.filter(b=>b.status==='requested')
  const upcoming=state.bookings.filter(b=>b.status!=='cancelled'&&b.status!=='requested'&&b.date>=today).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))
  const nextNight=state.nights.filter(n=>n.status==='published'&&n.date>=today).sort((a,b)=>a.date.localeCompare(b.date))[0]
@@ -80,9 +88,9 @@ export default function App(){
   {menuOpen&&<button className="dashboard-nav-scrim" aria-label="Close navigation" onClick={()=>closeNavigation()}/>}
   <aside ref={sidebarRef} className={'sidebar dashboard-sidebar'+(menuOpen?' is-open':'')} aria-label="Main navigation" aria-hidden={isMobile&&!menuOpen} role={isMobile?'dialog':undefined} aria-modal={isMobile&&menuOpen?true:undefined}>
    <button className="icon-button dashboard-close-menu" aria-label="Close menu" onClick={()=>closeNavigation()}><Icon name="close"/></button>
-   <a className="brand" href="#overview" onClick={event=>{event.preventDefault();if(menuOpen)closeNavigation(false);closeWindow();requestAnimationFrame(()=>mainRef.current?.focus({preventScroll:true}))}}><img src="/brand/logo-compact-reverse.svg" alt="Chef Sergio & Co."/><span>YOUR KITCHEN, ORGANISED</span></a>
+   <a className="brand" href="#overview" onClick={event=>{event.preventDefault();if(menuOpen)closeNavigation(false);openOverview();requestAnimationFrame(()=>mainRef.current?.focus({preventScroll:true}))}}><img src="/brand/logo-compact-reverse.svg" alt="Chef Sergio & Co."/><span>YOUR KITCHEN, ORGANISED</span></a>
    <div className="workspace-caption">WORKSPACE</div>
-   <nav aria-label="Dashboard sections">{navigation.map(item=>{const selected=item.id==='overview'?!activeWindow:item.id===activeWindow||(item.id==='bookings'&&activeWindow==='requests');return <button key={item.id} className={'nav-item'+(selected?' active':'')} aria-current={selected?'page':undefined} onClick={()=>{if(item.id==='overview'){if(menuOpen)closeNavigation();closeWindow()}else openWindow(item.id,'all')}}><Icon name={item.icon}/><span>{item.label}</span>{item.id==='bookings'&&requests.length>0&&<span className="nav-count">{requests.length}</span>}</button>})}</nav>
+   <nav aria-label="Dashboard sections">{navigation.map(item=>{const selected=item.id==='overview'?!activeWindow:item.id===activeWindow||(item.id==='bookings'&&activeWindow==='requests');return <button key={item.id} className={'nav-item'+(selected?' active':'')} aria-current={selected?'page':undefined} onClick={()=>{if(item.id==='overview'){if(menuOpen)closeNavigation();openOverview()}else openWindow(item.id,'all')}}><Icon name={item.icon}/><span>{item.label}</span>{item.id==='bookings'&&requests.length>0&&<span className="nav-count">{requests.length}</span>}</button>})}</nav>
    <div className="sidebar-bottom"><div className="sidebar-note"><Icon name="cutlery" size={24}/><p>A little less admin.<br/>A little more cooking.</p></div><button className="sidebar-help" onClick={showHelp}><Icon name="info" size={18}/><span>Workspace & connections</span></button><div className="sidebar-person"><span className="avatar">{user.name.slice(0,1).toUpperCase()}</span><div><strong>{user.name}</strong><span>Approved administrator</span></div><Icon name="shield" size={18}/></div></div>
   </aside>
   <div ref={workspaceRef} className="dashboard-workspace">
@@ -127,18 +135,19 @@ export default function App(){
   </div>
   {activeWindow&&<WorkspaceWindow title={windowTitles[activeWindow]} onClose={closeWindow}>
    {activeWindow==='requests'&&<Bookings embedded initialStatus="requested"/>}
-   {activeWindow==='bookings'&&<Bookings embedded initialScope={bookingScope}/>}
-   {activeWindow==='calendar'&&<Calendar embedded initialTab="calendar"/>}
+   {activeWindow==='bookings'&&<Bookings embedded initialScope={bookingScope} initialId={destination?.bookingId||destination?.recordId}/>}
+   {activeWindow==='calendar'&&<Calendar embedded initialTab={destination?.view==='nights'?'nights':'calendar'} initialPanel={destination?.view==='booking-setup'||destination?.view==='working-hours'?destination.view:undefined}/>}
    {activeWindow==='table'&&<Calendar embedded initialTab="nights"/>}
    {activeWindow==='website'&&<Website embedded/>}
-   {activeWindow==='payments'&&<BillingRecords/>}
-   {activeWindow==='communications'&&<Communications/>}
+   {activeWindow==='payments'&&<BillingRecords initialRecordId={destination?.recordId} initialBookingId={destination?.bookingId} initialFilter={billingFilter}/>}
+   {activeWindow==='communications'&&<Communications bookingId={destination?.bookingId} initialMessageId={destination?.recordId}/>}
    {activeWindow==='reviews'&&<Reviews/>}
    {activeWindow==='rewards'&&<Rewards/>}
-   {activeWindow==='newsletter'&&<Newsletter/>}
-   {activeWindow==='privacy'&&<><PrivacyRequests/><PrivacyExternalRequests/></>}
+   {activeWindow==='newsletter'&&<Newsletter initialView={destination?.view==='letter'||destination?.view==='subscribers'||destination?.view==='history'?destination.view:undefined} initialRecordId={destination?.recordId}/>}
+   {activeWindow==='privacy'&&<><PrivacyRequests initialRequestId={destination?.recordId&&!destination.recordId.startsWith('extcase_')&&destination.view!=='external'?destination.recordId:undefined}/><PrivacyExternalRequests initialCaseId={destination?.recordId&&(destination.recordId.startsWith('extcase_')||destination.view==='external')?destination.recordId:undefined}/></>}
+   {activeWindow==='operations'&&<ServiceOperations onNavigate={openOperationsTarget} onViewChange={view=>{const target:OperationsTarget={section:'operations',view};setOperationsTarget(target);history.replaceState(history.state,'',operationsTargetHash(target))}} initialView={isOperationsView(destination?.view)?destination.view:undefined}/>}
    {activeWindow==='activity'&&<section className="kiosk-activity"><ol>{state.activity.map(a=><li key={a.id}><span className="kiosk-activity-icon"><Icon name="check" size={18}/></span><div><p>{a.text}</p><time dateTime={a.at}>{new Date(a.at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</time></div></li>)}</ol>{!state.activity.length&&<p className="empty-state">Your recent actions will appear here.</p>}</section>}
   </WorkspaceWindow>}
-  {help&&<Modal title="Workspace & connections" onClose={()=>setHelp(false)}><div className="modal-body help-content"><p>Signed in as <strong>{user.email}</strong>. Your sign-in identity controls access and identifies saved changes in the activity record.</p><div className="notice"><Icon name="shield" size={20}/><p>Bookings, guest requirements, calendar settings, and receipts are saved privately and shared between approved administrators.</p></div><dl className="connection-list"><div><dt>Business records</dt><dd>Connected · shared storage</dd></div><div><dt>Card payments</dt><dd>Not connected · offline receipts available</dd></div><div><dt>Public booking page</dt><dd>Connected · new requests arrive here</dd></div><div><dt>Website publishing</dt><dd>Not connected · save drafts here</dd></div><div><dt>Google Calendar</dt><dd>Not connected</dd></div><div><dt>Guest email</dt><dd>Connection status in Communications</dd></div></dl><p>Use your approved Google or email account to sign in. New records stay empty until you add them; no sample bookings or payments are imported.</p></div><div className="modal-actions"><button className="button" onClick={()=>setHelp(false)}>Done</button></div></Modal>}
+  {help&&<Modal title="Workspace & connections" onClose={()=>setHelp(false)}><div className="modal-body help-content"><p>Signed in as <strong>{user.email}</strong>. Your sign-in identity controls access and identifies saved changes in the activity record.</p><div className="notice"><Icon name="shield" size={20}/><p>Bookings, guest requirements, calendar settings, and receipts are saved privately and shared between approved administrators.</p></div><dl className="connection-list"><div><dt>Business records</dt><dd>Connected · shared storage</dd></div><div><dt>Card payments</dt><dd>{capabilities.cardPayments ? 'Enabled · secure checkout available' : 'Unavailable · offline receipts available'}</dd></div><div><dt>Public booking page</dt><dd>{capabilities.publicBooking ? 'Connected · new requests arrive here' : 'Unavailable · booking connection needs attention'}</dd></div><div><dt>Website publishing</dt><dd>{capabilities.websitePublishing ? 'Connected · publishing available' : 'Not connected · save drafts here'}</dd></div><div><dt>Google Calendar</dt><dd>Not connected</dd></div><div><dt>Guest email</dt><dd>Connection status in Communications</dd></div></dl><p>These labels describe the current setup. Check each payment in Billing &amp; records and email delivery in Communications to confirm the result.</p><p>Use your approved Google or email account to sign in. New records stay empty until you add them; no sample bookings or payments are imported.</p></div><div className="modal-actions"><button className="button" onClick={()=>setHelp(false)}>Done</button></div></Modal>}
  </div>
 }

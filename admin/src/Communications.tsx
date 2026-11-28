@@ -215,7 +215,7 @@ function ComposeDialog({ data, bookingId, onClose, onCreated }: { data: Communic
   </div><div className="modal-actions communications-dialog-actions"><button className="button secondary" type="button" disabled={pending} onClick={onClose}>Cancel</button><button className="button" disabled={pending || !selectedBooking} type="submit"><Icon name="mail" size={17}/>{pending ? 'Preparing…' : 'Prepare preview'}</button></div></form></Modal>
 }
 
-export default function Communications({ bookingId }: { bookingId?: string }) {
+export default function Communications({ bookingId, initialMessageId }: { bookingId?: string; initialMessageId?: string }) {
   const { data, configuration, loading, error, updatedAt, refresh, record } = useCommunications(bookingId)
   const [tab, setTab] = useState<'history' | 'examples'>('history')
   const [query, setQuery] = useState('')
@@ -224,6 +224,9 @@ export default function Communications({ bookingId }: { bookingId?: string }) {
   const [example, setExample] = useState<EmailKind>('request_received')
   const [compose, setCompose] = useState(false)
   const [selected, setSelected] = useState<EmailMessageSummary | null>(null)
+  const [targetError, setTargetError] = useState('')
+  const [targetRetry, setTargetRetry] = useState(0)
+  const openedTarget = useRef('')
   const [testPending, setTestPending] = useState(false)
   const [sampleReady, setSampleReady] = useState(false)
   const testRequestIds = useRef<Partial<Record<EmailKind, string>>>({})
@@ -235,6 +238,17 @@ export default function Communications({ bookingId }: { bookingId?: string }) {
   const [dispatchFeedback, setDispatchFeedback] = useState('')
   const tabsId = useId()
   const messages = useMemo(() => [...(data?.messages || [])].sort((left, right) => right.createdAt.localeCompare(left.createdAt)), [data?.messages])
+  useEffect(() => {
+    if (!initialMessageId || !data || openedTarget.current === initialMessageId && !targetRetry) return
+    const controller = new AbortController()
+    const found = data.messages.find(message => message.id === initialMessageId && (!bookingId || message.bookingId === bookingId))
+    openedTarget.current = initialMessageId; setTargetError(''); setTab('history')
+    if (found) setSelected(found)
+    else void api<CommunicationsResponse>(`/api/communications?id=${encodeURIComponent(initialMessageId)}${bookingId ? `&bookingId=${encodeURIComponent(bookingId)}` : ''}`, undefined, controller.signal)
+      .then(result => { const message = result.messages?.find(item => item.id === initialMessageId); if (!message) throw new Error('That message is no longer available.'); if (!controller.signal.aborted) setSelected(message) })
+      .catch(cause => { if (!controller.signal.aborted) setTargetError(cause instanceof Error ? cause.message : 'That message could not be opened.') })
+    return () => controller.abort()
+  }, [initialMessageId, !!data, targetRetry, bookingId])
   const visible = messages.filter(message => (status === 'all' || message.status === status || status === 'attention' && ['failed', 'bounced', 'complained', 'needs_review', 'needs_contact', 'suppressed'].includes(message.status)) && (bookingFilter === 'all' || message.bookingId === bookingFilter) && (!query.trim() || [message.subject, message.recipientName, message.recipientEmail, message.bookingId, kindLabel(message.kind)].some(value => value.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))))
   const attention = messages.filter(message => ['failed', 'bounced', 'complained', 'needs_review', 'needs_contact', 'suppressed'].includes(message.status)).length
   const queued = messages.filter(message => message.status === 'queued').length
@@ -264,6 +278,7 @@ export default function Communications({ bookingId }: { bookingId?: string }) {
   return <section className="communications" aria-label={bookingId ? `Communications for ${bookingId}` : 'Customer communications'}>
     <div className="communications-intro"><div><p className="eyebrow">A NOTE FROM YOUR KITCHEN</p><h2>Good hospitality, in every message.</h2><p>Thoughtful emails for each step around the table.</p></div><div className="communications-heading-actions"><button className="button secondary" disabled={loading} onClick={() => void refresh()}><Icon name="history" size={17}/>{loading ? 'Refreshing…' : 'Refresh'}</button><button className="button" disabled={!data || !data.bookings.length} onClick={() => setCompose(true)}><Icon name="plus" size={18}/>Prepare an email</button></div></div>
     <ConfigurationNotice configuration={configuration}/>
+    {targetError && <p className="communications-error" role="alert">{targetError} <button type="button" className="link" onClick={() => setTargetRetry(value => value + 1)}>Try opening the message again</button></p>}
     {error && <div className="communications-load-error" role="alert"><div><strong>{data ? 'The latest records could not be loaded.' : 'Communications could not be loaded.'}</strong><p>{error}{data && ' The records below may be out of date.'}</p></div><button className="button secondary" disabled={loading} onClick={() => void refresh()}>Try again</button></div>}
     <div className="communications-tabs" role="tablist" aria-label="Communications view"><button id={`${tabsId}-history-tab`} role="tab" aria-selected={tab === 'history'} aria-controls={`${tabsId}-history`} tabIndex={tab === 'history' ? 0 : -1} onClick={() => setTab('history')} onKeyDown={event => { if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? 'history' : 'examples'; setTab(next); document.getElementById(`${tabsId}-${next}-tab`)?.focus() } }}>Message history <span>{messages.length}</span></button><button id={`${tabsId}-examples-tab`} role="tab" aria-selected={tab === 'examples'} aria-controls={`${tabsId}-examples`} tabIndex={tab === 'examples' ? 0 : -1} onClick={() => setTab('examples')} onKeyDown={event => { if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'End' ? 'examples' : 'history'; setTab(next); document.getElementById(`${tabsId}-${next}-tab`)?.focus() } }}>Design previews <Icon name="mail" size={17}/></button></div>
     {tab === 'history' && <div id={`${tabsId}-history`} role="tabpanel" aria-labelledby={`${tabsId}-history-tab`}>

@@ -18,20 +18,24 @@ async function api<T>(path: string, body?: object): Promise<T> {
 }
 
 /** Recording an outcome is an operator attestation; this view never deletes identities or business records. */
-export default function PrivacyRequests() {
+export default function PrivacyRequests({ initialRequestId }: { initialRequestId?: string }) {
   const [listing, setListing] = useState<Listing | null>(null), [filter, setFilter] = useState('open'), [offset, setOffset] = useState(0)
   const [selected, setSelected] = useState<string | null>(null), [error, setError] = useState(''), [notice, setNotice] = useState(''), [loading, setLoading] = useState(false), [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<Exclude<Status, 'pending'>>('in_review'), [responseNote, setResponseNote] = useState(''), [retained, setRetained] = useState(''), [evidence, setEvidence] = useState(''), [confirmed, setConfirmed] = useState(false)
   const [extensionMonths,setExtensionMonths]=useState(''),[extensionReason,setExtensionReason]=useState(''),[extensionNoticeConfirmed,setExtensionNoticeConfirmed]=useState(false)
   const attempt = useRef<{ payload: string; id: string } | null>(null), sequence = useRef(0), flight = useRef(false)
+  const [focusedId, setFocusedId] = useState(initialRequestId || '')
+  const openedTarget = useRef('')
   const review = listing?.requests.find(request => request.id === selected)
   async function load() {
     const run = ++sequence.current; setLoading(true); setError('')
-    try { const result = await api<Listing>(`/api/customer-privacy?status=${encodeURIComponent(filter)}&offset=${offset}`); if (run === sequence.current) { if (!Array.isArray(result.requests) || !result.pagination) throw new Error('The request list was incomplete.'); setListing(result) } }
+    try { const result = await api<Listing>(focusedId ? `/api/customer-privacy?id=${encodeURIComponent(focusedId)}` : `/api/customer-privacy?status=${encodeURIComponent(filter)}&offset=${offset}`); if (run === sequence.current) { if (!Array.isArray(result.requests) || !result.pagination) throw new Error('The request list was incomplete.'); setListing(result); const target=result.requests.find(item=>item.id===focusedId);if(target&&openedTarget.current!==focusedId){openedTarget.current=focusedId;choose(target)} } }
     catch (error) { if (run === sequence.current) setError(error instanceof Error ? error.message : String(error)) }
     finally { if (run === sequence.current) setLoading(false) }
   }
-  useEffect(() => { void load(); return () => { ++sequence.current } }, [filter, offset])
+  useEffect(() => { setFocusedId(initialRequestId || ''); openedTarget.current=''; setSelected(null) }, [initialRequestId])
+  useEffect(() => { void load(); return () => { ++sequence.current } }, [filter, offset, focusedId])
+  useEffect(() => { if(selected)document.getElementById('privacy-review-heading')?.focus({preventScroll:false}) }, [selected])
   function choose(request: Review) { setSelected(request.id); setStatus('in_review'); setResponseNote(''); setRetained(''); setEvidence(''); setConfirmed(false); setNotice(''); setExtensionMonths('');setExtensionReason('');setExtensionNoticeConfirmed(false);attempt.current = null }
   async function save(event: FormEvent) {
     event.preventDefault()
@@ -52,6 +56,7 @@ export default function PrivacyRequests() {
   return <section className="admin-privacy" aria-labelledby="admin-privacy-heading">
     <header><h2 id="admin-privacy-heading">Account &amp; privacy requests</h2><p>Review customer requests, arrange identity checks or fulfillment, and record the actual outcome. Customers follow these updates in Settings &amp; profile.</p></header>
     <p className="admin-privacy-notice">Use processing controls and reviewed retention pages for actual local changes. Source collection reads authoritative provider records. Provider deletion and Google changes need their own verified lifecycle. Recording an outcome is separate from performing the work; bookings are not cancelled here. Never enter passwords, tokens or private sign-in links.</p>
+    {focusedId&&<p className="admin-privacy-notice">Opened the request linked from Service operations. <button type="button" className="button secondary" disabled={busy} onClick={()=>{setFocusedId('');setSelected(null);setOffset(0);setFilter('open')}}>Show all requests</button></p>}
     <div className="admin-privacy-toolbar"><label>Show<select value={filter} disabled={busy} onChange={event => { setFilter(event.target.value); setOffset(0); setSelected(null) }}><option value="open">Open requests</option><option value="all">All requests</option>{Object.entries(statuses).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><button className="button secondary" type="button" disabled={loading || busy} onClick={() => void load()}>{loading ? 'Refreshing…' : 'Refresh requests'}</button></div>
     {error && <p className="admin-privacy-error" role="alert">{error} Your unsaved notes remain here. Refresh if another operator changed the request.</p>}
     {notice && <p role="status" className="admin-privacy-notice">{notice}</p>}
@@ -60,7 +65,7 @@ export default function PrivacyRequests() {
       {!listing.requests.length && <p>No requests match this view.</p>}
       <div className="admin-privacy-pages"><button className="button secondary" disabled={loading || busy || offset === 0} onClick={() => { setOffset(Math.max(0, offset - listing.pagination.limit)); setSelected(null) }}>Previous page</button><button className="button secondary" disabled={loading || busy || !listing.pagination.hasMore} onClick={() => { setOffset(offset + listing.pagination.limit); setSelected(null) }}>Next page</button></div>
     </>}
-    {review && <section className="admin-privacy-review" aria-labelledby="privacy-review-heading"><h3 id="privacy-review-heading">{review.name || review.email}: {names[review.kind]}</h3><p className="admin-privacy-message">{review.message || 'No additional message.'}</p>
+    {review && <section className="admin-privacy-review" aria-labelledby="privacy-review-heading"><h3 id="privacy-review-heading" tabIndex={-1}>{review.name || review.email}: {names[review.kind]}</h3><p className="admin-privacy-message">{review.message || 'No additional message.'}</p>
       <PrivacyProcessingControls key={review.id} request={review}/>
       {review.signInAction === 'disconnect_google' && <p className="admin-privacy-notice">Before any Google change: establish a verified usable alternative, arrange appropriate reauthentication, preserve the owning account and booking links, check active-session behavior, then verify provider identities and sign-in independently. Matching email addresses alone do not authorize linking accounts.</p>}
       {review.kind === 'erasure' && <p className="admin-privacy-notice">Review all relevant stores and processors, including communications and payment snapshots, reviews, referrals, gifts, capability links and backups. Identify retention reasons and record the actual scope. Deleting a profile row alone does not erase this person’s information.</p>}

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Night, dateLabel, money, timeLabel } from './model'
 import { useAdmin } from './store'
 import { Badge, Icon, Modal } from './ui'
@@ -13,7 +13,7 @@ const isoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() 
 const longDate = (date: string) => dateLabel(date, { weekday: 'long', month: 'long', day: 'numeric' })
 const newNight = (today:string): Night => ({ id: crypto.randomUUID(), title: '', date: today, time: '19:00', seats: 8, booked: 0, minimum: 6, price: 0, cutoff: 72, menu: '', status: 'draft' })
 
-export default function Calendar({initialTab='calendar',embedded=false}:{initialTab?:'calendar'|'nights';embedded?:boolean}) {
+export default function Calendar({initialTab='calendar',initialPanel,embedded=false}:{initialTab?:'calendar'|'nights';initialPanel?:'booking-setup'|'working-hours';embedded?:boolean}) {
   const { state, update, notify, businessDate: today, pending, capabilities } = useAdmin()
   const [tab, setTab] = useState<'calendar' | 'nights'>(initialTab)
   const [month, setMonth] = useState(new Date(today + 'T12:00:00'))
@@ -28,6 +28,10 @@ export default function Calendar({initialTab='calendar',embedded=false}:{initial
   const [publishTarget, setPublishTarget] = useState<Night | null>(null)
   const [unpublishTarget, setUnpublishTarget] = useState<Night | null>(null)
   const [error, setError] = useState('')
+  useEffect(() => {
+    if (initialPanel === 'booking-setup') setBookingSetup(true)
+    if (initialPanel === 'working-hours') { setHours({ ...state.availability, days: [...state.availability.days] }); setHoursModal(true) }
+  }, [initialPanel])
 
   const bookingsOn = (date: string) => state.bookings.filter(b => b.date === date && b.status !== 'cancelled')
   const nightsOn = (date: string) => state.nights.filter(n => n.date === date && n.status === 'published')

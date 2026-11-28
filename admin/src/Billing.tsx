@@ -158,14 +158,21 @@ export function BillingPanel({ bookingId }: { bookingId: string }) {
   return <section className="billing-compact"><div className="billing-section-heading"><h3>Billing & collection</h3><span className={'billing-status ' + (record.refundReview ? 'attention' : '')}>{paymentState(record)}</span></div><div className="billing-compact-amounts"><div><span>{record.total ? 'Balance due' : 'Quote pending'}</span><strong>{record.total ? money(balanceFor(record)) : 'Not agreed'}</strong></div><div><span>Net received</span><strong>{money(receivedFor(record))}</strong></div></div><p className="billing-compact-plan"><Icon name="clock" size={17}/><span>{!balanceFor(record) ? <><strong>{collectionHeading(record)}</strong><br/>{closedCollectionMessage(record)}</> : record.collection.mode === 'auto_debit' ? <><strong>{money(balanceFor(record))} auto-debit</strong><br/>{businessDate(record.collection.dueAt)}</> : <><strong>{modeLabel(record.collection.mode)}</strong><br/>No automatic debit scheduled.</>}</span></p>{record.refundReview && <p className="billing-compact-alert">Refund or overpayment review needed.</p>}<Timeline record={record} compact/><button className="button secondary" onClick={() => setOpen(true)}>Open billing record</button>{open && <Modal wide title={'Billing · ' + record.customer} subtitle={record.invoiceNumber} onClose={() => setOpen(false)}><BillingDetail recordId={record.id}/></Modal>}</section>
 }
 
-export function BillingRecords() {
+export function BillingRecords({ initialRecordId, initialBookingId, initialFilter = 'all' }: { initialRecordId?: string; initialBookingId?: string; initialFilter?: 'all' | 'outstanding' | 'review' }) {
   const { state, notify, capabilities } = useAdmin()
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<'all' | 'outstanding' | 'review'>('all')
+  const [filter, setFilter] = useState<'all' | 'outstanding' | 'review'>(initialFilter)
   const [selected, setSelected] = useState<string | null>(null)
   const list = useRef<HTMLDivElement>(null)
   const records = state.operations.billing.filter(record => (!query.trim() || [record.customer, record.invoiceNumber, record.eventLabel].some(value => value.toLowerCase().includes(query.trim().toLowerCase()))) && (filter === 'all' || filter === 'outstanding' && balanceFor(record) > 0 || filter === 'review' && record.refundReview)).sort((a, b) => a.eventDate.localeCompare(b.eventDate))
   const active = state.operations.billing.find(record => record.id === selected)
+  useEffect(() => {
+    setFilter(initialFilter)
+    if (!initialRecordId && !initialBookingId) return
+    const target = state.operations.billing.find(record => initialRecordId ? record.id === initialRecordId : record.bookingId === initialBookingId)
+    if (target) setSelected(target.id)
+    else notify('That billing record is no longer available. The current records are shown below.')
+  }, [initialRecordId, initialBookingId, initialFilter])
   function backToList() {
     const previous = selected
     setSelected(null)
