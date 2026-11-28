@@ -86,7 +86,7 @@ try {
       else reply = friend
     } else if (['/api/hold', '/api/request'].includes(url.pathname)) {
       reply = { ref, accessToken: proof, next: 'done', url: origin + '/book/done/?ref=' + ref + '#access=' + proof,
-        ...(scenario.paid && data.checkoutRequestId ? { checkout: { url: 'https://checkout.stripe.com/c/pay/cs_test_referral_fixture' } } : {}) }
+        ...(scenario.paid && data.checkoutRequestId ? { checkout: scenario.giftCovered ? { paid: true, ref, requestId: data.checkoutRequestId } : { url: 'https://checkout.stripe.com/c/pay/cs_test_referral_fixture' } } : {}) }
     } else if (url.pathname === '/api/referral/attach') {
       scenario.attachCount++
       if (scenario.attachCount === 1 && scenario.dropAfterAttach) {
@@ -100,7 +100,7 @@ try {
       else reply = { ok: true, welcome: 50 }
     } else if (url.pathname === '/api/booking/checkout') {
       if (scenario.checkoutFailure) { status = 503; reply = { error: { message: 'Checkout is unavailable in this fixture.' } } }
-      else reply = { url: 'https://checkout.stripe.com/c/pay/cs_test_referral_fixture' }
+      else reply = scenario.giftCovered ? { paid: true, ref, requestId: data.requestId } : { url: 'https://checkout.stripe.com/c/pay/cs_test_referral_fixture' }
     } else { status = 599; reply = { error: { message: 'Unexpected fixture request: ' + url.pathname } }; errors.push(reply.error.message) }
     res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(reply))
   })
@@ -166,8 +166,8 @@ try {
       if (options.continue) await button(page, options.paid ? 'Continue to payment' : 'Continue to your booking')
       else await button(page, 'Retry invitation')
     }
-    await page.waitForFunction(paid => paid ? location.hostname === 'checkout.stripe.com' : location.pathname === '/book/done/', {}, !!options.paid && !options.checkoutFailure)
-    if (options.paid && !options.checkoutFailure) {
+    await page.waitForFunction(paid => paid ? location.hostname === 'checkout.stripe.com' : location.pathname === '/book/done/', {}, !!options.paid && !options.checkoutFailure && !options.giftCovered)
+    if (options.paid && !options.checkoutFailure && !options.giftCovered) {
       await page.waitForSelector('h1')
       assert.equal(await page.$eval('h1', node => node.textContent), 'Local checkout fixture')
     }
@@ -188,6 +188,7 @@ try {
       assert.equal(scenario.calls.filter(call => call.path === '/api/booking/checkout').length, 0, 'combined checkout must not be created twice')
     }
     if (options.checkoutFailure) assert.match(await page.evaluate(ref => sessionStorage.getItem('booking-pay-error:' + ref), ref), /Checkout is unavailable/)
+    if (options.giftCovered) { assert.equal(await page.evaluate(ref => sessionStorage.getItem('booking-pay-error:' + ref), ref), null); assert.equal(new URL(page.url()).pathname, '/book/done/') }
     pass(name)
     await page.close()
   }
@@ -204,6 +205,8 @@ try {
   await run('legacy referral recovery clears the submitted draft and retries no booking', { legacy: true, dropAfterAttach: true })
   await run('legacy payment fallback failure still opens the original saved private booking', { legacy: true, paid: true, checkoutFailure: true })
   await run('Table seat bookings do not consume a private-event referral', { legacy: true, table: true })
+  await run('fully gift-covered quick checkout opens the saved receipt without another checkout or Stripe redirect', { paid: true, noFriend: true, giftCovered: true })
+  await run('fully gift-covered legacy Table checkout opens the same saved receipt without an undefined redirect', { legacy: true, table: true, paid: true, giftCovered: true })
   assert.deepEqual(errors, [])
   pass('all browser API/provider requests were local fixtures; no real booking, charge or email occurred')
 } finally {

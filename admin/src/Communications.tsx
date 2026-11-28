@@ -19,6 +19,8 @@ const examples: { kind: EmailKind; label: string; description: string }[] = [
   { kind: 'invitation_ready', label: 'Guest invitation', description: 'An invitation to share with the people at their table.' },
   { kind: 'pre_event', label: 'Before the evening', description: 'The practical details before everyone arrives.' },
   { kind: 'thank_you', label: 'Thank you', description: 'One final note after a memorable meal.' },
+  { kind: 'gift_sender', label: 'Gift card · sender receipt and full copy', description: 'The sender’s receipt and complete card copy, sent after paid issuance.' },
+  { kind: 'gift_recipient', label: 'Gift card · recipient copy', description: 'The recipient’s card copy, delivered on the chosen send date.' },
 ]
 const emptyConfiguration: EmailConfiguration = { mode: 'preview', ready: false, canSend: false, canTest: false, from: '', replyTo: '', testRecipient: '', missing: [] }
 const statusLabels: Record<EmailStatus, string> = { preview: 'Preview', queued: 'Queued', sending: 'Sending', sent: 'Accepted', delivered: 'Delivered', retry: 'Retry scheduled', failed: 'Failed', bounced: 'Bounced', complained: 'Complaint received', needs_review: 'Needs review', suppressed: 'Suppressed', cancelled: 'Cancelled', needs_contact: 'Missing email' }
@@ -31,6 +33,7 @@ const statusDescriptions: Record<EmailStatus, string> = {
   suppressed: 'Delivery is blocked for this recipient.', cancelled: 'This message was cancelled and will not be sent.', needs_contact: 'Correct the guest email address on the booking, then prepare a fresh preview. This saved message keeps its original recipient.',
 }
 const kindLabel = (kind: EmailKind) => examples.find(example => example.kind === kind)?.label || kind.replaceAll('_', ' ')
+const isGiftEmail = (kind: EmailKind) => kind === 'gift_sender' || kind === 'gift_recipient'
 const instant = (value: string | null) => value && !Number.isNaN(Date.parse(value)) ? new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Not recorded'
 const updatedEvent = 'chef-communications-updated'
 type MessageAction = 'send' | 'retry' | 'resend' | 'cancel'
@@ -160,8 +163,9 @@ function MessageDialog({ message, configuration, onClose, onChanged }: { message
   const [confirmResend, setConfirmResend] = useState(false)
   const requestIds = useRef<Record<string, string>>({})
   useEffect(() => { setCurrent(message) }, [message])
+  const gift = isGiftEmail(current.kind)
   async function act(action: MessageAction) {
-    if (pending) return
+    if (pending || gift) return
     setPending(action); setError(''); setFeedback('')
     try {
       const key = `${current.id}:${action}`
@@ -175,31 +179,31 @@ function MessageDialog({ message, configuration, onClose, onChanged }: { message
   }
   const canSend = configuration.canSend && ready && !!current.recipientEmail
   const accepted = current.status === 'sent' || current.status === 'delivered' || current.status === 'needs_review'
-  return <Modal wide title={kindLabel(current.kind)} subtitle={`${current.bookingId} · Saved ${instant(current.createdAt)}`} onClose={onClose}>
-    <div className="communications-message-body"><div className="communications-message-state"><Status status={current.status}/><p>{statusDescriptions[current.status]}</p></div>
+  return <Modal wide title={kindLabel(current.kind)} subtitle={`${gift ? 'Gift delivery' : current.bookingId} · Saved ${instant(current.createdAt)}`} onClose={onClose}>
+    <div className="communications-message-body"><div className="communications-message-state"><Status status={current.status}/><p>{gift ? 'The recorded result for this gift-card copy. Review supported next steps in Gifts.' : statusDescriptions[current.status]}</p></div>
       {current.lastError && <p className="communications-error communications-provider-error"><strong>Delivery detail:</strong> {current.lastError}</p>}
-      <PreviewContent message={current} configuration={configuration} onReady={setReady}/>
+      {gift ? <div className="communications-send-help"><p>Gift card copies are private. Review the purchase, sender and recipient delivery records, and supported recovery actions in Gifts.</p><a className="button secondary" href="#gifts" onClick={onClose}>Review in Gifts<Icon name="chevron" size={16}/></a></div> : <PreviewContent message={current} configuration={configuration} onReady={setReady}/>}
       <dl className="communications-delivery-details"><div><dt>Last updated</dt><dd>{instant(current.updatedAt)}</dd></div><div><dt>Attempts</dt><dd>{current.attempts}</dd></div>{current.sentAt && <div><dt>Accepted</dt><dd>{instant(current.sentAt)}</dd></div>}{current.deliveredAt && <div><dt>Delivered</dt><dd>{instant(current.deliveredAt)}</dd></div>}{current.parentId && <div><dt>Copy of</dt><dd>{current.parentId}</dd></div>}</dl>
       {error && <p className="communications-error" role="alert">{error}</p>}{feedback && <p className="communications-feedback" role="status">{feedback}</p>}
-      {!configuration.canSend && <p className="communications-send-help">Customer delivery is disabled in {configuration.mode} mode{!configuration.ready ? ' until the connection is ready' : ''}.</p>}
+      {!gift && !configuration.canSend && <p className="communications-send-help">Customer delivery is disabled in {configuration.mode} mode{!configuration.ready ? ' until the connection is ready' : ''}.</p>}
     </div>
-    <div className="modal-actions communications-message-actions"><button className="button secondary" onClick={onClose}>Close</button>{['preview', 'queued', 'retry', 'needs_review'].includes(current.status) && <button className="button secondary" disabled={!!pending} onClick={() => void act('cancel')}>{pending === 'cancel' ? 'Cancelling…' : 'Cancel message'}</button>}{current.status === 'preview' && <button className="button" disabled={!!pending || !canSend} onClick={() => void act('send')}><Icon name="mail" size={17}/>{pending === 'send' ? 'Sending…' : 'Send to guest'}</button>}{['failed', 'retry'].includes(current.status) && <button className="button" disabled={!!pending || !canSend} onClick={() => void act('retry')}>{pending === 'retry' ? 'Retrying…' : 'Retry delivery'}</button>}{accepted && <button className="button" disabled={!!pending || !canSend} onClick={() => setConfirmResend(true)}><Icon name="mail" size={17}/>Send a new copy</button>}</div>
-    {confirmResend && <Modal title="Send a new copy?" subtitle={current.status === 'needs_review' ? 'The previous attempt may already have been accepted.' : 'The previous message was already accepted.'} onClose={() => setConfirmResend(false)}><div className="modal-body"><p>This sends another email to <strong>{current.recipientEmail}</strong>. They may already have the original. The new copy will have its own delivery record.</p>{error && <p className="communications-error" role="alert">{error}</p>}</div><div className="modal-actions communications-dialog-actions"><button className="button secondary" disabled={!!pending} onClick={() => setConfirmResend(false)}>Keep original only</button><button className="button" disabled={!!pending || !canSend} onClick={() => void act('resend')}>{pending === 'resend' ? 'Sending new copy…' : 'Send a new copy'}</button></div></Modal>}
+    <div className="modal-actions communications-message-actions"><button className="button secondary" onClick={onClose}>Close</button>{!gift && <>{['preview', 'queued', 'retry', 'needs_review'].includes(current.status) && <button className="button secondary" disabled={!!pending} onClick={() => void act('cancel')}>{pending === 'cancel' ? 'Cancelling…' : 'Cancel message'}</button>}{current.status === 'preview' && <button className="button" disabled={!!pending || !canSend} onClick={() => void act('send')}><Icon name="mail" size={17}/>{pending === 'send' ? 'Sending…' : 'Send to guest'}</button>}{['failed', 'retry'].includes(current.status) && <button className="button" disabled={!!pending || !canSend} onClick={() => void act('retry')}>{pending === 'retry' ? 'Retrying…' : 'Retry delivery'}</button>}{accepted && <button className="button" disabled={!!pending || !canSend} onClick={() => setConfirmResend(true)}><Icon name="mail" size={17}/>Send a new copy</button>}</>}</div>
+    {!gift && confirmResend && <Modal title="Send a new copy?" subtitle={current.status === 'needs_review' ? 'The previous attempt may already have been accepted.' : 'The previous message was already accepted.'} onClose={() => setConfirmResend(false)}><div className="modal-body"><p>This sends another email to <strong>{current.recipientEmail}</strong>. They may already have the original. The new copy will have its own delivery record.</p>{error && <p className="communications-error" role="alert">{error}</p>}</div><div className="modal-actions communications-dialog-actions"><button className="button secondary" disabled={!!pending} onClick={() => setConfirmResend(false)}>Keep original only</button><button className="button" disabled={!!pending || !canSend} onClick={() => void act('resend')}>{pending === 'resend' ? 'Sending new copy…' : 'Send a new copy'}</button></div></Modal>}
   </Modal>
 }
 
 function ComposeDialog({ data, bookingId, onClose, onCreated }: { data: CommunicationsResponse; bookingId?: string; onClose: () => void; onCreated: (message: EmailMessageSummary) => void }) {
+  const kinds = (data.kinds.length ? data.kinds : examples).filter(item => !isGiftEmail(item.kind))
   const [selectedBooking, setSelectedBooking] = useState(bookingId || '')
-  const [kind, setKind] = useState<EmailKind>(() => data.kinds.some(item => item.kind === 'thank_you') ? 'thank_you' : data.kinds[0]?.kind || 'thank_you')
+  const [kind, setKind] = useState<EmailKind>(() => kinds.some(item => item.kind === 'thank_you') ? 'thank_you' : kinds[0]?.kind || 'thank_you')
   const [note, setNote] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const requestId = useRef(crypto.randomUUID())
   const recipient = data.bookings.find(booking => booking.id === selectedBooking)
-  const kinds = data.kinds.length ? data.kinds : examples
   async function compose(event: FormEvent) {
     event.preventDefault()
-    if (pending || !selectedBooking) return
+    if (pending || !selectedBooking || !kinds.some(item => item.kind === kind)) return
     setPending(true); setError('')
     try { const result = await api<{ message: EmailMessageSummary }>('/api/communications/compose', { bookingId: selectedBooking, kind, note: note.trim(), requestId: requestId.current }); onCreated(result.message) }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'The preview could not be prepared.') }
@@ -212,7 +216,7 @@ function ComposeDialog({ data, bookingId, onClose, onCreated }: { data: Communic
     <label className="field">A personal note <span className="communications-optional">Optional</span><textarea rows={4} maxLength={2000} value={note} disabled={pending} onChange={event => { setNote(event.target.value); requestId.current = crypto.randomUUID() }} placeholder="A few words from Sergio…"/><small>This note will be visible to the guest. {note.length.toLocaleString()} / 2,000 characters</small></label>
     {error && <p className="communications-error" role="alert">{error}</p>}
     <p className="communications-compose-note"><Icon name="shield" size={17}/>Preparing a preview does not send an email.</p>
-  </div><div className="modal-actions communications-dialog-actions"><button className="button secondary" type="button" disabled={pending} onClick={onClose}>Cancel</button><button className="button" disabled={pending || !selectedBooking} type="submit"><Icon name="mail" size={17}/>{pending ? 'Preparing…' : 'Prepare preview'}</button></div></form></Modal>
+  </div><div className="modal-actions communications-dialog-actions"><button className="button secondary" type="button" disabled={pending} onClick={onClose}>Cancel</button><button className="button" disabled={pending || !selectedBooking || !kinds.some(item => item.kind === kind)} type="submit"><Icon name="mail" size={17}/>{pending ? 'Preparing…' : 'Prepare preview'}</button></div></form></Modal>
 }
 
 export default function Communications({ bookingId, initialMessageId }: { bookingId?: string; initialMessageId?: string }) {

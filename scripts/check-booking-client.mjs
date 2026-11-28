@@ -355,6 +355,45 @@ try {
     assert.equal(calls.at(-1).body.requestId,checkoutId)
     assert(checkout.url.startsWith('https://checkout.stripe.com/'))
   })
+  const coveredApi = (await actualModule('src/booking/api.ts', 'https://covered.example.test')).api
+  let firstCoveredRequest, lostCoveredReply = true
+  globalThis.fetch = async (url, options) => {
+    const entry = observed(url, options); writeBoundary(entry); firstCoveredRequest ??= entry.body.requestId
+    if (lostCoveredReply) { lostCoveredReply = false; throw Error('Covered payment result lost after commit') }
+    return Response.json({ paid: true, ref: entry.body.ref, requestId: entry.body.requestId })
+  }
+  await assert.rejects(coveredApi.checkout(receipt.ref), error => error.code === 'network')
+  const covered = await (await actualModule('src/booking/api.ts', 'https://covered.example.test')).api.checkout(receipt.ref)
+  check('an exactly acknowledged gift-covered checkout recovers its original action without a redirect', () => {
+    assert.deepEqual(covered, { paid: true, ref: receipt.ref, requestId: firstCoveredRequest })
+    assert.equal(calls.at(-1).body.requestId, firstCoveredRequest)
+    assert.equal('url' in covered, false)
+    assert(![...pendingMemory.values()].includes(firstCoveredRequest))
+  })
+  const guardedCovered = (await actualModule('src/booking/api.ts', 'https://covered-guards.example.test')).api
+  let uncertainCoveredId
+  for (const patch of [{ ref: 'ANOTHER-BOOKING' }, { requestId: crypto.randomUUID() }, { requestId: undefined }, { paid: 'true' }, { url: 'https://checkout.stripe.com/c/pay/unexpected' }]) {
+    globalThis.fetch = async (url, options) => { const entry = observed(url, options); uncertainCoveredId ??= entry.body.requestId; return Response.json({ paid: true, ref: entry.body.ref, requestId: entry.body.requestId, ...patch }) }
+    await assert.rejects(guardedCovered.checkout(receipt.ref), error => error.code === 'network')
+    assert.equal(calls.at(-1).body.requestId, uncertainCoveredId)
+  }
+  check('bare, wrong-action, mixed and wrong-booking paid claims remain unverified with one retained retry identity', () => assert([...pendingMemory.values()].includes(uncertainCoveredId)))
+  globalThis.fetch = async (url, options) => {
+    const entry = observed(url, options)
+    return Response.json({ ...result, checkout: { paid: true, ref: result.ref, requestId: entry.body.checkoutRequestId } })
+  }
+  const coveredHold = await coveredApi.hold({ ...request, gift: 'SYNTHETIC-GIFT-CREDENTIAL' }, '', { checkout: true })
+  check('combined submission accepts only its own exact covered-payment acknowledgment and retains the private receipt path', () => {
+    assert.equal(coveredHold.checkout.paid, true); assert.equal(coveredHold.checkout.ref, coveredHold.ref)
+    assert.equal(coveredHold.checkout.requestId, calls.at(-1).body.checkoutRequestId); assert.equal(coveredHold.checkoutError, undefined)
+    assert.equal(coveredHold.url, result.url)
+  })
+  globalThis.fetch = async (url, options) => { observed(url, options); return Response.json({ ...result, checkout: { paid: true } }) }
+  const unknownCovered = await coveredApi.hold({ ...request, gift: 'OTHER-SYNTHETIC-GIFT' }, '', { checkout: true })
+  check('an unbound inline paid claim becomes a recoverable checkout error rather than payment success', () => {
+    assert.equal(unknownCovered.checkout, undefined); assert.equal(unknownCovered.checkoutError.code, 'invalid_checkout')
+    assert.equal(unknownCovered.ref, result.ref)
+  })
 
   const detailsApi = (await actualModule('src/booking/api.ts', 'https://details.example.test')).api
   const preparation = { occasion: 'Private family occasion', kitchen: 'Private kitchen description', budgetMode: 'guidance' }

@@ -1,5 +1,5 @@
 /** Shared customer-communication contracts. Private links are resolved only while rendering. */
-export type EmailKind = 'privacy_request_notification' | 'privacy_inactivity_notice' | 'privacy_request_update' | 'request_received' | 'waitlist_received' | 'plan_ready' | 'interview_scheduled' | 'booking_held' | 'booking_confirmed' | 'booking_changed' | 'booking_cancelled' | 'payment_received' | 'refund_received' | 'invitation_ready' | 'pre_event' | 'thank_you'
+export type EmailKind = 'gift_recipient' | 'gift_sender' | 'privacy_request_notification' | 'privacy_inactivity_notice' | 'privacy_request_update' | 'request_received' | 'waitlist_received' | 'plan_ready' | 'interview_scheduled' | 'booking_held' | 'booking_confirmed' | 'booking_changed' | 'booking_cancelled' | 'payment_received' | 'refund_received' | 'invitation_ready' | 'pre_event' | 'thank_you'
 export type EmailMode = 'preview' | 'test' | 'live'
 export type EmailStatus = 'preview' | 'queued' | 'sending' | 'sent' | 'delivered' | 'retry' | 'failed' | 'bounced' | 'complained' | 'needs_review' | 'suppressed' | 'cancelled' | 'needs_contact'
 export type ReceiptSnapshot = {
@@ -12,7 +12,7 @@ export type EmailSnapshot = {
   version: 1; kind: EmailKind; bookingId: string; recipientName: string; recipientEmail: string;
   service: string; date: string; time: string; guests: number | null; status: string; createdAt: string;
   contactBy?: string; location?: string; note?: string; changes?: string[]; details?: { label: string; value: string }[];
-  invitationId?: string; invitationVersion?: number; receipt?: ReceiptSnapshot;
+  invitationId?: string; invitationVersion?: number; receipt?: ReceiptSnapshot; giftCardId?: string;
   /** Resolved in memory only; never persist bearer URLs in the outbox snapshot. */
   action?: { label: string; url: string }; calendar?: string;
 }

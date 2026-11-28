@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { buildGiftCardArtwork, formatAmount, type GiftCardDocument, type GiftFace } from '../../prototypes/sergio-admin/shared/gift-cards/artwork'
 import { CtaButton, CtaLink } from '../components/CallToAction'
 import { href, TBD, track } from '../components/ui'
@@ -26,6 +26,8 @@ export function GiftPage() {
   const [honeypot, setHoneypot] = useState('')
   const [errors, setErrors] = useState<Partial<Record<keyof Draft | 'form', string>>>({})
   const [busy, setBusy] = useState(false)
+  const mounted = useRef(true)
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   // Orlando's date, as the gift service checks it: a late order from another time zone still counts as today there.
   const today = useMemo(() => typeof window === 'undefined' ? '' : todayET(), [])
 
@@ -56,6 +58,7 @@ export function GiftPage() {
   }
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    if (busy) return
     const next = validate()
     setErrors(next)
     if (Object.keys(next).length) { (document.getElementById(`gift-${Object.keys(next)[0]}`) as HTMLElement | null)?.focus(); return }
@@ -63,10 +66,9 @@ export function GiftPage() {
     try {
       track('gift_checkout', { amount: String(draft.amountCents) })
       const url = await startGiftCheckout({ ...draft, recipientName: draft.recipientName.trim(), recipientEmail: draft.recipientEmail.trim(), senderName: draft.senderName.trim(), senderEmail: draft.senderEmail.trim(), note: draft.note.trim() }, honeypot)
-      window.location.assign(url)
+      if (mounted.current) window.location.assign(url)
     } catch (error) {
-      setErrors({ form: error instanceof GiftError ? error.message : 'The payment page could not be opened. Nothing was charged.' })
-      setBusy(false)
+      if (mounted.current) { setErrors({ form: error instanceof GiftError ? error.message : 'The payment page could not be confirmed. Retry this purchase or contact Sergio before starting another payment.' }); setBusy(false) }
     }
   }
   const field = (key: keyof Draft) => ({ id: `gift-${key}`, 'aria-invalid': errors[key] ? true : undefined, 'aria-describedby': errors[key] ? `gift-${key}-error` : undefined })
@@ -88,7 +90,7 @@ export function GiftPage() {
         </div>
       </div>
       <form className="gift-form" onSubmit={submit} noValidate>
-        <fieldset className="gift-fieldset" onFocus={front}>
+        <fieldset className="gift-fieldset" onFocus={front} disabled={busy}>
           <legend className="gift-legend">Amount {!site.gift.amountsConfirmed && <TBD k="gift.amounts">Amounts to confirm with Sergio</TBD>}</legend>
           <div className="gift-amounts" role="radiogroup" aria-label="Amount">
             {config.amounts.map(amount => <label key={amount} className="gift-amount" data-checked={draft.amountCents === amount}>
@@ -98,18 +100,18 @@ export function GiftPage() {
           </div>
           <p className="gift-hint">Use it in part or in full. Whatever is left stays on the card.</p>
         </fieldset>
-        <fieldset className="gift-fieldset" onFocus={back}>
+        <fieldset className="gift-fieldset" onFocus={back} disabled={busy}>
           <legend className="gift-legend">For</legend>
           <div className="gift-pair">
             <label className="gift-field"><span>Their name</span><input {...field('recipientName')} className="gift-input" autoComplete="off" maxLength={60} value={draft.recipientName} onChange={event => set({ recipientName: event.target.value })} />{message('recipientName')}</label>
             <label className="gift-field"><span>Their email</span><input {...field('recipientEmail')} className="gift-input" type="email" autoComplete="off" maxLength={254} value={draft.recipientEmail} onChange={event => set({ recipientEmail: event.target.value })} />{message('recipientEmail')}</label>
           </div>
         </fieldset>
-        <fieldset className="gift-fieldset" onFocus={back}>
+        <fieldset className="gift-fieldset" onFocus={back} disabled={busy}>
           <legend className="gift-legend">From</legend>
           <div className="gift-pair">
             <label className="gift-field"><span>Your name</span><input {...field('senderName')} className="gift-input" autoComplete="name" maxLength={60} value={draft.senderName} onChange={event => set({ senderName: event.target.value })} />{message('senderName')}</label>
-            <label className="gift-field"><span>Your email</span><input {...field('senderEmail')} className="gift-input" type="email" autoComplete="email" maxLength={254} value={draft.senderEmail} onChange={event => set({ senderEmail: event.target.value })} />{message('senderEmail')}</label>
+          <label className="gift-field"><span>Your email</span><input {...field('senderEmail')} className="gift-input" type="email" autoComplete="email" maxLength={254} value={draft.senderEmail} onChange={event => set({ senderEmail: event.target.value })} />{message('senderEmail')}</label>
           </div>
           <label className="gift-field" onFocus={back}><span>A note <span className="text-ink-muted">(optional)</span></span>
             <textarea {...field('note')} className="gift-input gift-note" rows={3} maxLength={NOTE_MAX} value={draft.note} onChange={event => set({ note: event.target.value })} />
@@ -117,9 +119,9 @@ export function GiftPage() {
             {errors.note && !noteError ? message('note') : null}
           </label>
         </fieldset>
-        <fieldset className="gift-fieldset" onFocus={front}>
+        <fieldset className="gift-fieldset" onFocus={front} disabled={busy}>
           <label className="gift-field"><span>Send it on</span><input {...field('sendOn')} className="gift-input gift-date" type="date" min={today || undefined} max={today ? yearAhead(today) : undefined} value={draft.sendOn} onChange={event => set({ sendOn: event.target.value })} />
-            <span className="gift-hint">It reaches them by email that morning, Orlando time, with a copy to you.</span>{message('sendOn')}</label>
+            <span className="gift-hint">Scheduled for that morning, Orlando time. Same-day orders placed later are sent after payment. Your receipt and card copy are sent after payment and issuance.</span>{message('sendOn')}</label>
         </fieldset>
         <label className="gift-trap" aria-hidden="true">Website<input tabIndex={-1} autoComplete="off" value={honeypot} onChange={event => setHoneypot(event.target.value)} /></label>
         <ul className="gift-terms">
@@ -143,7 +145,7 @@ export function GiftPage() {
       <h2 id="gift-how-heading" className="text-3xl">How the gift works</h2>
       <ol>
         <li><h3>Write the card</h3><p>Choose the amount and write it to them. The card above is the card they receive.</p></li>
-        <li><h3>It arrives on the day</h3><p>By email that morning, with a copy to you. The card lives on their phone, ready to show or forward.</p></li>
+        <li><h3>Choose their day</h3><p>The recipient’s card is scheduled for that morning, Orlando time, or after payment for later same-day orders. Your receipt and card copy are sent after payment and issuance.</p></li>
         <li><h3>They book with it</h3><p>They <a className="link" href={href('/book/')}>book like anyone else</a> and enter the code. It pays the deposit first, then the rest of the evening.</p></li>
       </ol>
     </section>

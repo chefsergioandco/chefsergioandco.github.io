@@ -1,5 +1,5 @@
 import { booking } from '../content/booking'
-import { BookingError, type BookingReceipt, type DetailsReceipt, type PublicBookingApi, type PublicHoldResult, type PlanningConfig } from './types'
+import { BookingError, type BookingReceipt, type CheckoutResult, type DetailsReceipt, type PublicBookingApi, type PublicHoldResult, type PlanningConfig } from './types'
 import { isDetailsResult } from './details-result'
 
 // A failed or missing live service never creates a browser-only booking.
@@ -59,6 +59,14 @@ async function call<T>(path: string, body?: unknown, allowNull = false): Promise
   if (data === null && !allowNull) throw new BookingError('network', 'The service returned an incomplete response. Please retry before assuming your request was received.')
   return data as T
 }
+function verifiedCheckout(value: unknown, ref: string, requestId: string): value is CheckoutResult {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const result = value as Record<string, unknown>
+  if ('paid' in result) return result.paid === true && result.ref === ref && result.requestId === requestId && Object.keys(result).every(key => ['paid', 'ref', 'requestId'].includes(key))
+  if (Object.keys(result).some(key => !['url', 'expiresAt'].includes(key)) || typeof result.url !== 'string') return false
+  if (result.expiresAt !== undefined && (typeof result.expiresAt !== 'string' || !Number.isFinite(Date.parse(result.expiresAt)))) return false
+  try { const url = new URL(result.url); return url.protocol === 'https:' && url.hostname === 'checkout.stripe.com' && !url.username && !url.password && !url.port } catch { return false }
+}
 export const api: PublicBookingApi = {
   async config() {
     const result = await call<PlanningConfig>('/api/planning-config')
@@ -76,12 +84,10 @@ export const api: PublicBookingApi = {
     if (typeof result.ref !== 'string' || !result.ref || typeof result.accessToken !== 'string' || !result.accessToken || result.next !== 'done' || typeof result.url !== 'string' || !result.url) throw new BookingError('network', 'The request receipt was incomplete. Retry to recover the same request, or call Sergio.')
     rememberAccess(result.ref, result.accessToken)
     completeAttempt(attempt)
-    if (checkoutAttempt) completeAttempt(checkoutAttempt)
-    // Only a payment-provider page may follow; anything else is treated as a checkout that did not open.
+    // A settled gift payment needs its exact action acknowledgment; redirects stay on the payment provider.
     if (result.checkout) {
-      let url: URL | null = null
-      try { url = new URL(result.checkout.url) } catch { /* handled below */ }
-      if (!url || url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com' || url.username || url.password) return { ...result, checkout: undefined, checkoutError: { code: 'invalid_checkout', message: 'The payment link could not be verified. Your request is saved; pay from your booking page.' } }
+      if (!checkoutAttempt || !verifiedCheckout(result.checkout, result.ref, checkoutAttempt.value)) return { ...result, checkout: undefined, checkoutError: { code: 'invalid_checkout', message: 'The payment result could not be verified. Your request is saved; check its status before making another payment.' } }
+      completeAttempt(checkoutAttempt)
     }
     return result
   },
@@ -126,14 +132,12 @@ export const api: PublicBookingApi = {
     const accessToken = receiptAccess(ref)
     if (!ref || !accessToken) throw new BookingError('invalid', 'Open your complete private booking link first.')
     const payload = { ref, accessToken }, attempt = await requestId('checkout', payload)
-    let result: {url: string; expiresAt?: string}
-    try { result = await call<{url: string; expiresAt?: string}>('/api/booking/checkout', { ...payload, requestId: attempt.value }) } catch (error) {
+    let result: CheckoutResult
+    try { result = await call<CheckoutResult>('/api/booking/checkout', { ...payload, requestId: attempt.value }) } catch (error) {
       if (error instanceof BookingError && /previous checkout ended|could not be opened|is processing/.test(error.message)) { completeAttempt(attempt); attempts.delete(attempt.key) }
       throw error
     }
-    let url: URL
-    try { url = new URL(result.url) } catch { throw new BookingError('network', 'The payment link could not be verified. Please retry.') }
-    if (url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com' || url.username || url.password) throw new BookingError('network', 'The payment link could not be verified. Please contact Sergio.')
+    if (!verifiedCheckout(result, ref, attempt.value)) throw new BookingError('network', 'The payment result could not be verified. Retry this action or check the booking status before making another payment.')
     completeAttempt(attempt)
     attempts.delete(attempt.key)
     return result

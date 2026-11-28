@@ -1,4 +1,4 @@
-export const OPERATION_SECTIONS = ['communications', 'newsletter', 'payments', 'privacy', 'calendar', 'bookings', 'website', 'operations'] as const
+export const OPERATION_SECTIONS = ['communications', 'newsletter', 'payments', 'gifts', 'privacy', 'calendar', 'bookings', 'website', 'operations'] as const
 export type OperationsTarget = {
   section: typeof OPERATION_SECTIONS[number]
   recordId?: string

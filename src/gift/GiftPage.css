@@ -38,3 +38,14 @@
 
 /* Standalone navigation actions need the same thumb room as the form controls. */
 .gift-page a[href^="tel:"],.gift-page .gift-intro .flex>.link{display:inline-flex;align-items:center;min-height:44px}
+
+.gift-purchase-status { max-width: 44rem; padding: 1.5rem 0; border-block: 1px solid rgb(var(--c-rule)); }
+.gift-purchase-status > p, .gift-purchase-status > div > p { margin-top: .8rem; }
+.gift-purchase-facts { display: grid; gap: 1rem; margin: 1.5rem 0; }
+.gift-purchase-facts > div { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 2fr); gap: .5rem 1.5rem; }
+.gift-purchase-facts dt { color: rgb(var(--c-ink-muted)); font-size: .9rem; }
+.gift-purchase-facts dd { margin: 0; overflow-wrap: anywhere; }
+.gift-purchase-facts dd > span { display: block; margin-top: .25rem; font-size: .875rem; color: rgb(var(--c-ink-muted)); }
+.gift-purchase-reference { font-size: .875rem; color: rgb(var(--c-ink-muted)); }
+.gift-purchase-reference span { display: block; color: rgb(var(--c-ink)); overflow-wrap: anywhere; }
+@media (max-width: 480px) { .gift-purchase-facts > div { grid-template-columns: minmax(0, 1fr); gap: .25rem; } }

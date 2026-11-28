@@ -77,7 +77,11 @@ export function BookDone() {
   }
   async function pay() {
     if (busy) return; setBusy(true); setError(''); setPayError('')
-    try { const result = await api.checkout(ref()); location.assign(result.url) }
+    try {
+      const result = await api.checkout(ref())
+      if (result.paid) { await load(); setNotice('Your payment is recorded. Current booking and payment status are shown above.'); setBusy(false) }
+      else location.assign(result.url)
+    }
     catch (failure) { setPayError(failure instanceof Error ? failure.message : 'Checkout could not be opened. Your booking is still here.'); setBusy(false); void load() }
   }
   const p = receipt?.planning, paid = p?.depositStatus === 'paid'

@@ -195,8 +195,8 @@ export function BookingForm() {
       try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem('booking-draft') } catch { /* The confirmed server receipt is sufficient. */ }
       const destination = new URL(result.url, window.location.href)
       // Keep the original saved booking and checkout path on invitation retries.
-      if (canPay && result.next === 'done') {
-        try { window.location.assign((await api.checkout(result.ref)).url); return }
+      if (canPay && result.next === 'done' && !result.checkout?.paid) {
+        try { const checkout = await api.checkout(result.ref); if (!checkout.paid) { window.location.assign(checkout.url); return } }
         catch (failure) { try { sessionStorage.setItem('booking-pay-error:' + result.ref, failure instanceof Error ? failure.message : 'Checkout could not be opened. Your request is saved.') } catch { /* The receipt still offers payment. */ } }
       }
       if (result.next === 'done' && destination.origin === window.location.origin && destination.pathname === href('/book/done/')) {

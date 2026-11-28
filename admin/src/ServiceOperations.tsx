@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { adminFetch } from './api-client'
+import { isGiftPurchaseId } from './gift-types'
 import { Icon } from './ui'
 import { ATTENTION_AREAS, OPERATIONS_VIEWS, isOperationsResponse, isOperationsView, type OperationsResponse, type OperationsTarget, type OperationsView, type ServiceStatus, type JobStatus } from './service-operations-types'
 import './ServiceOperations.css'
@@ -8,7 +9,7 @@ const viewLabels: Record<OperationsView, string> = { connections: 'Connections',
 const serviceLabels: Record<ServiceStatus, string> = { ready: 'Ready', limited: 'Limited', blocked: 'Needs setup', not_connected: 'Not connected', unknown: 'Not verified' }
 const jobLabels: Record<JobStatus, string> = { healthy: 'Completed', failed: 'Failed', running: 'Running', never_recorded: 'No run recorded', overdue: 'Overdue', unknown: 'Not verified' }
 const areaLabels = { email: 'Guest email', newsletter: 'Newsletter', payments: 'Payments & gifts', privacy: 'Account & privacy', configuration: 'Connections & setup', monitoring: 'Background checks' }
-const sectionLabels = { communications: 'Communications', newsletter: 'Newsletter', payments: 'Billing & records', privacy: 'Account & privacy', calendar: 'Calendar', bookings: 'Bookings', website: 'Your website', operations: 'Service operations' }
+const sectionLabels = { communications: 'Communications', newsletter: 'Newsletter', payments: 'Billing & records', gifts: 'Gifts', privacy: 'Account & privacy', calendar: 'Calendar', bookings: 'Bookings', website: 'Your website', operations: 'Service operations' }
 const severityLabels = { error: 'Action needed', warning: 'Review needed', info: 'For your review' }
 const dateTime = (value: string) => new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/New_York' }).format(new Date(value))
 const When = ({ value, empty = 'Not recorded' }: { value: string | null; empty?: string }) => value ? <time dateTime={value}>{dateTime(value)}</time> : <span>{empty}</span>
@@ -59,7 +60,7 @@ export default function ServiceOperations({ onNavigate, onViewChange, initialVie
     <div id={uid + '-panel'} role="tabpanel" aria-labelledby={uid + '-tab-' + view} tabIndex={0} className="operations-panel" aria-busy={loading}>
       {!data ? <div className="operations-empty"><Icon name={loading ? 'clock' : 'info'} size={30}/><h3>{loading ? 'Reading the current picture…' : 'Your service report is unavailable.'}</h3><p>{loading ? 'The report checks setup and reads saved work. It does not send messages or start payments.' : 'Use Refresh checks to try again. No healthy or connected state has been assumed.'}</p></div> : view === 'connections' ? <>
         <p className="operations-intro">Ready describes the current setup. Confirm each payment or message in its own record; a ready connection is not proof of a completed transaction.</p>
-        <ul className="operations-connections">{data.services.map(service => <li key={service.id} className="operations-service"><div className="operations-item-heading"><h3>{service.label}</h3><span className={'operations-status service-' + service.status}>{serviceLabels[service.status]}</span></div><p>{service.summary}</p>{service.reasons.length > 0 && <ul className="operations-reasons">{service.reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul>}<div className="operations-item-footer"><p><span>Who can help</span>{service.owner}</p>{recovery(service.target)}</div></li>)}</ul>
+        <ul className="operations-connections">{data.services.map(service => <li key={service.id} className="operations-service"><div className="operations-item-heading"><h3>{service.label}</h3><span className={'operations-status service-' + service.status}>{serviceLabels[service.status]}</span></div><p>{service.summary}</p>{service.reasons.length > 0 && <ul className="operations-reasons">{service.reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul>}<div className="operations-item-footer"><p><span>Who can help</span>{service.owner}</p>{recovery(service.id === 'gifts' ? {section:'gifts'} : service.target)}</div></li>)}</ul>
       </> : view === 'background' ? <>
         <p className="operations-intro">A run is shown only when its evidence was saved. A passed check is separate from provider delivery, payment settlement or completion of a customer request.</p>
         {!data.limits.historyAvailable && <p className="operations-notice is-warning">Saved run history is unavailable. The current setup cannot tell us when the work last completed.</p>}
@@ -69,7 +70,7 @@ export default function ServiceOperations({ onNavigate, onViewChange, initialVie
         {data.limits.truncated && <p className="operations-notice is-warning">Showing the first {data.limits.maxAttention} items. Open the relevant workspace to review the remaining records.</p>}
         {attentionCount === 0 ? <div className="operations-empty"><Icon name="check" size={30}/><h3>No attention items were returned.</h3><p>That describes this check. Review Connections and Background work for unavailable setup or missing run evidence.</p></div> : ATTENTION_AREAS.map(area => {
           const items = data.attention.filter(item => item.area === area)
-          return items.length > 0 && <section className="operations-attention-group" key={area} aria-labelledby={uid + '-area-' + area}><h3 id={uid + '-area-' + area}>{areaLabels[area]} <span>{items.length}</span></h3><ul>{items.map(item => <li key={item.id}><div className="operations-item-heading"><h4>{item.title}</h4><span className={'operations-status severity-' + item.severity}>{severityLabels[item.severity]}</span></div><p>{item.summary}</p><div className="operations-item-footer"><p><span>Recorded</span><When value={item.at}/></p>{recovery(item.target, true)}</div></li>)}</ul></section>
+          return items.length > 0 && <section className="operations-attention-group" key={area} aria-labelledby={uid + '-area-' + area}><h3 id={uid + '-area-' + area}>{areaLabels[area]} <span>{items.length}</span></h3><ul>{items.map(item => <li key={item.id}><div className="operations-item-heading"><h4>{item.title}</h4><span className={'operations-status severity-' + item.severity}>{severityLabels[item.severity]}</span></div><p>{item.summary}</p><div className="operations-item-footer"><p><span>Recorded</span><When value={item.at}/></p>{recovery(item.id.startsWith('gift-') ? {section:'gifts', ...(isGiftPurchaseId(item.target?.recordId) ? {recordId:item.target!.recordId} : {})} : item.target, true)}</div></li>)}</ul></section>
         })}
       </>}
     </div>

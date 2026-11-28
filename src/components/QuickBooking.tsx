@@ -141,11 +141,11 @@ export function QuickBooking({ format: fixed }: { format?: FormatKey }) {
   async function openSavedBooking(result: PublicHoldResult) {
     setBusy(true)
     try {
-      if (canPay) {
+      if (canPay && !result.checkout?.paid) {
         if (result.checkout?.url) { window.location.assign(result.checkout.url); return }
         // An older booking service answers without a checkout: open it the usual way.
         if (!result.checkoutError) {
-          try { window.location.assign((await api.checkout(result.ref)).url); return }
+          try { const checkout = await api.checkout(result.ref); if (!checkout.paid) { window.location.assign(checkout.url); return } }
           catch (failure) { try { sessionStorage.setItem('booking-pay-error:' + result.ref, failure instanceof Error ? failure.message : 'Checkout could not be opened. Your request is saved.') } catch { /* The receipt still offers payment. */ } }
         } else try { sessionStorage.setItem('booking-pay-error:' + result.ref, result.checkoutError.message) } catch { /* The receipt still offers payment. */ }
       }

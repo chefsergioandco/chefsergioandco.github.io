@@ -102,7 +102,9 @@ export type BookingReceipt = {
   nightMinimumState?: 'awaiting_minimum' | 'confirmed'
   decisionDate?: string
 }
-export type PublicHoldResult = HoldResult & { next: 'done'; accessToken: string; checkout?: { url: string; expiresAt?: string }; checkoutError?: { code: string; message: string } }
+/** Gift value can settle checkout without a Stripe redirect; the exact booking/action acknowledgment is required. */
+export type CheckoutResult = { url: string; expiresAt?: string; paid?: never } | { paid: true; ref: string; requestId: string; url?: never }
+export type PublicHoldResult = HoldResult & { next: 'done'; accessToken: string; checkout?: CheckoutResult; checkoutError?: { code: string; message: string } }
 /** Options for a hold: open the deposit checkout in the same round trip, and report the guest's page-load-to-submit time. */
 export type HoldOptions = { checkout?: boolean; elapsedMs?: number }
 /** Menu-conversation answers a guest can add after the deposit. Sergio's agreed topics are never overwritten. */
@@ -119,7 +121,7 @@ export interface PublicBookingApi extends Omit<BookingApi, 'booking' | 'hold' | 
   details(ref: string, details: GuestDetails): Promise<DetailsReceipt>
   cancel(ref: string, reason: string): Promise<BookingReceipt | null>
   scheduleInterview(ref: string, slotId: string): Promise<BookingReceipt | null>
-  checkout(ref: string): Promise<{url: string; expiresAt?: string}>
+  checkout(ref: string): Promise<CheckoutResult>
   waitlist(nightId: string, email: string, honeypot?: string): Promise<void>
 }
 

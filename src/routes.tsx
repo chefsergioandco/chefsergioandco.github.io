@@ -183,7 +183,7 @@ const all: Route[] = [
     Page: GiftPage,
   },
   { path: '/gift/card/', title: 'Your gift card | Chef Sergio & Co.', description: 'See what is on your Chef Sergio & Co. gift card and book an evening with it.', h1: 'Your gift card.', Page: GiftCardPage, noindex: true, og: { card: 'home' } },
-  { path: '/gift/thanks/', title: 'Thank you for your gift | Chef Sergio & Co.', description: 'Your Chef Sergio & Co. gift card is on its way to them by email.', h1: 'Your gift is on its way.', Page: GiftThanks, noindex: true, og: { card: 'home' } },
+  { path: '/gift/thanks/', title: 'Your gift purchase | Chef Sergio & Co.', description: 'Check the current payment, card issuance and email delivery status of your Chef Sergio & Co. gift purchase.', h1: 'Your gift purchase.', Page: GiftThanks, noindex: true, og: { card: 'home' } },
 
   ...(site.features.sergiosTable
     ? [
